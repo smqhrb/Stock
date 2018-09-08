@@ -37,7 +37,7 @@ def drawPic():
     drawPic.canvas.show()
 if __name__ == '__main__':    
 	matplotlib.use('TkAgg')
-    root = Tk()  
+   # root = Tk()  
    #在Tk的GUI上放置一个画布，并用.grid()来调整布局
 	drawPic.f = Figure(figsize=(5,4), dpi=100)
     drawPic.canvas = FigureCanvasTkAgg(drawPic.f, master=root) 

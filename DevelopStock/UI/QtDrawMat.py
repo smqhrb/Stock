@@ -32,9 +32,11 @@ class App(QMainWindow):
         button.setToolTip('This s an example button')
         button.move(500,0)
         button.resize(140,100)
+        button.clicked.connect(self.click_callback)
  
         self.show()
- 
+    def click_callback(self):
+        print("click")
 
 class PlotCanvas(FigureCanvas):
     def __init__(self, parent=None,width=5, height=4, dpi=100):

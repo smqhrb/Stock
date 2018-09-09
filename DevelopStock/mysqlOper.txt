@@ -1,0 +1,32 @@
+1.run: cmd
+2.start db:  net start mysql ;stop db: net stop mysql
+3.login DB:  mysql -hlocalhost -uroot -p
+   root/smq1234
+
+安装完mysql 之后，登陆以后，不管运行任何命令，总是提示这个
+
+step 1: SET PASSWORD = PASSWORD('your new password');
+
+step 2: ALTER USER 'root'@'localhost' PASSWORD EXPIRE NEVER;
+
+step 3: flush privileges;
+
+CREATE DATABASE IF NOT EXISTS stockdb;
+use stockdb;
+CREATE TABLE gupiao(
+         code  CHAR(20) NOT NULL,
+         name  varCHAR(80),
+         date  varchar(20),   
+shoupan varchar(20),
+zhangdiefu varchar(20),
+huanshoulv varchar(20),
+zijinliuru varchar(20),
+zijinliuchu varchar(20),
+jingliuru varchar(20),
+zhuliliuru varchar(20),
+zhuliliuchu varchar(20),
+zhulijingliuru varchar(20)
+ )default charset=utf8;
+"INSERT INTO gupiao(code,name,date,shoupan,zhangdiefu,huanshoulv,zijinliuru,zijinliuchu,jingliuru,zhuliliuru,zhuliliuchu,zhulijingliuru)" "VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)")
+
+select code,name,zijinliuru from (select code,name,zijinliuru from gupiao) as total order by zijinliuru asc;

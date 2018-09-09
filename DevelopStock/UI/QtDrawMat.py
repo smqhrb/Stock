@@ -1,35 +1,99 @@
- import matplotlib
-2 matplotlib.use("Qt5Agg")  # 声明使用QT5
-3 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-4 from matplotlib.figure import Figure
-class Figure_Canvas(FigureCanvas):   # 通过继承FigureCanvas类，使得该类既是一个PyQt5的Qwidget，又是一个matplotlib的FigureCanvas，这是连接pyqt5与matplot                                          lib的关键
+import sys
 
-    def __init__(self, parent=None, width=11, height=5, dpi=100):
-        fig = Figure(figsize=(width, height), dpi=100)  # 创建一个Figure，注意：该Figure为matplotlib下的figure，不是matplotlib.pyplot下面的figure
+from PyQt5.QtWidgets import QApplication, QMainWindow, QMenu, QVBoxLayout, QSizePolicy, QMessageBox, QWidget, QPushButton
+from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import QTimer
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
+import matplotlib.pyplot as plt
+import numpy
+from scipy import interpolate
+import random
+ 
+class App(QMainWindow):
+ 
+    def __init__(self):
+        super().__init__()
+        self.left = 10
+        self.top = 10
+        self.title = 'PyQt5 matplotlib example - pythonspot.com'
+        self.width = 640
+        self.height = 400
+        self.initUI()
+ 
+    def initUI(self):
+        self.setWindowTitle(self.title)
+        self.setGeometry(self.left, self.top, self.width, self.height)
+ 
+        m = PlotCanvas(self, width=5, height=4)
+        m.move(0,0)
+ 
+        button = QPushButton('PyQt5 button', self)
+        button.setToolTip('This s an example button')
+        button.move(500,0)
+        button.resize(140,100)
+ 
+        self.show()
+ 
 
-        FigureCanvas.__init__(self, fig) # 初始化父类
+class PlotCanvas(FigureCanvas):
+    def __init__(self, parent=None,width=5, height=4, dpi=100):
+        fig=Figure(figsize=(width,height),dpi=dpi)
+        self.axes = fig.add_subplot(111)# 调用figure下面的add_subplot方法，类似于matplotlib.pyplot下面的subplot方法
+        FigureCanvas.__init__(self,fig)
         self.setParent(parent)
-
-        self.axes = fig.add_subplot(111) # 调用figure下面的add_subplot方法，类似于matplotlib.pyplot下面的subplot方法
+        FigureCanvas.setSizePolicy(self,
+                                   QSizePolicy.Expanding,
+                                   QSizePolicy.Expanding)
+        FigureCanvas.updateGeometry(self)
+        self.test()
 
     def test(self):
-        x = [1,2,3,4,5,6,7,8,9]
-        y = [23,21,32,13,3,132,13,3,1]
-        self.axes.plot(x, y)
-        self.gridLayoutWidget = QtWidgets.QWidget()
-        self.gridLayoutWidget.setGeometry(QtCore.QRect(180, 10, 1100, 500))  # 定义gridLayout控件的大小和位置，4个数字分别为左边坐标，上边坐标，长，宽
-        self.gridLayoutWidget.setObjectName("gridLayoutWidget")
-        self.gridLayout_2 = QtWidgets.QGridLayout(self.gridLayoutWidget)  
-        self.gridLayout_2.setContentsMargins(0, 0, 0, 0)  # 在gridLayoutWidget 上创建一个网格Layout，注意以gridLayoutWidget为参
-        self.gridLayout_2.setObjectName("gridLayout_2")
-# ===通过graphicview来显示图形
-        self.graphicview = QtWidgets.QGraphicsView(self.gridLayoutWidget)  # 第一步，创建一个QGraphicsView，注意同样以gridLayoutWidget为参
-        self.graphicview.setObjectName("graphicview")
-        self.gridLayout_2.addWidget(self.graphicview, 0, 0)  第二步，将该QGraphicsView放入Layout中
+        self.init_plot()
+        #每秒更新一次图像
+        timer =QTimer(self)
+        timer.timeout.connect(self.update_figure)
+        timer.start(1000)
 
-dr = Figure_Canvas() 实例化一个FigureCanvas
-dr.test()  # 画图
-graphicscene = QtWidgets.QGraphicsScene()  # 第三步，创建一个QGraphicsScene，因为加载的图形（FigureCanvas）不能直接放到graphicview控件中，必须先放到graphicScene，然后再把graphicscene放到graphicview中
-graphicscene.addWidget(dr)  # 第四步，把图形放到QGraphicsScene中，注意：图形是作为一个QWidget放到QGraphicsScene中的
-self.graphicview.setScene(graphicscene) # 第五步，把QGraphicsScene放入QGraphicsView
-self.graphicview.show()  # 最后，调用show方法呈现图形！Voila!!
+    def init_plot(self):
+        x=[1,2,3,4,5,6,7,8,9]
+        y=[23,21,32,13,3,132,13,3,1]
+        self.axes.plot(x, y)
+
+    def update_figure(self):
+        x=numpy.linspace(0,10,10)
+        y = [random.randint(0, 10) for i in range(10)]
+        xx=numpy.linspace(0,10)
+        f=interpolate.interp1d(x,y,'quadratic')#产生插值曲线的函数
+        yy=f(xx)
+        self.axes.cla()
+        self.axes.plot(x,y,'o',xx,yy)
+        self.draw()
+
+'''
+class PlotCanvas(FigureCanvas):
+    def __init__(self, parent=None, width=5, height=4, dpi=100):
+        fig = Figure(figsize=(width, height), dpi=dpi)
+        self.axes = fig.add_subplot(111)
+ 
+        FigureCanvas.__init__(self, fig)
+        self.setParent(parent)
+ 
+        FigureCanvas.setSizePolicy(self,
+                QSizePolicy.Expanding,
+                QSizePolicy.Expanding)
+        FigureCanvas.updateGeometry(self)
+        self.plot()
+ 
+ 
+    def plot(self):
+        data = [random.random() for i in range(25)]
+        ax = self.figure.add_subplot(111)
+        ax.plot(data, 'r-')
+        ax.set_title('PyQt Matplotlib Example')
+        self.draw()
+'''
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    ex = App()
+    sys.exit(app.exec_())

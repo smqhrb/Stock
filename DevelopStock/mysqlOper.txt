@@ -1,4 +1,4 @@
-1.run: cmd
+﻿1.run: cmd
 2.start db:  net start mysql ;stop db: net stop mysql
 3.login DB:  mysql -hlocalhost -uroot -p
    root/smq1234
@@ -29,4 +29,25 @@ zhulijingliuru varchar(20)
  )default charset=utf8;
 "INSERT INTO gupiao(code,name,date,shoupan,zhangdiefu,huanshoulv,zijinliuru,zijinliuchu,jingliuru,zhuliliuru,zhuliliuchu,zhulijingliuru)" "VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)")
 
-select code,name,zijinliuru from (select code,name,zijinliuru from gupiao) as total order by zijinliuru asc;
+select code,name,zijinliuru from (select code,name,zijinliuru from gupiao) as total order by zijinliuru 
+
+use stockdb;
+drop table hist_data;
+create table hist_data(
+	code char(6),
+	date varchar(20),
+	open double(20,2),
+	high double(20,2),
+	close double(20,2),
+	low double(20,2),
+	volume double(20,2),
+	price_change  double(20,2),
+	p_change  double(20,2),
+	ma5 double(20,2),
+	ma10 double(20,2),
+	ma20 double(20,2),
+	v_ma5 double(20,2),
+	v_ma10 double(20,2),
+	v_ma20 double(20,2),
+	turnover  double(20,2)
+)default charset=utf8;

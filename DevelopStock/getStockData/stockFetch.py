@@ -75,8 +75,9 @@ class tushareGet:
             totalAssets =str(df.loc[indexs,["totalAssets"]].values[0])
             insert = ("insert into stock_basics(code,name,industry,area,pe,outstanding,totals,totalAssets) values('"+\
                          stockCode+"','"+name+"','"+industry+"','"+area+"',"+pe+","+outstanding+","+totals+","+totalAssets+")")
+            print(stockCode)
             self.dbA.updateInsertDelete(insert)
-        self.dbA.commit()
+         self.dbA.commit()
     
     def hist_data(self,code,ktype):
         df = ts.get_hist_data(code,ktype=ktype) 
@@ -96,7 +97,7 @@ class tushareGet:
             v_ma10 =str(df.loc[indexs,["v_ma10"]].values[0])
             v_ma20 =str(df.loc[indexs,["v_ma20"]].values[0])
             insert =("insert into  hist_data(code,date,open,high,close,low,volume,price_change,p_change,ma5,ma10,ma20,v_ma5,v_ma10,v_ma20) values('"+code+"','"+date+"',"+opend+","+high+","+close+","+low+","+volume+","+price_change+","+p_change+","+ma5+","+ma10+","+ma20+","+v_ma5+","+v_ma10+","+v_ma20+")")
-            #print(insert)
+            # print(insert)
             self.dbA.updateInsertDelete(insert)
         self.dbA.commit()
     

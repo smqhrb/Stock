@@ -1,5 +1,6 @@
 
-import math
+import math 
+import sys
 from PyQt5 import QtWidgets, QtCore
 
 PI =3.14

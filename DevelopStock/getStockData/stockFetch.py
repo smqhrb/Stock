@@ -77,7 +77,7 @@ class tushareGet:
                          stockCode+"','"+name+"','"+industry+"','"+area+"',"+pe+","+outstanding+","+totals+","+totalAssets+")")
             print(stockCode)
             self.dbA.updateInsertDelete(insert)
-         self.dbA.commit()
+        self.dbA.commit()
     
     def hist_data(self,code,ktype):
         df = ts.get_hist_data(code,ktype=ktype) 
@@ -100,8 +100,26 @@ class tushareGet:
             # print(insert)
             self.dbA.updateInsertDelete(insert)
         self.dbA.commit()
-    
+
+    def profit_data(self,year,quarter):
+        df =ts.get_profit_data(year,quarter)   
+        for indexs in df.index:
+            code =str(df.loc[indexs,["code"]].values[0])
+            name =str(df.loc[indexs,["name"]].values[0])
+            roe =str(df.loc[indexs,["roe"]].values[0])
+            net_profit_ratio =str(df.loc[indexs,["net_profit_ratio"]].values[0])
+            gross_profit_rate =str(df.loc[indexs,["gross_profit_rate"]].values[0])
+            net_profits =str(df.loc[indexs,["net_profits"]].values[0])
+            eps =str(df.loc[indexs,["eps"]].values[0])
+            business_income =str(df.loc[indexs,["business_income"]].values[0])
+            bips =str(df.loc[indexs,["bips"]].values[0])
+            insert =("insert into  profit_data(code,name,roe,net_profit_ratio,gross_profit_rate,net_profits,eps,business_income,bips) values('"+code+"','"+name+"',"+roe+","+net_profit_ratio+","+gross_profit_rate+","+net_profits+","+eps+","+business_income+","+bips+")")            
+            self.dbA.updateInsertDelete(insert)
+        self.dbA.commit()
+
 if __name__ == '__main__':
     tg =tushareGet()
-    tg.stock_basics()
+    #tg.stock_basics()
     #tg.hist_data()
+    tg.profit_data(2017,1) #fail to get data
+

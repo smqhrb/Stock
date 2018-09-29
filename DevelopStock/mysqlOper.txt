@@ -65,3 +65,15 @@ create table stock_basics(
 	primary key(code),
 	unique key cd(code)
 )default charset=utf8;
+drop table profit_data;
+create table profit_data(
+       code char(6),
+       name varchar(20),
+       roe  double(20,3),
+       net_profit_ratio double(20,3),
+       gross_profit_rate double(20,3),
+       net_profits double(20,3),
+       eps double(20,3),
+       business_income double(20,3),
+       bips double(20,3)
+)default charset=utf8;

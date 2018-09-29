@@ -31,7 +31,7 @@ class dbOperate:
             #data =cursor.fetchone()
             data =cursor.fetchall()
         except:
-            print("select err")
+            print("except "+sel)
             data =""
         return data
 
@@ -40,8 +40,9 @@ class dbOperate:
             cursor = self.db.cursor()
             cursor.execute(updateSentence)
         except:
-            print("updateInsertDelete")
-            self.db.rollback()
+            
+            print("except "+updateSentence)
+            #self.db.rollback()
 
     def commit(self):
         self.db.commit()    

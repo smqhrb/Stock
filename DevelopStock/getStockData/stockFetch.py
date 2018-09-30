@@ -101,25 +101,129 @@ class tushareGet:
             self.dbA.updateInsertDelete(insert)
         self.dbA.commit()
 
-    def profit_data(self,year,quarter):
+    def profit_data(self,year,quarter):#盈利能力
         df =ts.get_profit_data(year,quarter)   
         for indexs in df.index:
             code =str(df.loc[indexs,["code"]].values[0])
             name =str(df.loc[indexs,["name"]].values[0])
             roe =str(df.loc[indexs,["roe"]].values[0])
+            roe = '0' if roe in('nan','--') else roe
             net_profit_ratio =str(df.loc[indexs,["net_profit_ratio"]].values[0])
+            net_profit_ratio = '0' if net_profit_ratio in('nan','--') else net_profit_ratio
             gross_profit_rate =str(df.loc[indexs,["gross_profit_rate"]].values[0])
+            gross_profit_rate = '0' if gross_profit_rate in('nan','--') else gross_profit_rate
             net_profits =str(df.loc[indexs,["net_profits"]].values[0])
+            net_profits = '0' if net_profits in('nan','--') else net_profits
             eps =str(df.loc[indexs,["eps"]].values[0])
+            eps = '0' if eps in('nan','--') else eps
             business_income =str(df.loc[indexs,["business_income"]].values[0])
+            business_income = '0' if business_income in('nan','--') else business_income
             bips =str(df.loc[indexs,["bips"]].values[0])
-            insert =("insert into  profit_data(code,name,roe,net_profit_ratio,gross_profit_rate,net_profits,eps,business_income,bips) values('"+code+"','"+name+"',"+roe+","+net_profit_ratio+","+gross_profit_rate+","+net_profits+","+eps+","+business_income+","+bips+")")            
+            bips = '0' if bips in('nan','--') else bips
+            insert =("insert into  profit_data(code,name,roe,net_profit_ratio,gross_profit_rate,net_profits,eps,business_income,bips,year,quarter) values('"+code+"','"+name+"',"+roe+","+net_profit_ratio+","+gross_profit_rate+","+net_profits+","+eps+","+business_income+","+bips+",'"+str(year)+"','"+str(quarter)+"')")            
             self.dbA.updateInsertDelete(insert)
         self.dbA.commit()
 
+    def operation_data(self,year,quarter):#营运能力
+        df =ts.get_operation_data(year,quarter)   
+        for indexs in df.index:
+            code =str(df.loc[indexs,["code"]].values[0])
+            name =str(df.loc[indexs,["name"]].values[0])
+            arturnover =str(df.loc[indexs,["arturnover"]].values[0])
+            arturnover = '0' if arturnover in('nan','--') else arturnover
+            arturndays =str(df.loc[indexs,["arturndays"]].values[0])
+            arturndays = '0' if arturndays in('nan','--') else arturndays
+            inventory_turnover =str(df.loc[indexs,["inventory_turnover"]].values[0])
+            inventory_turnover = '0' if inventory_turnover in('nan','--') else inventory_turnover
+            inventory_days =str(df.loc[indexs,["inventory_days"]].values[0])
+            inventory_days = '0' if inventory_days in('nan','--') else inventory_days
+            currentasset_turnover =str(df.loc[indexs,["currentasset_turnover"]].values[0])
+            currentasset_turnover = '0' if currentasset_turnover in('nan','--') else currentasset_turnover
+            currentasset_days =str(df.loc[indexs,["currentasset_days"]].values[0])
+            currentasset_days = '0' if currentasset_days in('nan','--') else currentasset_days
+ 
+            insert =("insert into  operation_data(code,name,arturnover,arturndays,inventory_turnover,inventory_days,currentasset_turnover,currentasset_days,year,quarter) values('"+code+"','"+name+"',"+arturnover+","+arturndays+","+inventory_turnover+","+inventory_days+","+currentasset_turnover+","+currentasset_days+",'"+str(year)+"','"+str(quarter)+"')")            
+            self.dbA.updateInsertDelete(insert)
+        self.dbA.commit()
+
+
+    def growth_data(self,year,quarter):#成长能力
+        df =ts.get_growth_data(year,quarter)   
+        for indexs in df.index:
+            code =str(df.loc[indexs,["code"]].values[0])
+            name =str(df.loc[indexs,["name"]].values[0])
+            mbrg =str(df.loc[indexs,["mbrg"]].values[0])
+            mbrg = '0' if mbrg=='nan' else mbrg
+            nprg =str(df.loc[indexs,["nprg"]].values[0])
+            nprg = '0' if nprg=='nan' else nprg
+            nav =str(df.loc[indexs,["nav"]].values[0])
+            nav = '0' if nav=='nan' else nav
+            targ =str(df.loc[indexs,["targ"]].values[0])
+            targ = '0' if targ=='nan' else targ
+            epsg =str(df.loc[indexs,["epsg"]].values[0])
+            epsg = '0' if epsg=='nan' else epsg
+            seg =str(df.loc[indexs,["seg"]].values[0])
+            seg = '0' if seg=='nan' else seg
+            insert =("insert into  growth_data(code,name,mbrg,nprg,nav,targ,epsg,seg,year,quarter) values('"+code+"','"+name+"',"+mbrg+","+nprg+","+nav+","+targ+","+epsg+","+seg+",'"+str(year)+"','"+str(quarter)+"')")            
+            self.dbA.updateInsertDelete(insert)
+        self.dbA.commit()
+
+    def debtpaying_data(self,year,quarter):#偿债能力
+        df =ts.get_debtpaying_data(year,quarter)   
+        for indexs in df.index:
+            code =str(df.loc[indexs,["code"]].values[0])
+            name =str(df.loc[indexs,["name"]].values[0])
+            currentratio =str(df.loc[indexs,["currentratio"]].values[0])
+            currentratio = '0' if currentratio in('nan','--') else currentratio
+            quickratio =str(df.loc[indexs,["quickratio"]].values[0])
+            quickratio = '0' if quickratio in('nan','--') else quickratio
+            cashratio =str(df.loc[indexs,["cashratio"]].values[0])
+            cashratio = '0' if cashratio in('nan','--') else cashratio
+            icratio =str(df.loc[indexs,["icratio"]].values[0])
+            icratio = '0' if icratio in('nan','--') else icratio
+            sheqratio =str(df.loc[indexs,["sheqratio"]].values[0])
+            sheqratio = '0' if sheqratio in('nan','--') else sheqratio
+            adratio =str(df.loc[indexs,["adratio"]].values[0])
+            adratio = '0' if adratio in('nan','--') else adratio
+ 
+            insert =("insert into  debtpaying_data(code,name,currentratio,quickratio,cashratio,icratio,sheqratio,adratio,year,quarter)\
+                                values('"+code+"','"+name+"',"+currentratio+","+quickratio+","+cashratio+","+icratio+","+sheqratio+","+adratio+",'"+str(year)+"','"+str(quarter)+"')")            
+            self.dbA.updateInsertDelete(insert)
+        self.dbA.commit()
+
+    def cashflow_data(self,year,quarter):#现金流量
+        df =ts.get_cashflow_data(year,quarter)   
+        for indexs in df.index:
+            code =str(df.loc[indexs,["code"]].values[0])
+            name =str(df.loc[indexs,["name"]].values[0])
+            cf_sales  =str(df.loc[indexs,["cf_sales"]].values[0])
+            cf_sales ='0' if cf_sales in('nan','--') else cf_sales
+            rateofreturn =str(df.loc[indexs,["rateofreturn"]].values[0])
+            rateofreturn = '0' if rateofreturn in('nan','--') else rateofreturn
+            cf_nm =str(df.loc[indexs,["cf_nm"]].values[0])
+            cf_nm = '0' if cf_nm in('nan','--') else cf_nm
+            cf_liabilities =str(df.loc[indexs,["cf_liabilities"]].values[0])
+            cf_liabilities = '0' if cf_liabilities in('nan','--') else cf_liabilities
+            cashflowratio =str(df.loc[indexs,["cashflowratio"]].values[0])
+            cashflowratio = '0' if cashflowratio in('nan','--') else cashflowratio
+ 
+            insert =("insert into  cashflow_data(code,name,cf_sales,rateofreturn,cf_nm,cf_liabilities,cashflowratio,year,quarter) values('"+code+"','"+name+"',"+cf_sales+","+rateofreturn+","+cf_nm+","+cf_liabilities+","+cashflowratio+",'"+str(year)+"','"+str(quarter)+"')")            
+            self.dbA.updateInsertDelete(insert)
+        self.dbA.commit()
+
+
 if __name__ == '__main__':
     tg =tushareGet()
-    #tg.stock_basics()
-    #tg.hist_data()
-    tg.profit_data(2017,1) #fail to get data
+    year =2017
+    quarter =1
+    # tg.stock_basics()
+    # tg.hist_data()
+    # tg.profit_data(2017,1) #fail to get data
+    # 
+    # tg.growth_data(year,quarter)
+    # tg.operation_data(year,quarter)
+    # tg.debtpaying_data(year,quarter)
+    # tg.cashflow_data(year,quarter)
+
+    
 

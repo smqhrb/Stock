@@ -1,0 +1,6 @@
+Prettier formatter for Visual Studio Code
+Bracket Pair Colorizer
+IntelliSense for CSS class names in HTML
+Bootstrap 3 Snippets
+Bootstrap v4 Snippets for VS Code
+Bootstrap 4 & Font awesome snippets for Visual studio code

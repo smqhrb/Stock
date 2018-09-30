@@ -13,25 +13,7 @@ step 3: flush privileges;
 
 CREATE DATABASE IF NOT EXISTS stockdb;
 use stockdb;
-CREATE TABLE gupiao(
-         code  CHAR(20) NOT NULL,
-         name  varCHAR(80),
-         date  varchar(20),   
-shoupan varchar(20),
-zhangdiefu varchar(20),
-huanshoulv varchar(20),
-zijinliuru varchar(20),
-zijinliuchu varchar(20),
-jingliuru varchar(20),
-zhuliliuru varchar(20),
-zhuliliuchu varchar(20),
-zhulijingliuru varchar(20)
- )default charset=utf8;
-"INSERT INTO gupiao(code,name,date,shoupan,zhangdiefu,huanshoulv,zijinliuru,zijinliuchu,jingliuru,zhuliliuru,zhuliliuchu,zhulijingliuru)" "VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)")
 
-select code,name,zijinliuru from (select code,name,zijinliuru from gupiao) as total order by zijinliuru 
-
-use stockdb;
 drop table hist_data;
 create table hist_data(
 	code char(6),
@@ -65,15 +47,73 @@ create table stock_basics(
 	primary key(code),
 	unique key cd(code)
 )default charset=utf8;
+
 drop table profit_data;
-create table profit_data(
+create table profit_data1(
        code char(6),
        name varchar(20),
-       roe  double(20,3),
-       net_profit_ratio double(20,3),
-       gross_profit_rate double(20,3),
-       net_profits double(20,3),
-       eps double(20,3),
-       business_income double(20,3),
-       bips double(20,3)
+       roe  double(20,3),#净资产收益率(%)
+       net_profit_ratio double(20,3),#净利率(%)
+       gross_profit_rate double(20,3),#毛利率(%)
+       net_profits double(20,3),#净利润(万元)
+       eps double(20,3),#每股收益
+       business_income double(20,3),#营业收入(百万元)
+       bips double(20,3),#每股主营业务收入(元)
+       year varchar(6),
+       quarter varchar(4)
+)default charset=utf8;
+
+drop table operation_data;
+create table operation_data(
+      code char(6),
+      name varchar(20),
+      arturnover double(10,4),#应收账款周转率(次)
+      arturndays double(10,4),#应收账款周转率(次)
+      inventory_turnover double(10,4),#存货周转率(次)
+      inventory_days double(10,4),#存货周转天数(天)
+      currentasset_turnover double(10,4),#动资产周转率(次)
+      currentasset_days double(10,4),#流动资产周转天数(天)
+      year varchar(6),
+      quarter varchar(4)
+)default charset=utf8;
+
+drop table growth_data;
+create table growth_data(
+      code char(6),
+      name varchar(20),
+      mbrg double(10,4),#营业务收入增长率(%)
+      nprg double(10,4),#净利润增长率(%)
+      nav double(10,4),#净资产增长率
+      targ double(10,4),#总资产增长率
+      epsg double(10,4),#每股收益增长率
+      seg double(10,4),#股东权益增长率
+      year varchar(6),
+      quarter varchar(4)
+)default charset=utf8;
+
+drop table debtpaying_data;
+create table debtpaying_data(
+      code char(6),
+      name varchar(20),
+      currentratio double(20,4),#流动比率
+      quickratio double(20,4),#速动比率
+      cashratio double(20,4),#现金比率
+      icratio double(20,4),#利息支付倍数
+      sheqratio double(20,4),#股东权益比率
+      adratio double(20,4),#股东权益增长率
+      year varchar(6),
+      quarter varchar(4)
+)default charset=utf8;
+       
+drop table cashflow_data;
+create table cashflow_data(
+      code char(6),
+      name varchar(20),
+      cf_sales double(10,4),#经营现金净流量对销售收入比率
+      rateofreturn double(10,4),#资产的经营现金流量回报率
+      cf_nm double(10,4),#经营现金净流量与净利润的比率
+      cf_liabilities double(10,4),#经营现金净流量对负债比率
+      cashflowratio double(10,4),#现金流量比率
+      year varchar(6),
+      quarter varchar(4)
 )default charset=utf8;

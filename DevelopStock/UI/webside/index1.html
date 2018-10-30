@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="jquery-3.3.1.js"></script>
+    <link rel="stylesheet" href="index.css" type="text/css" />
+    <link rel="stylesheet" href="dist/themes/default/style.min.css" />
+    <script src="dist/jstree.min.js">
+     $(function () { $('#jstree_demo_div').jstree(); });
+     $('#jstree_demo_div').on("changed.jstree", function (e, data) {
+        console.log(data.selected);
+    }
+ );
+ $('button').on('click', function () {
+            $('#jstree').jstree(true).select_node('child_node_1');
+            $('#jstree').jstree('select_node', 'child_node_1');
+            $.jstree.reference('#jstree').select_node('child_node_1');
+    });   
+
+    </script>
+    <title>hello world</title>
+</head>
+<body>
+    <div class ="mydiv">
+        <ul>aaa</ul>
+        <ul>bbb</ul>
+        
+    </div>
+    <div id="jstree_demo_div"></div>
+    <div id="jstree">
+        <!-- in this example the tree is populated from inline HTML -->
+        <ul>
+          <li>Root node 1
+            <ul>
+              <li id="child_node_1">Child node 1</li>
+              <li>Child node 2</li>
+            </ul>
+          </li>
+          <li>Root node 2</li>
+        </ul>
+      </div>
+    
+</body>
+</html>

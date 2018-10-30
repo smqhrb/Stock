@@ -1,19 +1,76 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <title>hello world</title>
     <link rel="stylesheet" href="index.css">
+    <script type="text/javascript" src="index.js">
+    </script>
 </head>
 
 <body>
     <div class="mydiv">net is building.</div>
 
     <div class="alert">
-        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+        
+        <input type="button" onclick="appendTable()" value="click">
         <strong>Title!</strong> Alert body ...
     </div>
 
 </body>
 
+</html> -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>02-jQuery-动态创建表格案例</title>
+    <link rel="stylesheet" href="index.css">
+    <script src="jquery-3.3.1.js"></script>
+    <script type="text/javascript" src="index.js">
+    </script>
+</head>
+<body>
+    <table>
+        <thead>
+            <tr>
+                <th>标题</th>
+                <th>地址</th>
+                <th>说明</th>
+            </tr>
+        </thead>
+        <tbody id="J_TbData">
+        </tbody>
+    </table>
+
+    <br>
+    <!-- 整个表格：ｔａｂｌｅ -->
+    <table>
+        <thead>
+            <tr>  <!-- tr：table row：表格的行 -->
+                <th>一个格</th>
+                <th>一个格</th>
+                <th>一个格</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <!-- rowspan:跨度两个行 -->
+                <td rowspan="2">一个格</td>
+
+                <!-- clospan：跨度两个列 -->
+                <td colspan="2">一个格</td>
+                <!-- <td>一个格</td> -->
+            </tr>
+
+            <tr>
+                <!-- <td>sd</td> -->
+                <td>ss</td>
+                <td>ss</td>
+            </tr>
+        </tbody>
+
+    </table>
+</body>
 </html>

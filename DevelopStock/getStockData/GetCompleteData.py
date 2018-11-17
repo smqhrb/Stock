@@ -15,168 +15,212 @@ import urllib.request as urllib2
 import xlwt
 from bs4 import BeautifulSoup 
 
+class CollectFrom163:
+    def __init__(self):
+        self.code =""
+        self.item =""
+        self.filename =""
+
+        self.wb = xlwt.Workbook()
+
+        self.wsZcfzb = self.wb.add_sheet(u'资产负债表')
+        self.wsLrb = self.wb.add_sheet(u'利润表')
+        self.wsXjllb = self.wb.add_sheet(u'现金流量表')
+        self.sheet =self.wsZcfzb
+        self.df_Code = self.Get_Stock_List()
+        
 
 #获取股票列表
 #code,代码 name,名称 industry,所属行业 area,地区 pe,市盈率 outstanding,流通股本 totals,总股本(万) totalAssets,总资产(万)liquidAssets,流动资产
 # fixedAssets,固定资产 reserved,公积金 reservedPerShare,每股公积金 eps,每股收益 bvps,每股净资 pb,市净率 timeToMarket,上市日期
-def Get_Stock_List():
-    df = ts.get_stock_basics()
-    return df
+    def Get_Stock_List(self):
+        self.df = ts.get_stock_basics()
+        return self.df
+
+    def Set_Stock_Code(self,Code):
+        self.code =Code
+
+    def Set_Stock_fName(self,filename):
+        self.filename =filename
+
+    def Set_Stock_Item(self,item):
+        self.item =item
+
+    def Set_Xls_Sheet(self,sheet):
+        self.sheet =sheet
+
 
 
 # 主要抓取函数在下面，要分析数据在网页上的呈现方式进而选择合适的抓取方式。
 # 网易股票的资产负债表的应收票据的数据其实被拆成了2张表，第一张表是纯表头，第二张表是纯数据。
 
-def GetZcfzb(url,code,ws):
-    headers = {"User-Agent":"Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6"}
-    req = urllib2.Request(url, headers = headers)
-    try:
-        content = urllib2.urlopen(req).read()
-    except:
-        return
-    soup = BeautifulSoup(content)
-#所以要在第一张表中先找到应收票据的位置。
-    table0 = soup.find("table",{"class":"table_bg001 border_box limit_sale"})
-    j =0
-    for row in table0.findAll("tr"):
-        j+=1
-        cells = row.findAll("td") 
-        k =len(cells)
-        if k<=0:
-            cells =row.findAll("th")
-            ws.write(j, 0, cells[0].text)
-            continue
-        ws.write(j, 0, cells[0].text)          
+    def GetZcfzb(self,url,code):
+        headers = {"User-Agent":"Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6"}
+        req = urllib2.Request(url, headers = headers)
+        try:
+            content = urllib2.urlopen(req).read()
+        except:
+            return
+        soup = BeautifulSoup(content)
+    #所以要在第一张表中先找到应收票据的位置。
+        table0 = soup.find("table",{"class":"table_bg001 border_box limit_sale"})
+        j =0
+        for row in table0.findAll("tr"):
+            j+=1
+            cells = row.findAll("td") 
+            k =len(cells)
+            if k<=0:
+                cells =row.findAll("th")
+                self.sheet.write(j, 0, cells[0].text)
+                continue
+            self.sheet.write(j, 0, cells[0].text)          
 
-    table = soup.find("table",{"class":"table_bg001 border_box limit_sale scr_table"})
+        table = soup.find("table",{"class":"table_bg001 border_box limit_sale scr_table"})
 
-    j=0
-    for row in table.findAll("tr"):
-        cells = row.findAll("td")
-        j+=1
-        
-        if len(cells) > 0:#
-            i = 0
-            lencell = len(cells)#统计财务报表的年数            
-            while i < len(cells):
-                #print cells[i].text
-                ws.write(j, i+1, cells[i].text)                                        
-                i=i+1
-        else:
-            cells = row.findAll("th")
-            i=0
-            while i<len(cells):
-                ws.write(j,i+1,cells[i].text)
-                i=i+1
-
-
-
-        
-           
-    return lencell
-
-#抓取网页数据
-def Get_3_Cell(url,code,count):
-    headers = {"User-Agent":"Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6"}
-    req = urllib2.Request(url, headers = headers)
-    try:
-        content = urllib2.urlopen(req).read()
-    except:
-        return
-    soup = BeautifulSoup(content)
-
-    j=-1
-    for row in table0.findAll("tr"):
-        j+=1
-        cells = row.findAll("td")            
-        if len(cells) > 0:#
-            if cells[0].text.find(u'应收票据')>=0:
-                position = j
-                #print position
-                break;
-#所以要在第一张表中先找到应收票据的位置。
-    table0 = soup.find("table",{"class":"table_bg001 border_box limit_sale"})
-    j=-1
-    for row in table0.findAll("tr"):
-        j+=1
-        cells = row.findAll("td")            
-        if len(cells) > 0:#
-            if cells[0].text.find(u'应收票据')>=0:
-                position = j
-                #print position
-                break;
+        j=0
+        for row in table.findAll("tr"):
+            cells = row.findAll("td")
+            j+=1
             
-#然后到第二张表中去抓对应位置的数据。
-    lencell=0
-    table = soup.find("table",{"class":"table_bg001 border_box limit_sale scr_table"})
-
-
-    j=-1
-    for row in table.findAll("tr"):
-        cells = row.findAll("td")
-        j+=1
-        if j == position:       
             if len(cells) > 0:#
                 i = 0
                 lencell = len(cells)#统计财务报表的年数            
                 while i < len(cells):
                     #print cells[i].text
-                    ws.write(count, i+2, cells[i].text)                                        
+                    self.sheet.write(j, i+1, cells[i].text)                                        
                     i=i+1
-            break;
+            else:
+                cells = row.findAll("th")
+                i=0
+                while i<len(cells):
+                    self.sheet.write(j,i+1,cells[i].text)
+                    i=i+1
+        return lencell
+
+#抓取网页数据
+    def Get_3_Cell(self,url,code,count):
+        headers = {"User-Agent":"Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6"}
+        req = urllib2.Request(url, headers = headers)
+        try:
+            content = urllib2.urlopen(req).read()
+        except:
+            return
+        soup = BeautifulSoup(content)
+        table0 = soup.find("table",{"class":"table_bg001 border_box limit_sale"})
+        j=-1
+        for row in table0.findAll("tr"):
+            j+=1
+            cells = row.findAll("td")            
+            if len(cells) > 0:#
+                if cells[0].text.find(self.item)>=0:
+                    position = j
+                    #print position
+                    break;
+        #所以要在第一张表中先找到应收票据的位置。
+        table0 = soup.find("table",{"class":"table_bg001 border_box limit_sale"})
+        j=-1
+        for row in table0.findAll("tr"):
+            j+=1
+            cells = row.findAll("td")            
+            if len(cells) > 0:#
+                if cells[0].text.find(self.item)>=0:
+                    position = j
+                    #print position
+                    break;
+                
+    #然后到第二张表中去抓对应位置的数据。
+        lencell=0
+        table = soup.find("table",{"class":"table_bg001 border_box limit_sale scr_table"})
+
+
+        j=-1
+        for row in table.findAll("tr"):
+            cells = row.findAll("td")
+            j+=1
+            if j == position:       
+                if len(cells) > 0:#
+                    i = 0
+                    lencell = len(cells)#统计财务报表的年数            
+                    while i < len(cells):
+                        #print cells[i].text
+                        self.sheet.write(count, i+2, cells[i].text)                                        
+                        i=i+1
+                break;
+        return lencell
+
+    def GetAllFullAcount(self,df_Code):
+        for Code in df_Code.index:
+            print(u"股票代码:" + Code)
+            Name = df_Code.loc[Code,'name']
+            print( Name)
+            self.GetFullAcount(Code)
+
+    def GetFullAcount(self,Code):
         
-           
-    return lencell
-
-def GetFullAcount(Code):
-    #资产负债表
-    #ws = wb.add_sheet(u'资产负债表')
-    Url1 = 'http://quotes.money.163.com/f10/zcfzb_'+Code+'.html?type=year'
-    GetZcfzb(Url1,Code,ws)
-    #wb.save('Get3Data1.xls')
-    
-    Url1 = 'http://quotes.money.163.com/f10/lrb_'+Code+'.html?type=year'
-    GetZcfzb(Url1,Code,ws1)
-    #wb.save('Get3Data1.xls')
-    
-    Url1 = 'http://quotes.money.163.com/f10/xjllb_'+Code+'.html?type=year'
-    GetZcfzb(Url1,Code,ws2)
-    wb.save(Code+'.xls')
-
-def GetData(df_Code,count):
-    
-    for Code in df_Code.index:
+        self.sheet = self.wsZcfzb
+        #资产负债表
         
-        print(u"股票代码:" + Code)
-        Name = df_Code.loc[Code,'name']
-        print( Name)
-        ws.write(count, 0, Code)
-        ws.write(count, 1, Name)        
-      
-        Url1 = 'http://quotes.money.163.com/f10/zcfzb_'+Code+'.html?type=year'                    
-        LenCell1 = Get_3_Cell(Url1,Code,count)
-        wb.save('Get3Data1.xls')
-        '''
-        #利润表
-        Url2 = 'http://quotes.money.163.com/f10/lrb_'+Code+'.html?type=year'
-        (NumCount,LenCell) = Get_Num(Url2,Code,count)
-        wb.save('Get3Data2.xls')
-        #现金流量表
-        Url3 = 'http://quotes.money.163.com/f10/xjllb_'+Code+'.html?type=year'
-        (NumCount,LenCell) = Get_Num(Url3,Code,count)
-        wb.save('Get3Data3.xls')
-        '''
-        #如果到主要财务指标中抓数要到下文进行。
-        #Url4 = 'http://quotes.money.163.com/f10/zycwzb_'+Code+'.html?type=year'                    
-        #LenCell4 = Get_Main_Cell(Url4,Code,count)
-        #wb.save('GetMainData.xls')
-        count = count +1
-        break
+        Url1 = 'http://quotes.money.163.com/f10/zcfzb_'+Code+'.html?type=year'
+        self.GetZcfzb(Url1,Code)
+        #wb.save('Get3Data1.xls')
 
-#主函数        
-df = Get_Stock_List()
-count = 1
+        self.sheet = self.wsLrb
+        Url1 = 'http://quotes.money.163.com/f10/lrb_'+Code+'.html?type=year'
+        self.GetZcfzb(Url1,Code)
+        #wb.save('Get3Data1.xls')
+        self.sheet = self.wsXjllb
+        Url1 = 'http://quotes.money.163.com/f10/xjllb_'+Code+'.html?type=year'
+        self.GetZcfzb(Url1,Code)
+        if len(self.filename)<=0:
+            self.wb.save(Code+'.xls')
+        else:
+            self.wb.save(self.filename+'('+Code+').xls')
+
+    def GetData(self,df_Code,count):
+        
+        for Code in df_Code.index:
+            
+            print(u"股票代码:" + Code)
+            Name = df_Code.loc[Code,'name']
+            print( Name)
+            self.sheet.write(count, 0, Code)
+            self.sheet.write(count, 1, Name)        
+            if (len(self.item)==0 or self.item =='1'):
+                Url1 = 'http://quotes.money.163.com/f10/zcfzb_'+Code+'.html?type=year'                    
+            elif self.item =='2':
+                Url1 = 'http://quotes.money.163.com/f10/lrb_'+Code+'.html?type=year'
+            elif self.item =='3':
+                Url1 = 'http://quotes.money.163.com/f10/xjllb_'+Code+'.html?type=year'
+            elif self.item =='4':
+                Url1 = 'http://quotes.money.163.com/f10/zycwzb_'+Code+'.html?type=year'
+
+            LenCell1 = self.Get_3_Cell(Url1,Code,count)
+            self.wb.save('zcfzb_'+Code+'.xls')
+    
+            '''
+            #利润表
+            Url2 = 'http://quotes.money.163.com/f10/lrb_'+Code+'.html?type=year'
+            (NumCount,LenCell) = Get_Num(Url2,Code,count)
+            wb.save('Get3Data2.xls')
+            #现金流量表
+            Url3 = 'http://quotes.money.163.com/f10/xjllb_'+Code+'.html?type=year'
+            (NumCount,LenCell) = Get_Num(Url3,Code,count)
+            wb.save('Get3Data3.xls')
+            '''
+            #如果到主要财务指标中抓数要到下文进行。
+            #Url4 = 'http://quotes.money.163.com/f10/zycwzb_'+Code+'.html?type=year'                    
+            #LenCell4 = Get_Main_Cell(Url4,Code,count)
+            #wb.save('GetMainData.xls')
+            count = count +1
+            #break
+
+#主函数 
+
 if __name__ == '__main__':
+    Test =CollectFrom163()    
+    Test.Set_Stock_fName("test") 
+    df = Test.Get_Stock_List()
+    count = 1
     #定义excel表格内容
     # wb = xlwt.Workbook()
     # ws = wb.add_sheet(u'统计表')
@@ -199,11 +243,12 @@ if __name__ == '__main__':
     # ws.write(0, 16, u'2001')
     # ws.write(0, 17, u'2000')
     # GetData(df,count)
-    wb = xlwt.Workbook()
+
+    # wb = xlwt.Workbook()
     
-    ws = wb.add_sheet(u'资产负债表')
+    # ws = wb.add_sheet(u'资产负债表')
     
-    ws1 = wb.add_sheet(u'利润表')
-    ws2 = wb.add_sheet(u'现金流量表')
+    # ws1 = wb.add_sheet(u'利润表')
+    # ws2 = wb.add_sheet(u'现金流量表')
     # GetData(df,count)
-    GetFullAcount('601319')
+    Test.GetFullAcount('601319')

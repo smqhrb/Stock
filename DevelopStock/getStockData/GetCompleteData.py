@@ -153,7 +153,7 @@ class CollectFrom163:
             #self.wsZycwzb = self.wb.add_sheet(u'主要财务指标')
             self.sheet =self.wsZcfzb
             self.GetFullAcount(Code)
-            break
+            
             
 
     def GetFullAcount(self,Code):
@@ -202,26 +202,9 @@ class CollectFrom163:
             elif self.item =='4':
                 Url1 = 'http://quotes.money.163.com/f10/zycwzb_'+Code+'.html?type=year'
                 prefix ='zycwzb_'
-
+            count =count+1
             LenCell1 = self.Get_3_Cell(Url1,Code,count)
-            self.wb.save(prefix +Code+'.xls')
-    
-            '''
-            #利润表
-            Url2 = 'http://quotes.money.163.com/f10/lrb_'+Code+'.html?type=year'
-            (NumCount,LenCell) = Get_Num(Url2,Code,count)
-            wb.save('Get3Data2.xls')
-            #现金流量表
-            Url3 = 'http://quotes.money.163.com/f10/xjllb_'+Code+'.html?type=year'
-            (NumCount,LenCell) = Get_Num(Url3,Code,count)
-            wb.save('Get3Data3.xls')
-            '''
-            #如果到主要财务指标中抓数要到下文进行。
-            #Url4 = 'http://quotes.money.163.com/f10/zycwzb_'+Code+'.html?type=year'                    
-            #LenCell4 = Get_Main_Cell(Url4,Code,count)
-            #wb.save('GetMainData.xls')
-            count = count +1
-            #break
+        self.wb.save(prefix +Code+'.xls')
 
 #主函数 
 
@@ -230,34 +213,4 @@ if __name__ == '__main__':
     Test.Set_Stock_fName("test") 
     df = Test.Get_Stock_List()
     count = 1
-    #定义excel表格内容
-    # wb = xlwt.Workbook()
-    # ws = wb.add_sheet(u'统计表')
-    # ws.write(0, 0, u'股票代码')
-    # ws.write(0, 1, u'股票名称')
-    # ws.write(0, 2, u'2015')
-    # ws.write(0, 3, u'2014')
-    # ws.write(0, 4, u'2013')
-    # ws.write(0, 5, u'2012')
-    # ws.write(0, 6, u'2011')
-    # ws.write(0, 7, u'2010')
-    # ws.write(0, 8, u'2009')
-    # ws.write(0, 9, u'2008')
-    # ws.write(0, 10, u'2007')
-    # ws.write(0, 11, u'2006')
-    # ws.write(0, 12, u'2005')
-    # ws.write(0, 13, u'2004')
-    # ws.write(0, 14, u'2003')
-    # ws.write(0, 15, u'2002')
-    # ws.write(0, 16, u'2001')
-    # ws.write(0, 17, u'2000')
-    # GetData(df,count)
-
-    # wb = xlwt.Workbook()
-    
-    # ws = wb.add_sheet(u'资产负债表')
-    
-    # ws1 = wb.add_sheet(u'利润表')
-    # ws2 = wb.add_sheet(u'现金流量表')
-    # GetData(df,count)
     Test.GetFullAcount('601319')

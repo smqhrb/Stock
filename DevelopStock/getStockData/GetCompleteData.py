@@ -20,14 +20,14 @@ class CollectFrom163:
         self.code =""
         self.item =""
         self.filename =""
+        self.text =""
 
         self.wb = xlwt.Workbook()
-
         self.wsZcfzb = self.wb.add_sheet(u'资产负债表')
         self.wsLrb = self.wb.add_sheet(u'利润表')
         self.wsXjllb = self.wb.add_sheet(u'现金流量表')
         self.sheet =self.wsZcfzb
-        self.df_Code = self.Get_Stock_List()
+        
         
 
 #获取股票列表
@@ -45,6 +45,9 @@ class CollectFrom163:
 
     def Set_Stock_Item(self,item):
         self.item =item
+
+    def Set_Stock_Text(self,text):
+        self.text =text
 
     def Set_Xls_Sheet(self,sheet):
         self.sheet =sheet
@@ -106,16 +109,7 @@ class CollectFrom163:
         except:
             return
         soup = BeautifulSoup(content)
-        table0 = soup.find("table",{"class":"table_bg001 border_box limit_sale"})
-        j=-1
-        for row in table0.findAll("tr"):
-            j+=1
-            cells = row.findAll("td")            
-            if len(cells) > 0:#
-                if cells[0].text.find(self.item)>=0:
-                    position = j
-                    #print position
-                    break;
+
         #所以要在第一张表中先找到应收票据的位置。
         table0 = soup.find("table",{"class":"table_bg001 border_box limit_sale"})
         j=-1
@@ -123,7 +117,7 @@ class CollectFrom163:
             j+=1
             cells = row.findAll("td")            
             if len(cells) > 0:#
-                if cells[0].text.find(self.item)>=0:
+                if cells[0].text.find(self.text)>=0:
                     position = j
                     #print position
                     break;
@@ -150,10 +144,17 @@ class CollectFrom163:
 
     def GetAllFullAcount(self,df_Code):
         for Code in df_Code.index:
-            print(u"股票代码:" + Code)
             Name = df_Code.loc[Code,'name']
-            print( Name)
+            print(u"股票:"+Name+"(" + Code +")")
+            self.wb = xlwt.Workbook()
+            self.wsZcfzb = self.wb.add_sheet(u'资产负债表')
+            self.wsLrb = self.wb.add_sheet(u'利润表')
+            self.wsXjllb = self.wb.add_sheet(u'现金流量表')
+            #self.wsZycwzb = self.wb.add_sheet(u'主要财务指标')
+            self.sheet =self.wsZcfzb
             self.GetFullAcount(Code)
+            break
+            
 
     def GetFullAcount(self,Code):
         
@@ -171,31 +172,39 @@ class CollectFrom163:
         self.sheet = self.wsXjllb
         Url1 = 'http://quotes.money.163.com/f10/xjllb_'+Code+'.html?type=year'
         self.GetZcfzb(Url1,Code)
+        # self.sheet = self.wsZycwzb
+        # Url1 = 'http://quotes.money.163.com/f10/zycwzb_'+Code+'.html?type=year'
+        # self.GetZcfzb(Url1,Code)
         if len(self.filename)<=0:
             self.wb.save(Code+'.xls')
         else:
             self.wb.save(self.filename+'('+Code+').xls')
+        
 
     def GetData(self,df_Code,count):
         
         for Code in df_Code.index:
             
-            print(u"股票代码:" + Code)
+            
             Name = df_Code.loc[Code,'name']
-            print( Name)
+            print(u"股票:"+Name+"(" + Code +") text="+self.text)
             self.sheet.write(count, 0, Code)
             self.sheet.write(count, 1, Name)        
             if (len(self.item)==0 or self.item =='1'):
-                Url1 = 'http://quotes.money.163.com/f10/zcfzb_'+Code+'.html?type=year'                    
+                Url1 = 'http://quotes.money.163.com/f10/zcfzb_'+Code+'.html?type=year'  
+                prefix ='zcfzb_'                  
             elif self.item =='2':
                 Url1 = 'http://quotes.money.163.com/f10/lrb_'+Code+'.html?type=year'
+                prefix ='lrb_' 
             elif self.item =='3':
                 Url1 = 'http://quotes.money.163.com/f10/xjllb_'+Code+'.html?type=year'
+                prefix ='xjllb_'
             elif self.item =='4':
                 Url1 = 'http://quotes.money.163.com/f10/zycwzb_'+Code+'.html?type=year'
+                prefix ='zycwzb_'
 
             LenCell1 = self.Get_3_Cell(Url1,Code,count)
-            self.wb.save('zcfzb_'+Code+'.xls')
+            self.wb.save(prefix +Code+'.xls')
     
             '''
             #利润表

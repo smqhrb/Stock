@@ -152,11 +152,15 @@ class CollectFrom163:
             self.wsXjllb = self.wb.add_sheet(u'现金流量表')
             #self.wsZycwzb = self.wb.add_sheet(u'主要财务指标')
             self.sheet =self.wsZcfzb
-            self.GetFullAcount(Code)
+            self.GetFullAcount(Code,Name)
             
-            
+    def GetFullAcountTop(self,df_Code,Code):    
+        Name = df_Code.loc[Code,'name']
+        print(u"股票:"+Name+"(" + Code +")")
+        self.GetFullAcount(Code,Name)        
 
-    def GetFullAcount(self,Code):
+
+    def GetFullAcount(self,Code,Name):
         
         self.sheet = self.wsZcfzb
         #资产负债表
@@ -176,18 +180,73 @@ class CollectFrom163:
         # Url1 = 'http://quotes.money.163.com/f10/zycwzb_'+Code+'.html?type=year'
         # self.GetZcfzb(Url1,Code)
         if len(self.filename)<=0:
-            self.wb.save(Code+'.xls')
+            self.wb.save(Name+'('+Code+').xls')
         else:
-            self.wb.save(self.filename+'('+Code+').xls')
+            self.wb.save(self.filename+'_'+Name+'('+Code+').xls')
         
 
     def GetData(self,df_Code,count):
         
+        if (len(self.item)==0 or self.item =='1'):
+            self.sheet = self.wsZcfzb             
+        elif self.item =='2':
+            self.sheet = self.wsLrb
+        elif self.item =='3':
+            self.sheet = self.wsXjllb
+        elif self.item =='4':
+            self.sheet = self.wsZcfzb
+
         for Code in df_Code.index:
-            
-            
             Name = df_Code.loc[Code,'name']
             print(u"股票:"+Name+"(" + Code +") text="+self.text)
+            self.sheet.write(count, 0, Code)
+            self.sheet.write(count, 1, Name)   
+            if (len(self.item)==0 or self.item =='1'):
+                Url1 = 'http://quotes.money.163.com/f10/zcfzb_'+Code+'.html?type=year'  
+                prefix ='zcfzb_'   
+                            
+            elif self.item =='2':
+                Url1 = 'http://quotes.money.163.com/f10/lrb_'+Code+'.html?type=year'
+                prefix ='lrb_' 
+               
+            elif self.item =='3':
+                Url1 = 'http://quotes.money.163.com/f10/xjllb_'+Code+'.html?type=year'
+                prefix ='xjllb_'
+                
+            elif self.item =='4':
+                Url1 = 'http://quotes.money.163.com/f10/zycwzb_'+Code+'.html?type=year'
+                prefix ='zycwzb_'                 
+            LenCell1 = self.Get_3_Cell(Url1,Code,count)
+            count =count+1
+            if count>10:
+                break
+        self.wb.save(prefix +Code+'.xls')
+
+    def get_industry_classified(self,classify,count):
+        ddf =ts.get_industry_classified()
+        ddf1 =ddf.copy()
+        a =ddf1[ddf1['c_name'].isin([classify])] 
+
+        # self.wb = xlwt.Workbook()
+        # self.wsZcfzb = self.wb.add_sheet(u'资产负债表')
+        # self.wsLrb = self.wb.add_sheet(u'利润表')
+        # self.wsXjllb = self.wb.add_sheet(u'现金流量表')
+        # self.sheet =self.wsZcfzb      
+
+        if (len(self.item)==0 or self.item =='1'):
+            self.sheet = self.wsZcfzb             
+        elif self.item =='2':
+             self.sheet = self.wsLrb
+        elif self.item =='3':
+            self.sheet = self.wsXjllb
+        elif self.item =='4':
+            self.sheet = self.wsZcfzb
+        prefix ='NA_' 
+        for ind in a.index:
+            Code =a.loc[ind,"code"]
+            Name =a.loc[ind,"name"]
+            print("Stock="+Name+"("+Code+")")
+
             self.sheet.write(count, 0, Code)
             self.sheet.write(count, 1, Name)        
             if (len(self.item)==0 or self.item =='1'):
@@ -202,15 +261,22 @@ class CollectFrom163:
             elif self.item =='4':
                 Url1 = 'http://quotes.money.163.com/f10/zycwzb_'+Code+'.html?type=year'
                 prefix ='zycwzb_'
-            count =count+1
+            
             LenCell1 = self.Get_3_Cell(Url1,Code,count)
-        self.wb.save(prefix +Code+'.xls')
+            count =count+1
+            
+        self.wb.save(prefix+'['+classify+'].xls')    
+        
+        # self.GetData(ddf,0)
 
 #主函数 
 
 if __name__ == '__main__':
     Test =CollectFrom163()    
     Test.Set_Stock_fName("test") 
-    df = Test.Get_Stock_List()
-    count = 1
-    Test.GetFullAcount('601319')
+    Test.Set_Stock_Item("1")
+    Test.Set_Stock_Text("货币资金")
+    # df = Test.Get_Stock_List()
+    # count = 1
+    # Test.GetFullAcount('601319')
+    Test.get_industry_classified('汽车电子',0)

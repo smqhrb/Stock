@@ -72,7 +72,7 @@ def MainOpt():
         allC.Set_Stock_Item(item)
         allC.Set_Stock_Text(text)
         if len(industry)>0:
-            print ("hhh")
+            
             allC.get_industry_classified(industry,0)
         else:
             allC.GetData(df,0)

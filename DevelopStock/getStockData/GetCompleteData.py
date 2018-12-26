@@ -53,7 +53,7 @@ class CollectFrom163:
         self.sheet =sheet
 
 
-
+           
 # 主要抓取函数在下面，要分析数据在网页上的呈现方式进而选择合适的抓取方式。
 # 网易股票的资产负债表的应收票据的数据其实被拆成了2张表，第一张表是纯表头，第二张表是纯数据。
 
@@ -101,7 +101,7 @@ class CollectFrom163:
         return lencell
 
 #抓取网页数据
-    def Get_3_Cell(self,url,code,count):
+    def Get_3_Cell(self,url,code,count,headyear):
         headers = {"User-Agent":"Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6"}
         req = urllib2.Request(url, headers = headers)
         try:
@@ -126,7 +126,18 @@ class CollectFrom163:
         lencell=0
         table = soup.find("table",{"class":"table_bg001 border_box limit_sale scr_table"})
 
-
+        for row in table.findAll("tr"):
+            cells = row.findAll("td")
+            j+=1
+            if headyear ==0:
+                if len(cells) > 0:#
+                    i = 0
+                    lencell = len(cells)#统计财务报表的年数            
+                    while i < len(cells):
+                        #print cells[i].text
+                        self.sheet.write(j, i+1, cells[i].text)                                        
+                        i=i+1
+                    
         j=-1
         for row in table.findAll("tr"):
             cells = row.findAll("td")
@@ -186,7 +197,7 @@ class CollectFrom163:
         
 
     def GetData(self,df_Code,count):
-        
+        headyear =1
         if (len(self.item)==0 or self.item =='1'):
             self.sheet = self.wsZcfzb             
         elif self.item =='2':
@@ -216,17 +227,16 @@ class CollectFrom163:
             elif self.item =='4':
                 Url1 = 'http://quotes.money.163.com/f10/zycwzb_'+Code+'.html?type=year'
                 prefix ='zycwzb_'                 
-            LenCell1 = self.Get_3_Cell(Url1,Code,count)
+            LenCell1 = self.Get_3_Cell(Url1,Code,count,headyear)
             count =count+1
-            if count>10:
-                break
+        
         self.wb.save(prefix +Code+'.xls')
 
     def get_industry_classified(self,classify,count):
         ddf =ts.get_industry_classified()
         ddf1 =ddf.copy()
         a =ddf1[ddf1['c_name'].isin([classify])] 
-
+        headyear =0
         # self.wb = xlwt.Workbook()
         # self.wsZcfzb = self.wb.add_sheet(u'资产负债表')
         # self.wsLrb = self.wb.add_sheet(u'利润表')
@@ -262,10 +272,11 @@ class CollectFrom163:
                 Url1 = 'http://quotes.money.163.com/f10/zycwzb_'+Code+'.html?type=year'
                 prefix ='zycwzb_'
             
-            LenCell1 = self.Get_3_Cell(Url1,Code,count)
+            LenCell1 = self.Get_3_Cell(Url1,Code,count,headyear)
+            headyear =1
             count =count+1
-            
-        self.wb.save(prefix+'['+classify+'].xls')    
+  
+        self.wb.save(prefix+'['+classify+'('+ self.text+')].xls')    
         
         # self.GetData(ddf,0)
 
@@ -274,9 +285,11 @@ class CollectFrom163:
 if __name__ == '__main__':
     Test =CollectFrom163()    
     Test.Set_Stock_fName("test") 
-    Test.Set_Stock_Item("1")
-    Test.Set_Stock_Text("货币资金")
+    Test.Set_Stock_Item("3")
+    Test.Set_Stock_Text("现金及现金等价物净增加额(万元)")
+    kk = ts.get_industry_classified()
+    print(kk)
     # df = Test.Get_Stock_List()
     # count = 1
-    # Test.GetFullAcount('601319')
-    Test.get_industry_classified('汽车电子',0)
+    # Test.GetFullAcount('601319')n
+    Test.get_industry_classified('家电行业',1)

@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from sklearn import datasets, linear_model
+
+
 # read_csv里面的参数是csv在你电脑上的路径，此处csv文件放在notebook运行目录下面的CCPP目录里
 data = pd.read_csv('.\ccpp.csv')
 #读取前五行数据，如果是最后五行，用data.tail()
@@ -15,6 +17,7 @@ y1.head()
 
 from sklearn.impute import SimpleImputer
 imp = SimpleImputer(missing_values=np.nan, strategy='mean')
+print(X1.shape)
 im1 = imp.fit(X1)
 X2 =imp.transform(X1)
 

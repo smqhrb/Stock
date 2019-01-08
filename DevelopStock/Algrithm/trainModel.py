@@ -44,6 +44,34 @@ lassoModel =Lasso(alpha=0.5)
 lassoModel.fit(X_train, y_train)
 y_pre =lassoModel.predict(X_test)
 print('Lasso Variance score: %.2f' % lassoModel.score(X_test, y_test))
+
+###
+# from sklearn import datasets
+# from sklearn import svm
+# from sklearn.model_selection import cross_val_score
+# clf = svm.SVC(kernel='linear', C=1)
+# iris = datasets.load_iris()
+# clf = svm.SVC(kernel='linear', C=1)
+# scores = cross_val_score(clf, iris.data, iris.target, cv=5)
+# print(scores)
+###
+# xt =np.array(X)
+# yt =np.array(orginY)
+# yt =yt.ravel()
+# print('###')
+# print(xt.shape,yt.shape)
+# print('###')
+# print(xt)
+# print(xt.dtype)
+# print('###')
+# print(yt)
+# print(yt.dtype)
+# print('###')
+# clf = svm.SVC(kernel='linear', C=1)
+# clf.fit()
+# scores = cross_val_score(clf, xt, yt, cv=2)
+# print(scores)
+###
 ##
 ## train on whole X using the best Model
 ## get final model
@@ -56,3 +84,14 @@ from sklearn.externals import joblib
 joblib.dump(finalModel_lasso,'lasso.pkl')
 finalModel_lasso1=joblib.load('lasso.pkl')
 print('Final Model Lasso1 Variance score: %.2f' % finalModel_lasso1.score(X_test, y_test))
+
+# ###random walk condition
+# def hurst(ts):
+#     lags =range(2,100)
+
+#     tau =[sqrt(std(substract(ts[lag:],ts[:-lag]))) for lag in lags]
+
+#     poly =ployfit(log(lags),log(tau),1)
+
+#     return poly[0]*2.0
+

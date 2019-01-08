@@ -13,13 +13,22 @@ X = data[['AT', 'V', 'AP', 'RH']]
 print(X.head())
 y = data[['PE']]
 y.head()
+from sklearn.preprocessing import StandardScaler
+# X =preprocessing.scale(X1)
+# y =preprocessing.scale(y1)
+pre =StandardScaler()
+pre1 =StandardScaler()
+# X =pre.fit_transform(X1)
+# y =pre1.fit_transform(y1)
 
 from sklearn.model_selection import train_test_split
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=1)
 print (X_train.shape)
 print (y_train.shape)
-print (X_test.shape)
-print (y_test.shape)
+print("X_test")
+print (X_test)
+print ("y_test")
+print (y_test)
 
 from sklearn.linear_model import LinearRegression
 linreg = LinearRegression()
@@ -32,11 +41,11 @@ y_pred = linreg.predict(X_test)
 from sklearn import metrics
 # 用scikit-learn计算MSE
 print ("MSE:",metrics.mean_squared_error(y_test, y_pred))
-# 用scikit-learn计算RMSE
+# 用scikit-learn计算RMSEa
 print ("RMSE:",np.sqrt(metrics.mean_squared_error(y_test, y_pred)))
 
-X = data[['AT', 'V', 'AP']]
-y = data[['PE']]
+# X = data[['AT', 'V', 'AP']]
+# y = data[['PE']]
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=1)
 from sklearn.linear_model import LinearRegression
 linreg = LinearRegression()
@@ -49,8 +58,8 @@ print ("MSE:",metrics.mean_squared_error(y_test, y_pred))
 # 用scikit-learn计算RMSE
 print ("RMSE:",np.sqrt(metrics.mean_squared_error(y_test, y_pred)))
 
-X = data[['AT', 'V', 'AP', 'RH']]
-y = data[['PE']]
+# X = data[['AT', 'V', 'AP', 'RH']]
+# y = data[['PE']]
 from sklearn.model_selection import cross_val_predict
 predicted = cross_val_predict(linreg, X, y, cv=5)
 # 用scikit-learn计算MSE
@@ -61,7 +70,11 @@ print ("RMSE:",np.sqrt(metrics.mean_squared_error(y, predicted)))
 fig, ax = plt.subplots()
 #ax.scatter(y, predicted)
 ax.scatter(y_test, y_pred)
-
+print(y_test)
+print(y_pred)
+print("invert")
+# print(pre.inverse_transform(y_test))
+print(pre1.inverse_transform(y_pred))
 #ax.plot([y.min(), y.max()], [y.min(), y.max()], 'k--', lw=4)
 # ax.plot(y_test, y_pred, 'g', lw=1)
 

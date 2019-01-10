@@ -94,4 +94,3 @@ print('Final Model Lasso1 Variance score: %.2f' % finalModel_lasso1.score(X_test
 #     poly =ployfit(log(lags),log(tau),1)
 
 #     return poly[0]*2.0
-

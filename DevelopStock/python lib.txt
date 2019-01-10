@@ -58,3 +58,6 @@ urllib3           1.23
 wrapt             1.10.11
 yahoo-finance     1.4.0
 yql               1.0.1
+
+pip install statsmodels
+pip install patsy

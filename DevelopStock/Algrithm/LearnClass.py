@@ -256,7 +256,16 @@ if __name__=='__main__':
     p.start()
     p.join()
     print('Child process end.')
+#########
+# # 若A.py和B.py位于不同的目录下，可以用以下方法
 
+# # (假设B.py位于D盘的根目录下)
+
+# import sys
+# sys.path.append('D:/')
+# import B
+# if __name__=="__main__":
+#     print B.pr(x,y)
 #////////////////////////////////
 # not useful python 中MethodType方法详解和使用
 # from types import MethodType 

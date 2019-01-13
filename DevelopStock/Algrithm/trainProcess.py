@@ -1,4 +1,6 @@
-
+# import sys
+# sys.path.append('./')
+from prepareData import *
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
@@ -7,6 +9,7 @@ from sklearn.linear_model import Lasso
 from sklearn.externals import joblib
 import numpy as np
 import pandas as pd
+
 class trainProcess:
     def __init__(self):
         self.inputX =0
@@ -22,7 +25,7 @@ class trainProcess:
         self.inputX =x
         self.inputY =y
 
-    def prepareData(self):
+    def localPrepareData(self):
         ##process nan data
         self.flag =0
         imp = SimpleImputer(missing_values=np.nan, strategy='mean')
@@ -88,7 +91,11 @@ class trainProcess:
 
     def runDataLearnModel(self,x,y):
         self.setData(x,y)
-        self.prepareData()
+        # self.localPrepareData()
+        preDX =prepareData(self.inputX)
+        self.inputX =preDX.Normalizer()
+        preDY =prepareData(self.inputY)
+        self.inputY =preDY.Normalizer()
         self.divDataAsTrain()
         self.modelFix()
         self.learnToFinalModel()
@@ -102,4 +109,4 @@ if __name__ == '__main__':
     print(orginX.shape)
     orginY = inputData[['RR']]
     train =trainProcess()
-    train.runDataLearnModel(orginX,orginY)
+    train.runDataLearnModel(np.array(orginX),np.array(orginY))

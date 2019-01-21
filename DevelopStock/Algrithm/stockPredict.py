@@ -11,10 +11,11 @@ from sklearn import preprocessing,svm
 from sklearn.model_selection import train_test_split
 
 from sklearn.linear_model import LinearRegression
-start = datetime.datetime(2015, 1, 1)
-end = datetime.datetime(2016, 11, 20)
+start = datetime.datetime(2017, 11, 1)
+end = datetime.datetime(2019, 1, 14)
 #从互联网获取数据
-df = web.DataReader("XOM", "yahoo", start, end)
+df = web.DataReader("000651.SZ", "yahoo", start, end)
+print(df)
 #print(df.head())
 df = df[['Open',  'High',  'Low',  'Close', 'Volume']]
 df['HL_PCT'] = (df['High'] - df['Low']) / df['Close'] * 100.0
@@ -27,16 +28,17 @@ forecast_out = int(math.ceil(0.01 * len(df)))
 #预测forecast_out天后的
 
 df['label'] = df[forecast_col].shift(-forecast_out)
-
+print(df)
 print(df.shape)
 print(df.tail())
 X = np.array(df.drop(['label'], 1))
-
-
 X = preprocessing.scale(X)
 
 X_lately = X[-forecast_out:]
+print(X)
+print(X_lately)
 X = X[:-forecast_out]
+
 df.dropna(inplace=True)
 print(X)
 print(X_lately)
@@ -59,6 +61,8 @@ print(accuracy)
 forecast_set = clf.predict(X_lately)
 print(forecast_set,accuracy,forecast_out)
 
+from sklearn.externals import joblib
+joblib.dump(clf,'000651.pkl')
 style.use('ggplot')
 
 df['Forecast']=np.nan

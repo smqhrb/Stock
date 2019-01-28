@@ -61,3 +61,4 @@ yql               1.0.1
 
 pip install statsmodels
 pip install patsy
+pip install pyecharts

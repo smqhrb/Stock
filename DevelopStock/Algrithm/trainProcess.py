@@ -1,6 +1,9 @@
 # import sys
 # sys.path.append('./')
 from prepareData import *
+from getStockTradeData import stockData
+import datetime
+from datetime import timedelta
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
@@ -11,7 +14,11 @@ from sklearn.externals import joblib
 import numpy as np
 import pandas as pd
 import pandas_datareader.data as web
-import datetime
+from sklearn.metrics import r2_score
+
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble import AdaBoostRegressor
+
 import matplotlib.pyplot as plt
 class trainProcess:
     def __init__(self):
@@ -71,7 +78,7 @@ class trainProcess:
         ###score
         scoreLasso =lassoModel.score(self.testX, self.testY)
         print('Lasso Variance score: %.2f' % scoreLasso)
-
+        
         if scoreLinear>scoreLasso:
             self.finalClf =linregModel
         else:
@@ -86,11 +93,12 @@ class trainProcess:
             mList[ind].fit(self.trainX, self.trainY)
             y_pred = mList[ind].predict(self.testX)
             scoreK = mList[ind].score(self.testX, self.testY)
+            # print("r2:%.2f"%r2_score(self.testY,y_pred))
             print(mLable[ind]+'Variance score: %.2f' % scoreK)
             dataFeedX.append(self.testX)
             dataFeedY.append(y_pred)
             dataScore.append(scoreK)
-        print(dataScore.index(max(dataScore)))
+        print("model index :"+str(dataScore.index(max(dataScore))))
         self.finalClf =mList[dataScore.index(max(dataScore))]
 
         return dataFeedX,dataFeedY,dataScore
@@ -123,17 +131,28 @@ class trainProcess:
         ###Multi Model Learn###
         modelList =[]
         modelLabel =[]
-        linregModel = LinearRegression()
-        modelList.append(linregModel)
-        modelLabel.append('LinearRegression ')
+        # linregModel = LinearRegression()
+        # modelList.append(linregModel)
+        # modelLabel.append('LinearRegression ')
 
-        lassoModel =Lasso(alpha=0.5)
-        modelList.append(lassoModel)
-        modelLabel.append('Lasso ')
+        # lassoModel =Lasso(alpha=0.5)
+        # modelList.append(lassoModel)
+        # modelLabel.append('Lasso ')
 
-        svr_rbf = SVR(kernel='rbf', C=1e3, gamma=0.1)
-        modelList.append(svr_rbf)
-        modelLabel.append('SVR.rbf ')   
+        # svr_rbf = SVR(kernel='rbf', C=1e3, gamma=0.3)
+        # modelList.append(svr_rbf)
+        # modelLabel.append('SVR.rbf ') 
+
+        # regr_1 = DecisionTreeRegressor(max_depth=4)
+        # modelList.append(regr_1)
+        # modelLabel.append('regr_1 ') 
+
+        rng = np.random.RandomState(1)
+        regr_2 = AdaBoostRegressor(DecisionTreeRegressor(max_depth=4),n_estimators=300,loss='square', random_state=rng)
+        modelList.append(regr_2)
+        modelLabel.append('regr_2 ') 
+
+
 
         dataFeedX,dataFeedY,dataScore=self.multiModelFix(modelList,modelLabel)
         # self.showResultPlot(dataFeedX,dataFeedY,['r','g'],['linear','lasso'])
@@ -195,18 +214,43 @@ if __name__ == '__main__':
     # y_pred =train.getModelFromPkl('000651.pkl',X)
     # print(y_pred)
 
+    # train =trainProcess()
+    # # 8.669896007	0.797576364	0.715665422	1.431330844	2.146996266	3.578327111
+    # # 3.489489941	0.294683444	0.290436954	0.580873908	0.871310863	1.452184771
+    # # 7.951857877	0.717696375	0.657651046	1.315302091	1.972953137	3.288255228
+    # # 9.598156776	0.647320792	2.048074513	2.695395305	0.75598543	3.451380736
+    # # 13.17550301	0.992880429	2.376762874	3.369643303	1.533286551	4.902929855
+    # # 57.14744374	10	8.61690736	18.61690736	0.648360827	19.26526819
+
+
+    # X=np.array([[10,8.61690736,18.61690736,0.648360827,19.26526819],
+    #             [0.992880429,2.376762874,3.369643303,1.533286551,4.902929855]])
+    # # X=X.reshape(1,-1)
+    # y_pred =train.getModelFromPkl('finalModel.pkl',X)
+    # print(y_pred)
+
+    # now_time = datetime.datetime.now()
+    # end =now_time.strftime('%Y%m%d')
+    # lastyear_time =now_time -timedelta(days=365)
+    # start =lastyear_time.strftime('%Y%m%d') 
+    ##
+    # start ='20000101'
+    # end ='20180101'   
+    # sd =stockData('000651.SZ',start,end)
+    # X,y =sd.preDataForProcess()
+    # print(X,y)
+    # print(X.shape)
+    # print(y.shape)
+    # train =trainProcess()
+    # train.runDataLearnModel(np.array(X),np.array(y))
+
+    sd =stockData('000651.SZ',"20181121","20190123")
+    X,y =sd.preDataForProcess()
     train =trainProcess()
-    # 8.669896007	0.797576364	0.715665422	1.431330844	2.146996266	3.578327111
-    # 3.489489941	0.294683444	0.290436954	0.580873908	0.871310863	1.452184771
-    # 7.951857877	0.717696375	0.657651046	1.315302091	1.972953137	3.288255228
-    # 9.598156776	0.647320792	2.048074513	2.695395305	0.75598543	3.451380736
-    # 13.17550301	0.992880429	2.376762874	3.369643303	1.533286551	4.902929855
-    # 57.14744374	10	8.61690736	18.61690736	0.648360827	19.26526819
-
-
-    X=np.array([[10,8.61690736,18.61690736,0.648360827,19.26526819],
-                [0.992880429,2.376762874,3.369643303,1.533286551,4.902929855]])
+    
     # X=X.reshape(1,-1)
     y_pred =train.getModelFromPkl('finalModel.pkl',X)
-    print(y_pred)
+    print(y,y_pred)
+    print("r2:%.2f"%r2_score(y,y_pred))
+
 

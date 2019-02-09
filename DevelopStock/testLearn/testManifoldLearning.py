@@ -37,3 +37,64 @@ plt.show()
 from sklearn.metrics import pairwise_distances
 D = pairwise_distances(X)
 print(D.shape)
+
+from sklearn.manifold import MDS
+model = MDS(n_components=2, dissimilarity='precomputed', random_state=1)
+out = model.fit_transform(D)
+plt.scatter(out[:, 0], out[:, 1], **colorize)
+plt.axis('equal');
+# plt.show()
+
+def random_projection(X, dimension=3, rseed=42):
+    assert dimension >= X.shape[1]
+    rng = np.random.RandomState(rseed)
+    C = rng.randn(dimension, dimension)
+    e, V = np.linalg.eigh(np.dot(C, C.T))
+    return np.dot(X, V[:X.shape[1]])
+X3 = random_projection(X, 3)
+print(X3.shape)
+
+# from mpl_toolkits import mplot3d
+# ax = plt.axes(projection='3d')
+# ax.scatter3D(X3[:, 0], X3[:, 1], X3[:, 2],**colorize)
+# ax.view_init(azim=70, elev=50)
+
+from mpl_toolkits.mplot3d import Axes3D
+fig = plt.figure()
+ax = Axes3D(fig)
+y3 = np.arctan2(X3[:, 0], X3[:, 1])
+ax.scatter(X3[:, 0], X3[:, 1], X3[:, 2], c=y3, marker='.', s=50, label='')
+plt.show()
+
+def make_hello_s_curve(X):
+    t = (X[:, 0] - 2) * 0.75 * np.pi
+    x = np.sin(t)
+    y = X[:, 1]
+    z = np.sign(t) * (np.cos(t) - 1)
+    return np.vstack((x, y, z)).T
+XS = make_hello_s_curve(X)
+# from mpl_toolkits import mplot3d
+# ax = plt.axes(projection='3d')
+# ax.scatter3D(XS[:, 0], XS[:, 1], XS[:, 2],**colorize);
+
+from mpl_toolkits.mplot3d import Axes3D
+fig = plt.figure()
+ax = Axes3D(fig)
+y3 = np.arctan2(XS[:, 0], XS[:, 1])
+ax.scatter(XS[:, 0], XS[:, 1], XS[:, 2], c=y3, marker='.', s=50, label='')
+# plt.show()
+
+# from sklearn.manifold import MDS
+# model = MDS(n_components=2, random_state=2)
+# outS = model.fit_transform(XS)
+# plt.scatter(outS[:, 0], outS[:, 1], **colorize)
+# plt.axis('equal');
+# plt.show()
+
+rom sklearn.manifold import LocallyLinearEmbedding
+model = LocallyLinearEmbedding(n_neighbors=100, n_components=2, method='modified',
+eigen_solver='dense')
+out = model.fit_transform(XS)
+fig, ax = plt.subplots()
+ax.scatter(out[:, 0], out[:, 1], **colorize)
+ax.set_ylim(0.15, -0.15);

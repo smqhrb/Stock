@@ -5,6 +5,9 @@ import pymysql
 #DBPASS ="smq1234"
 #DBNAME ="stockdb"
 class dbOperate:
+    '''
+    configure DBIP,DBUser,DBPass,DBName
+    '''
 #    gDbIP ="localhost"
 #    gDbUser ="root"
 #    gDbPass ="smq1234"

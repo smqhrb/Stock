@@ -8,6 +8,7 @@ import datetime
 from datetime import timedelta
 import numpy as np
 import math
+import pandas as pd
 class stockData():
     def __init__(self,code,start,end):
         ts.set_token('582c8c9ab1bd9e3e14d5d60527d63affb8c310fba3fb9f5d7853bf9c')
@@ -51,6 +52,14 @@ class stockData():
         df.dropna(inplace=True)
         y = np.array(df['label'])
         return X,y
+    def preDataForCluster(self):
+        '''
+        1. get stock HS300
+        2. prepare weekly data as 'open close high vol'
+        '''
+       
+
+        df = self.pro.weekly(ts_code='000001.SZ', start_date='20180101', end_date='20181101', fields='ts_code,trade_date,open,high,low,close,vol,amount')
 if __name__ == '__main__':
     now_time = datetime.datetime.now()
     end =now_time.strftime('%Y%m%d')

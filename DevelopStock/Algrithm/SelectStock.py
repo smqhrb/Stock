@@ -20,18 +20,64 @@
 # 它突破了传统积极型投资和指数型投资的局限，将投资方法建立在对各种资产类股票公开数据的统计分析上，
 # 通过比较不同资产类的统计特征，建立数学模型，进而确定组合资产的配置目标和分配比例。
 '''
-
-# encoding=utf-8
 import jieba
+import xlwt
+from sklearn.decomposition import PCA
+from sklearn.mixture import GaussianMixture
+import matplotlib.pyplot as plt
+import numpy as np
+from sklearn.datasets.samples_generator import make_blobs
+from sklearn.cluster import KMeans
+# encoding=utf-8
+class selectStock:
+    def __init__(self,data):
+        '''
 
-seg_list = jieba.cut("我来到北京清华大学", cut_all=True)
-print("Full Mode: " + "/ ".join(seg_list)) # 全模式
+        '''
+        self.data =data
+    def getClusterCenter(self):
+        '''
+        1.reduce dimense of data
+        2.search the best center number
+        3.by eye.
+        '''
+        pca = PCA(0.99, whiten=True)
+        data = pca.fit_transform(self.data)
+        n_components = np.arange(1, 30, 1)
+        models = [GaussianMixture(n, covariance_type='full', random_state=0) for n in n_components]
+        aics = [model.fit(data).aic(data) for model in models]
+        plt.plot(n_components, aics);
+        plt.show()
+              
+    def stockCluster(self,centers,data):
+        gmm = GaussianMixture(centers, covariance_type='full', random_state=0)
+        result =gmm.fit(self.data)
+        print(result)
+        kmeans = KMeans(n_clusters=centers)
+        kmeans.fit(self.data)
+        y_kmeans = kmeans.predict(data)
+        return y_kmeans;
+        # pass
 
-seg_list = jieba.cut("我来到北京清华大学", cut_all=False)
-print("Default Mode: " + "/ ".join(seg_list)) # 精确模式
 
-seg_list = jieba.cut("他来到了网易杭研大厦") # 默认是精确模式
-print(", ".join(seg_list))
+if __name__ == '__main__':
+    # seg_list = jieba.cut("我来到北京清华大学", cut_all=True)
+    # print("Full Mode: " + "/ ".join(seg_list)) # 全模式
 
-seg_list = jieba.cut_for_search("小明硕士毕业于中国科学院计算所，后在日本京都大学深造") # 搜索引擎模式
-print(", ".join(seg_list))
+    # seg_list = jieba.cut("我来到北京清华大学", cut_all=False)
+    # print("Default Mode: " + "/ ".join(seg_list)) # 精确模式
+
+    # seg_list = jieba.cut("他来到了网易杭研大厦") # 默认是精确模式
+    # print(", ".join(seg_list))
+
+    # seg_list = jieba.cut_for_search("小明硕士毕业于中国科学院计算所，后在日本京都大学深造") # 搜索引擎模式
+    # print(", ".join(seg_list))
+
+
+    X, y_true = make_blobs(n_samples=80, centers=5,
+    cluster_std=0.60, random_state=0)
+    X = X[:, ::-1] # flip axes for better plotting
+
+    sS =selectStock(X)
+    sS.getClusterCenter()
+    # sS.stockCluster(20)

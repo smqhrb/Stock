@@ -8,6 +8,8 @@ import datetime
 from datetime import timedelta
 import numpy as np
 import math
+import os
+# import Config.configureStock as cf
 import pandas as pd
 class stockData():
     def __init__(self,code,start,end):
@@ -57,17 +59,46 @@ class stockData():
         1. get stock HS300
         2. prepare weekly data as 'open close high vol'
         '''
-       
+        if(os.path.isfile("HS300Data.xls")):
+            hs300Data =pd.read_excel("HS300Data.xls")
+            hs300 =pd.read_excel('hs300.xls')
+            for code in hs300['code']:
+                if(code <600000):
+                    codeStr="%06d.SZ"%(code)
+                else:
+                    codeStr="%06d.SH"%(code)
+                print(hs300Data.ix[hs300Data['ts_code']==codeStr])
+           
+           
 
-        df = self.pro.weekly(ts_code='000001.SZ', start_date='20180101', end_date='20181101', fields='ts_code,trade_date,open,high,low,close,vol,amount')
+        else:
+            dfH =pd.DataFrame()
+            # hs300 =pd.read_excel(cf.HS300)
+            hs300 =pd.read_excel('hs300.xls')
+            for code in hs300['code']:
+                if(code <600000):
+                    codeStr="%06d.SZ"%(code)
+                else:
+                    codeStr="%06d.SH"%(code)
+                df = self.pro.weekly(ts_code=codeStr, start_date=self.startTime, end_date=self.endTime, fields='ts_code,trade_date,open,high,low,close,vol,amount')
+                dfH =dfH.append(df)
+            # print(dfH)
+            writer = pd.ExcelWriter('HS300Data.xls')
+            df=dfH.sort_values(by=['ts_code'])
+            df.to_excel(writer,sheet_name='HS300Data')   
+            writer.save()
+
 if __name__ == '__main__':
-    now_time = datetime.datetime.now()
-    end =now_time.strftime('%Y%m%d')
-    lastyear_time =now_time -timedelta(days=365)
-    start =lastyear_time.strftime('%Y%m%d')    
-    sd =stockData('000651.SZ',start,end)
-    X,y =sd.preDataForProcess()
-    print(X,y)
-    print(X.shape)
-    print(y.shape)
+    # now_time = datetime.datetime.now()
+    # end =now_time.strftime('%Y%m%d')
+    # lastyear_time =now_time -timedelta(days=365)
+    # start =lastyear_time.strftime('%Y%m%d')    
+    # sd =stockData('000651.SZ',start,end)
+    # X,y =sd.preDataForProcess()
+    # print(X,y)
+    # print(X.shape)
+    # print(y.shape)
+
+    sd =stockData('000651.SZ','20180101','20190101')
+    sd.preDataForCluster()
 

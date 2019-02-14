@@ -26,8 +26,11 @@ from sklearn.decomposition import PCA
 from sklearn.mixture import GaussianMixture
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from sklearn.datasets.samples_generator import make_blobs
 from sklearn.cluster import KMeans
+from sklearn.covariance import GraphLassoCV
+from sklearn.cluster import affinity_propagation
 # encoding=utf-8
 class selectStock:
     def __init__(self,data):
@@ -49,15 +52,41 @@ class selectStock:
         plt.plot(n_components, aics);
         plt.show()
               
-    def stockCluster(self,centers,data):
-        gmm = GaussianMixture(centers, covariance_type='full', random_state=0)
-        result =gmm.fit(self.data)
-        print(result)
-        kmeans = KMeans(n_clusters=centers)
-        kmeans.fit(self.data)
-        y_kmeans = kmeans.predict(data)
-        return y_kmeans;
+    def stockCluster(self,centers,data,selectStock):
+        '''
+        data like
+                     600010  600011
+                 0    1.7     2.1
+                 1    2.3     3.1
+        
+        stockList like 600010 600011
+        '''
+        # gmm = GaussianMixture(centers, covariance_type='full', random_state=0)
+        # result =gmm.fit(self.data)
+        # print(result)
+        # kmeans = KMeans(n_clusters=centers)
+        # kmeans.fit(self.data)
+        # y_kmeans = kmeans.predict(data)
+        # return y_kmeans;
         # pass
+
+        edge_model=GraphLassoCV()
+        edge_model.fit(data)
+
+        _,labels=affinity_propagation(edge_model.covariance_)
+        n_labels=max(labels) 
+        # 对这41只股票进行了聚类，labels里面是每只股票对应的类别标号
+        print('Stock Clusters: {}'.format(n_labels+1)) # 10，即得到10个类别
+        stockList =pd.read_excel("stockList.xls")
+        sz50_df2=stockList.set_index('ts_code')
+        # print(sz50_df2)
+        for i in range(n_labels+1):
+            # print('Cluster: {}----> stocks: {}'.format(i,','.join(np.array(selected_stocks)[labels==i]))) # 这个只有股票代码而不是股票名称
+            # 下面打印出股票名称，便于观察
+            stocks=np.array(selectStock)[labels==i].tolist()
+            names=sz50_df2.loc[stocks,:].name.tolist()
+            print('Cluster: {}----> stocks: {}'.format(i,','.join(names)))
+
 
 
 if __name__ == '__main__':
@@ -74,10 +103,13 @@ if __name__ == '__main__':
     # print(", ".join(seg_list))
 
 
-    X, y_true = make_blobs(n_samples=80, centers=5,
-    cluster_std=0.60, random_state=0)
-    X = X[:, ::-1] # flip axes for better plotting
+    # X, y_true = make_blobs(n_samples=80, centers=5,
+    # cluster_std=0.60, random_state=0)
+    # X = X[:, ::-1] # flip axes for better plotting
+
+    # sS =selectStock(X)
+    # sS.getClusterCenter()
+    # # sS.stockCluster(20)
 
     sS =selectStock(X)
-    sS.getClusterCenter()
-    # sS.stockCluster(20)
+

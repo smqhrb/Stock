@@ -68,7 +68,7 @@ class stockData():
                 else:
                     codeStr="%06d.SH"%(code)
                 print(hs300Data.ix[hs300Data['ts_code']==codeStr])
-           
+            
            
 
         else:
@@ -87,6 +87,36 @@ class stockData():
             df=dfH.sort_values(by=['ts_code'])
             df.to_excel(writer,sheet_name='HS300Data')   
             writer.save()
+    def preprocess_data(self,stock_df,min_K_num=50):
+        '''
+        preprocess the stock data.
+        Notice: min_K_num: the minimum stock K number.
+        because some stocks was halt trading in this time period, 
+        the some K data was missing. 
+        if the K data number is less than min_K_num, the stock is discarded.
+        '''
+        df=stock_df.copy()
+        df['diff']=df.close-df.open  # 此处用收盘价与开盘价的差值做分析
+        df.drop(['open','close','high','low','vol','amount'],axis=1,inplace=True)
+
+        result_df=None 
+        #下面一部分是将不同的股票diff数据整合为不同的列，列名为股票代码
+        for name, group in df[['trade_date','diff']].groupby(df.ts_code):
+            if len(group.index)<min_K_num: 
+                continue
+            if result_df is None:
+                result_df=group.rename(columns={'diff':name})
+            else:
+                result_df=pd.merge(result_df,
+                                    group.rename(columns={'diff':name}),
+                                    on='trade_date',how='inner') # 一定要inner，要不然会有很多日期由于股票停牌没数据
+
+        result_df.drop(['trade_date'],axis=1,inplace=True)
+        # 然后将股票数据DataFrame转变为np.ndarray
+        stock_dataset=np.array(result_df).astype(np.float64)
+        # 数据归一化，此处使用相关性而不是协方差的原因是在结构恢复时更高效
+        stock_dataset/=np.std(stock_dataset,axis=0)
+        return stock_dataset,result_df.columns.tolist()
 
 if __name__ == '__main__':
     # now_time = datetime.datetime.now()
@@ -98,7 +128,12 @@ if __name__ == '__main__':
     # print(X,y)
     # print(X.shape)
     # print(y.shape)
-
+    hs300Data =pd.read_excel("HS300Data.xls")
     sd =stockData('000651.SZ','20180101','20190101')
-    sd.preDataForCluster()
+    dd,ff =sd.preprocess_data(hs300Data)
+    # print(dd.shape)
+    # print(ff.shape)
+    from  SelectStock import selectStock
+    test =selectStock(dd)
+    test.stockCluster(0,dd,ff)
 

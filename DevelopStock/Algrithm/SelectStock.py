@@ -46,7 +46,7 @@ class selectStock:
         '''
         pca = PCA(0.99, whiten=True)
         data = pca.fit_transform(self.data)
-        n_components = np.arange(1, 30, 1)
+        n_components = np.arange(1, 100, 1)
         models = [GaussianMixture(n, covariance_type='full', random_state=0) for n in n_components]
         aics = [model.fit(data).aic(data) for model in models]
         plt.plot(n_components, aics);
@@ -87,8 +87,57 @@ class selectStock:
             names=sz50_df2.loc[stocks,:].name.tolist()
             print('Cluster: {}----> stocks: {}'.format(i,','.join(names)))
 
+    def selectByAccount(self):
+        '''
+        1.五力模型
+        2.缴税金额 与企业业绩 比例
+        3. 资产：货币资产,交易性金融资产,应收账款
+            稳健型企业：
+                货币资产>负债总额
+                投资收益率>利息率
+            中小企业：
+                货币资金+应收账款+应收票据>负载总额
+                经营活动现金流>负债总额
 
+            投资性资产：长期股权投资+交易性金融资产
+            经营性资产=总资产-长期股权投资-交易性金融资产
 
+            理性资产结构：
+                投资性资产<经营性资产
+            
+            预收账款越大，预付账款越少，核心竞争力越强。预收款》预付款。
+                应收票据+应收账款+预收账款>应付票据+应付账款+预付账款
+        4.利润表：
+            营业收入：
+                主营业务收入，投资收入，其他业务收入
+            营业成本
+            营业利润=营业收入 - 营业成本
+            利润总额
+            净利润
+            每股收益
+            分析：
+                收入增长速度>成本增长速度
+                公司收入增长 与 利润增长 的关系
+            盈利能力：
+                总利润/总资产
+        5.现金流量表：
+            经营活动：销售商品，提供劳务收到的现金比重越大越好>=主营收入（利润表）
+            经营活动资金净流量 历史同期比较，增长率越高越好。>= 营业利润
+                   经营活动资金净流量*(1.2~1.5)=经营现金净流量
+            投资活动产生的现金净流量>=投资收益*30%
+            对内投资=构建固定资产，无形资产和其他长期资产支付现金（看销售增长）
+            对外投资=投资支付现金(越少越好)
+
+            偿债能力：
+                经营活动产生的现金净流量>负债总额(以年报为准)
+                货币现金+应收账款>负债总额
+        6.市净率: (股价/每股净资产)<1.5
+        7.市盈率:(股价/每股收益)=总市值/企业净利润<15
+        '''
+    def StockValueAssess(self):
+        '''
+        股票内在价值计算
+        '''        
 if __name__ == '__main__':
     # seg_list = jieba.cut("我来到北京清华大学", cut_all=True)
     # print("Full Mode: " + "/ ".join(seg_list)) # 全模式

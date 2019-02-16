@@ -87,6 +87,7 @@ class stockData():
             df=dfH.sort_values(by=['ts_code'])
             df.to_excel(writer,sheet_name='HS300Data')   
             writer.save()
+
     def preprocess_data(self,stock_df,min_K_num=50):
         '''
         preprocess the stock data.
@@ -135,5 +136,6 @@ if __name__ == '__main__':
     # print(ff.shape)
     from  SelectStock import selectStock
     test =selectStock(dd)
-    test.stockCluster(0,dd,ff)
+    test.getClusterCenter()
+    # test.stockCluster(0,dd,ff)
 

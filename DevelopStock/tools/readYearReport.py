@@ -3,6 +3,7 @@
 down load year report 
 '''
 import urllib.request 
+import urllib
 import re 
 import os 
 import pandas as pd
@@ -29,33 +30,83 @@ class ReportDownSina:
         for line in f.readlines(): 
             line = line.replace('\n','') 
             stock.append(line) 
+        self.stockList =stock
         f.close() 
-        print(stock) 
         return stock
+
     def readStockListFromXls(self,filename,colName='ts_code',suffix='1'):
         '''
-        parameter is file name,stock column name ,suffix ='1' or '0',return suffix '1' or '0'
+        parameter is file name,stock column name ,suffix ='1' remove suffix or '0' keep suffix
 
         return list
         '''
         stockList =pd.read_excel(filename)
         rlist =stockList[colName].tolist()
-        print (rlist)
         rlist =self.listRemoveDup(rlist)
-        print (rlist)
+
         returnList =[]
-        if(suffix):
+        if(suffix=='1'):
             for each in rlist:
                 returnList.append(each.split('.')[0])
+        else:
+            returnList =rlist
         print(returnList)
+        self.stockList =returnList
+        return returnList
+
     def listRemoveDup(self,inList):
         newList =[]
         for id in inList:
             if id not in newList:
+                id= "%06d"%(id)
                 newList.append(id)
-        print (newList)
         return newList
-    def reportDown(self,type='y'):
+    def reportDownByStock(self,url,each,baseDir):
+        req = urllib.request.Request(url) 
+        req.add_header('User-Agent','Mozilla/5.0 (Windows NT 6.2; rv:16.0) Gecko/20100101 Firefox/16.0') 
+        page = urllib.request.urlopen(req) 
+        try: 
+            html = page.read().decode('gbk') 
+            target = r'&id=[_0-9_]{7}' 
+            target_list = re.findall(target,html) 
+
+            if(os.path.exists(baseDir+'/'+each)):
+                pass
+            else:
+                os.mkdir(baseDir+'/'+each) 
+            sid = each 
+            #print(target_list)
+                
+            for each in target_list: 
+                #print(a) #print(each) 
+
+                target_url=TARGET_URL%(sid,each) 
+                #print(target_url) 
+                treq = urllib.request.Request(target_url) 
+                #'User-Agent':'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6'
+
+                # treq.add_header('User-Agent','Mozilla/5.0 (Windows NT 6.2; rv:16.0) Gecko/20100101 Firefox/16.0') 
+                treq.add_header('User-Agent','Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6') 
+                tpage = urllib.request.urlopen(treq) 
+                try: 
+                    thtml = tpage.read().decode('gbk') 
+                    #print(thtml) 
+                    file_url = re.search('http://file.finance.sina.com.cn/211.154.219.97:9494/.*?PDF',thtml) 
+                    try: 
+                        #print(file_url.group(0)) 
+                        local = './'+sid+'/'+file_url.group(0).split("/")[-2]+'.pdf' 
+                        #调试用作文件占位 
+                        # #open(local, 'wb').write(b'success') 
+                        #print(local) 
+                        urllib.request.urlretrieve(file_url.group(0),local,None) 
+                    except: 
+                        print('PDF is not available;'+target_url) 
+                except: 
+                    print('page of report  error:'+target_url) 
+        except: 
+            print('year report list error: '+url)
+
+    def reportDown(self,targetDir='YearReport',type='y'):
         '''
         parameter: 
             'y'-year report;
@@ -64,6 +115,13 @@ class ReportDownSina:
             'q3' -quarter 3 report
 
         '''
+        baseDir = './'+targetDir
+        if(os.path.exists(baseDir)):
+            pass
+        else:
+            os.mkdir(baseDir) 
+        
+        urlBase =URL_YEAR_BASE
         if(type=='y'):
             urlBase =URL_YEAR_BASE
         if(type=='hy'):
@@ -72,47 +130,127 @@ class ReportDownSina:
             urlBase =URL_Q1_BASE
         if(type=='q3'):
             urlBase =URL_Q3_BASE
+        reachCount =0
         for each in self.stockList: 
+            reachCount =reachCount +1
+            print('%d:%s;'%(reachCount,each))
             url=urlBase%each 
-            req = urllib.request.Request(url) 
-            req.add_header('User-Agent','Mozilla/5.0 (Windows NT 6.2; rv:16.0) Gecko/20100101 Firefox/16.0') 
-            page = urllib.request.urlopen(req) 
-            try: 
-                html = page.read().decode('gbk') 
-                target = r'&id=[_0-9_]{7}' 
-                target_list = re.findall(target,html) 
-                os.mkdir('./'+each) 
-                sid = each 
-                #print(target_list) 
-                for each in target_list: 
-                    #print(a) #print(each) 
-                    target_url=TARGET_URL%(sid,each) 
-                    #print(target_url) 
-                    treq = urllib.request.Request(target_url) 
-                    treq.add_header('User-Agent','Mozilla/5.0 (Windows NT 6.2; rv:16.0) Gecko/20100101 Firefox/16.0') 
-                    tpage = urllib.request.urlopen(treq) 
-                    try: 
-                        thtml = tpage.read().decode('gbk') 
-                        #print(thtml) 
-                        file_url = re.search('http://file.finance.sina.com.cn/211.154.219.97:9494/.*?PDF',thtml) 
-                        try: 
-                            #print(file_url.group(0)) 
-                            local = './'+sid+'/'+file_url.group(0).split("/")[-2]+'.pdf' 
-                            #调试用作文件占位 
-                            # #open(local, 'wb').write(b'success') 
-                            #print(local) 
-                            urllib.request.urlretrieve(file_url.group(0),local,None) 
-                        except: 
-                            print('PDF失效;'+target_url) 
-                    except: 
-                        print('page of report  error:'+target_url) 
-            except: 
-                print('year report list error: '+url)
+            self.reportDownByStock(url,each,baseDir)
+            # req = urllib.request.Request(url) 
+            # req.add_header('User-Agent','Mozilla/5.0 (Windows NT 6.2; rv:16.0) Gecko/20100101 Firefox/16.0') 
+            # page = urllib.request.urlopen(req) 
+            # try: 
+            #     html = page.read().decode('gbk') 
+            #     target = r'&id=[_0-9_]{7}' 
+            #     target_list = re.findall(target,html) 
+
+            #     if(os.path.exists(baseDir+'/'+each)):
+            #         pass
+            #     else:
+            #         os.mkdir(baseDir+'/'+each) 
+            #     sid = each 
+            #     #print(target_list)
+                 
+            #     for each in target_list: 
+            #         #print(a) #print(each) 
+
+            #         target_url=TARGET_URL%(sid,each) 
+            #         #print(target_url) 
+            #         treq = urllib.request.Request(target_url) 
+            #         #'User-Agent':'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6'
+
+            #         # treq.add_header('User-Agent','Mozilla/5.0 (Windows NT 6.2; rv:16.0) Gecko/20100101 Firefox/16.0') 
+            #         treq.add_header('User-Agent','Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6') 
+            #         tpage = urllib.request.urlopen(treq) 
+            #         try: 
+            #             thtml = tpage.read().decode('gbk') 
+            #             #print(thtml) 
+            #             file_url = re.search('http://file.finance.sina.com.cn/211.154.219.97:9494/.*?PDF',thtml) 
+            #             try: 
+            #                 #print(file_url.group(0)) 
+            #                 local = './'+sid+'/'+file_url.group(0).split("/")[-2]+'.pdf' 
+            #                 #调试用作文件占位 
+            #                 # #open(local, 'wb').write(b'success') 
+            #                 #print(local) 
+            #                 urllib.request.urlretrieve(file_url.group(0),local,None) 
+            #             except: 
+            #                 print('PDF is not available;'+target_url) 
+            #         except: 
+            #             print('page of report  error:'+target_url) 
+            # except: 
+            #     print('year report list error: '+url)
+    def login(self,username,password):
+        # import urllib
+        # from urllib import parse
+        # data=parse.urlencode({'username':username,
+        #                     'password':password,
+        #                     'continue':'http://www.verycd.com/',
+        #                     'login_submit':u'登录'.encode('utf-8'),
+        #                     'save_cookie':1,})
+        # url = 'http://www.verycd.com/signin'
+        # # self.opener.open(url,data).read()
+        
+        # postdata=parse.urlencode({
+        #     'username':'XXXXX',
+        #     'password':'XXXXX',
+        #     'continueURI':'http://www.verycd.com/',
+        #     'fk':fk,
+        #     'login_submit':'登录'
+        # })
+        # req = urllib.request.Request(
+        #     url = 'http://secure.verycd.com/signin/*/http://www.verycd.com/',
+        #     data = postdata
+        # )
+        # result = urllib.request.urlopen(req).read()
+
+        from urllib import request
+        from urllib import parse
+        from urllib.request import urlopen
+
+        values = {'username': '962457839@qq.com', 'password': 'XXXX'}
+        data = parse.urlencode(values).encode('utf-8')  # 提交类型不能为str，需要为byte类型
+        url = 'https://passport.csdn.net/account/login?from=http://my.csdn.net/my/mycsdn'
+        request = request.Request(url, data)
+        response = urlopen(request)
+        print(response.read().decode())
 
 if __name__ == '__main__':
     rlist =[]
     aa =ReportDownSina(rlist)
-    aa.readStockListFromXls('hs300.xls','code')
+    # rlist =aa.readStockListFromXls('hs300.xls','code','0')
+    rlist =aa.readStockListFromTxt('stock_num.txt')
+    aa.reportDown()
+# ###################
+# from threading import Thread
+# from Queue import Queue
+# from time import sleep
+# #q是任务队列
+# #NUM是并发线程总数
+# #JOBS是有多少任务
+# q = Queue()
+# NUM = 2
+# JOBS = 10
+# #具体的处理函数，负责处理单个任务
+# def do_somthing_using(arguments):
+#     print (arguments)
+# #这个是工作进程，负责不断从队列取数据并处理
+# def working():
+#     while True:
+#         arguments = q.get()
+#         do_somthing_using(arguments)
+#         sleep(1)
+#         q.task_done()
+# #fork NUM个线程等待队列
+# for i in range(NUM):
+#     t = Thread(target=working)
+#     t.setDaemon(True)
+#     t.start()
+# #把JOBS排入队列
+# for i in range(JOBS):
+#     q.put(i)
+# #等待所有JOBS完成
+# q.join()
+# ###################
 
 
 # f=open('stock_num.txt') 

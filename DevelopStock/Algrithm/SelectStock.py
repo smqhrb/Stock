@@ -21,16 +21,21 @@
 # 通过比较不同资产类的统计特征，建立数学模型，进而确定组合资产的配置目标和分配比例。
 '''
 import jieba
-import xlwt
+# import xlwt
+import xlrd, xlwt
+from xlutils.copy import copy as xl_copy
 from sklearn.decomposition import PCA
 from sklearn.mixture import GaussianMixture
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from pandas import Series,DataFrame
 from sklearn.datasets.samples_generator import make_blobs
 from sklearn.cluster import KMeans
 from sklearn.covariance import GraphLassoCV
 from sklearn.cluster import affinity_propagation
+import matplotlib.pyplot as plt
+from numpy.random import randn
 # encoding=utf-8
 class selectStock:
     def __init__(self,data):
@@ -134,10 +139,78 @@ class selectStock:
         6.市净率: (股价/每股净资产)<1.5
         7.市盈率:(股价/每股收益)=总市值/企业净利润<15
         '''
+
     def StockValueAssess(self):
         '''
-        股票内在价值计算
-        '''        
+        股票内在价值计算:
+            1.资本结构：
+                货币资金+应收账款+应收票据>负债总额
+                货币资金>负债总额
+                投资收益率>利息率
+                经营活动现金流>负债总额
+                投资性资产(长期股权+交易性金融资产)<经营性资产(总资产-投资性资产)
+                预收账款>>预付账款
+
+                不良资产：
+                    其他应收款 其他预付款 在建工程
+            2.利润分析:
+                收入增长速度>成本增长速度
+                主营业务>>投资收入+其他业务收入
+                盈利能力：
+                    投资利润<营业利润
+                营业利润/营业资产   投资收益/投资资产
+                公司税务变化:
+                    营业税及附加  所得税
+            3.现金流量表：
+                经营活动流入小计 销售收入  --销售应该占大部分
+                经营活动净流量同期比
+            4.盈利能力：
+                ->现金流量表中的销售商品>利润表中的营业收入
+                ->经营活动净现金流>营业利润
+                ->投资活动产生现金净流量>投资收益*30%
+                ->投资活动产生现金净额>负债总额
+                ->货币现金+应收账款>负债总额
+            5.估值:
+                市净率=(市值/(现金+应收票据+投资性房地产))<1.5
+                市盈率=(总市值/(企业净利润-投资收益))<15 ,高成长<25
+                毛利润率=毛利润/总收入<30%(优秀企业)
+        '''
+        #read xls 
+        zcfzb =pd.read_excel('002271.xls','资产负债表')
+        zcfzb.set_index('报告日期', inplace=True)
+        zcfzb['2017-12-31'] = zcfzb['2017-12-31'].str.replace(',','').astype(int)
+        zcfzb =zcfzb.apply(lambda col:pd.to_numeric(col, errors='coerce'))
+        # zcfzb =zcfzb.replace([',','--'],['',np.nan])##
+        # zcfzb['2017-12-31'] = zcfzb['2017-12-31'].str.replace(',','').astype(int)
+
+        print(zcfzb)
+        zcfzb =zcfzb.convert_objects(convert_numeric=True)
+        # lrb =pd.read_excel('002271.xls','利润表')
+        # lrb.set_index('报告日期', inplace=True)
+        # xjllb =pd.read_excel('002271.xls','现金流量表')
+        # xjllb.set_index('报告日期', inplace=True)
+
+        kk =zcfzb.loc['货币资金(万元)']
+        print(kk)
+        
+        
+        # self.addXlsSheet('002271.xls','result')
+        # 货币资金+应收账款+应收票据>负债总额
+        # fz =zcfzb.loc['货币资金(万元)']+zcfzb.loc['应收账款(万元)']+zcfzb.loc['应收票据(万元)'] -zcfzb.loc['负债合计(万元)']
+        # df =pd.DataFrame(fz)
+
+        # df.to_excel('002271.xls', sheet_name='result')
+
+    def addXlsSheet(self,xlsfile,addSheet):
+        # open existing workbook
+        rb = xlrd.open_workbook(xlsfile, formatting_info=True)
+        # make a copy of it
+        wb = xl_copy(rb)
+        # add sheet to workbook with existing sheets
+        
+        Sheet1 = wb.add_sheet(addSheet)
+        wb.save(xlsfile)
+                
 if __name__ == '__main__':
     # seg_list = jieba.cut("我来到北京清华大学", cut_all=True)
     # print("Full Mode: " + "/ ".join(seg_list)) # 全模式
@@ -160,5 +233,8 @@ if __name__ == '__main__':
     # sS.getClusterCenter()
     # # sS.stockCluster(20)
 
-    sS =selectStock(X)
+    # sS =selectStock(X)
+    x=0
+    test =selectStock(x)
+    test.StockValueAssess()
 

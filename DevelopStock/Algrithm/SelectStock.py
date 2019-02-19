@@ -140,7 +140,7 @@ class selectStock:
         7.市盈率:(股价/每股收益)=总市值/企业净利润<15
         '''
 
-    def StockValueAssess(self):
+    def StockValueAssess(self,srcFile,outFile):
         '''
         股票内在价值计算:
             1.资本结构：
@@ -174,32 +174,96 @@ class selectStock:
                 市净率=(市值/(现金+应收票据+投资性房地产))<1.5
                 市盈率=(总市值/(企业净利润-投资收益))<15 ,高成长<25
                 毛利润率=毛利润/总收入<30%(优秀企业)
+        parameter:
+            srcFile: input file of account
+            outFile: result for analyst.
         '''
         #read xls 
-        zcfzb =pd.read_excel('002271.xls','资产负债表')
+        zcfzb =pd.read_excel(srcFile,'资产负债表')
         zcfzb.set_index('报告日期', inplace=True)
-        zcfzb['2017-12-31'] = zcfzb['2017-12-31'].str.replace(',','').astype(int)
+        cols =zcfzb.columns.values.tolist()
+        for col in cols:
+            zcfzb[col] = zcfzb[col].str.replace(',','')
+            zcfzb[col] = zcfzb[col].str.replace('--','0')
+            # zcfzb[col] = zcfzb[col].str.replace('','0')
         zcfzb =zcfzb.apply(lambda col:pd.to_numeric(col, errors='coerce'))
-        # zcfzb =zcfzb.replace([',','--'],['',np.nan])##
-        # zcfzb['2017-12-31'] = zcfzb['2017-12-31'].str.replace(',','').astype(int)
+        zcfzb.fillna(0,inplace=True)
 
-        print(zcfzb)
-        zcfzb =zcfzb.convert_objects(convert_numeric=True)
-        # lrb =pd.read_excel('002271.xls','利润表')
-        # lrb.set_index('报告日期', inplace=True)
-        # xjllb =pd.read_excel('002271.xls','现金流量表')
-        # xjllb.set_index('报告日期', inplace=True)
+        # 
+        lrb =pd.read_excel(srcFile,'利润表')
+        lrb.set_index('报告日期', inplace=True)
+        cols =lrb.columns.values.tolist()
+        for col in cols:
+            lrb[col] = lrb[col].str.replace(',','')
+            lrb[col] = lrb[col].str.replace('--','')
+        lrb =lrb.apply(lambda col:pd.to_numeric(col, errors='coerce'))
+        lrb.fillna(0,inplace=True)
 
-        kk =zcfzb.loc['货币资金(万元)']
-        print(kk)
-        
-        
+        #
+        xjllb =pd.read_excel(srcFile,'现金流量表')
+        xjllb.set_index('报告日期', inplace=True)
+        cols =xjllb.columns.values.tolist()
+        for col in cols:
+            xjllb[col] = xjllb[col].str.replace(',','')
+            xjllb[col] = xjllb[col].str.replace('--','')
+        xjllb =xjllb.apply(lambda col:pd.to_numeric(col, errors='coerce'))
+        xjllb.fillna(0,inplace=True)
+ 
         # self.addXlsSheet('002271.xls','result')
-        # 货币资金+应收账款+应收票据>负债总额
-        # fz =zcfzb.loc['货币资金(万元)']+zcfzb.loc['应收账款(万元)']+zcfzb.loc['应收票据(万元)'] -zcfzb.loc['负债合计(万元)']
-        # df =pd.DataFrame(fz)
-
-        # df.to_excel('002271.xls', sheet_name='result')
+        #偿债能力
+        fz0 =zcfzb.loc['货币资金(万元)']+zcfzb.loc['应收账款(万元)']+zcfzb.loc['应收票据(万元)'] -zcfzb.loc['负债合计(万元)']
+        fz1 =zcfzb.loc['货币资金(万元)']-zcfzb.loc['负债合计(万元)']
+        fz2 =xjllb.loc['经营活动产生的现金流量净额(万元)']-zcfzb.loc['负债合计(万元)']
+        fz3 =zcfzb.loc['资产总计(万元)']-2*(zcfzb.loc['长期股权投资(万元)']+zcfzb.loc['交易性金融资产(万元)'])
+        fz =pd.DataFrame([fz0,fz1,fz2,fz3],index=['资金','货币资金减负债合计','经营活动现金减负债','经营性资产减投资性资产'])
+        #竞争力
+        jzl0 =zcfzb.loc['预收账款(万元)']-zcfzb.loc['预付款项(万元)']
+        jzl1 =zcfzb.loc['其他应收款(万元)'] +zcfzb.loc['在建工程(万元)']
+        jzl2 =lrb.loc['营业收入(万元)'] -lrb.loc['营业成本(万元)']
+        jzl3 =lrb.loc['营业收入(万元)'] -lrb.loc['投资收益(万元)'] -lrb.loc['其他业务利润(万元)']
+        jzl =pd.DataFrame([jzl0,jzl1,jzl2,jzl3],['预收减预付','不良资产','净利润','主收入减一次性收入'])
+        #盈利能力
+        ylnl0 =lrb.loc['营业利润(万元)']-lrb.loc['投资收益(万元)']
+        ylnl1 =lrb.loc['营业利润(万元)']/zcfzb.loc['资产总计(万元)']
+        ylnl2 =lrb.loc['营业税金及附加(万元)']+lrb.loc['所得税费用(万元)']
+        ylnl3 =xjllb.loc['销售商品、提供劳务收到的现金(万元)']/xjllb.loc['经营活动现金流入小计(万元)']
+        ylnl4 =xjllb.loc['经营活动产生的现金流量净额(万元)']/lrb.loc['营业利润(万元)']
+        ylnl5 =xjllb.loc['购建固定资产、无形资产和其他长期资产所支付的现金(万元)']
+        ylnl6 =xjllb.loc['支付的其他与投资活动有关的现金(万元)']
+        ylnl =pd.DataFrame([ylnl0,ylnl1,ylnl2,ylnl3,ylnl4,ylnl5,ylnl6],['营业利润减投资收益','利润率','税金','销售/现金流入','现金流量净额/营业利润','对内投资','对外投资'])
+        #清算估值
+        hbzj =zcfzb.loc['货币资金(万元)']
+        yspj =zcfzb.loc['应收票据(万元)']
+        yszk =zcfzb.loc['应收账款(万元)']
+        ch   =zcfzb.loc['存货(万元)']
+        qtldzc =zcfzb.loc['其他流动资产(万元)']
+        ldzchj =hbzj +yspj +yszk +ch +qtldzc
+        cqgqtz =zcfzb.loc['长期股权投资(万元)']
+        gdzcjz =zcfzb.loc['固定资产净值(万元)']
+        wxzc =zcfzb.loc['无形资产(万元)']
+        qtfldzc =zcfzb.loc['其他非流动资产(万元)']
+        fldzchj =cqgqtz +gdzcjz +wxzc +qtfldzc
+        zchj =ldzchj +fldzchj
+        dqfz =zcfzb.loc['短期借款(万元)']
+        yfpj =zcfzb.loc['应付票据(万元)']
+        yfzk =zcfzb.loc['应付账款(万元)']
+        qtldfz =zcfzb.loc['其他流动负债(万元)']
+        ldfzhj =dqfz +yfpj +yfzk +qtldfz
+        yfzq =zcfzb.loc['应付债券(万元)']
+        cqjk =zcfzb.loc['长期借款(万元)']
+        fldfzhj =yfzq +cqjk 
+        fzhj =ldfzhj +fldfzhj
+        gdqy =zchj -fzhj
+        qsgj =pd.DataFrame([hbzj,yspj,yszk,ch,qtldzc,ldzchj,cqgqtz,gdzcjz,wxzc,qtfldzc,fldzchj,zchj,dqfz,yfpj,yfzk,qtldfz,ldfzhj,yfzq,cqjk,fldfzhj,fzhj,gdqy],['货币资金','应收票据','应收账款','存货','其他流动资产','流动资产合计','长期股权投资','固定资产净值','无形资产','其他非流动资产','非流动资产合计','资产总计','短期借款','应付票据','应付账款','其他流动负债','流动负债合计','应付债券','长期借款','非流动负债合计','负债合计','股东权益'])
+ 
+        
+        #
+        write = pd.ExcelWriter(outFile)
+        fz.to_excel(write,sheet_name='偿还能力',index=True)
+        jzl.to_excel(write,sheet_name='竞争力',index=True)
+        ylnl.to_excel(write,sheet_name='盈利能力',index=True)
+        qsgj.to_excel(write,sheet_name='清算估计',index=True)
+        write.save()
 
     def addXlsSheet(self,xlsfile,addSheet):
         # open existing workbook
@@ -236,5 +300,5 @@ if __name__ == '__main__':
     # sS =selectStock(X)
     x=0
     test =selectStock(x)
-    test.StockValueAssess()
+    test.StockValueAssess('002271.xls','A002271.xls')
 

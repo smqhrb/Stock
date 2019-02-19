@@ -215,7 +215,7 @@ class selectStock:
         fz1 =zcfzb.loc['货币资金(万元)']-zcfzb.loc['负债合计(万元)']
         fz2 =xjllb.loc['经营活动产生的现金流量净额(万元)']-zcfzb.loc['负债合计(万元)']
         fz3 =zcfzb.loc['资产总计(万元)']-2*(zcfzb.loc['长期股权投资(万元)']+zcfzb.loc['交易性金融资产(万元)'])
-        fz =pd.DataFrame([fz0,fz1,fz2,fz3],index=['资金','货币资金减负债合计','经营活动现金减负债','经营性资产减投资性资产'])
+        fz =pd.DataFrame([fz0,fz1,fz2,fz3],index=['资金加应收减总负债','货币资金减负债合计','经营活动现金减负债','经营性资产减投资性资产'])
         #竞争力
         jzl0 =zcfzb.loc['预收账款(万元)']-zcfzb.loc['预付款项(万元)']
         jzl1 =zcfzb.loc['其他应收款(万元)'] +zcfzb.loc['在建工程(万元)']
@@ -254,10 +254,19 @@ class selectStock:
         fldfzhj =yfzq +cqjk 
         fzhj =ldfzhj +fldfzhj
         gdqy =zchj -fzhj
-        qsgj =pd.DataFrame([hbzj,yspj,yszk,ch,qtldzc,ldzchj,cqgqtz,gdzcjz,wxzc,qtfldzc,fldzchj,zchj,dqfz,yfpj,yfzk,qtldfz,ldfzhj,yfzq,cqjk,fldfzhj,fzhj,gdqy],['货币资金','应收票据','应收账款','存货','其他流动资产','流动资产合计','长期股权投资','固定资产净值','无形资产','其他非流动资产','非流动资产合计','资产总计','短期借款','应付票据','应付账款','其他流动负债','流动负债合计','应付债券','长期借款','非流动负债合计','负债合计','股东权益'])
- 
-        
-        #
+        qsgj =pd.DataFrame([hbzj,yspj,yszk,ch,qtldzc,ldzchj,cqgqtz,gdzcjz,wxzc,qtfldzc,fldzchj,zchj,dqfz,yfpj,yfzk,qtldfz,ldfzhj,yfzq,cqjk,fldfzhj,fzhj,gdqy],
+                           ['货币资金','应收票据','应收账款','存货','其他流动资产','流动资产合计','长期股权投资','固定资产净值','无形资产','其他非流动资产','非流动资产合计','资产总计','短期借款','应付票据','应付账款','其他流动负债','流动负债合计','应付债券','长期借款','非流动负债合计','负债合计','股东权益'])
+        qsgj['清算比率']=[1.0,0.9,0.5,0.7,0.7,0,0.5,0.5,0.8,0.5,0,0,1,1,1,1,0,1,1,0,0,0]
+        qsgj['清算后价值%s'%(cols[0])] =qsgj[cols[0]]*qsgj['清算比率']
+        qsgj.loc['流动资产合计'] =qsgj.loc['货币资金']+qsgj.loc['应收票据']+qsgj.loc['应收账款']+qsgj.loc['存货']+qsgj.loc['其他流动资产']
+        qsgj.loc['非流动资产合计'] =qsgj.loc['长期股权投资']+qsgj.loc['固定资产净值']+qsgj.loc['无形资产']+qsgj.loc['其他非流动资产']
+        qsgj.loc['资产总计'] =qsgj.loc['流动资产合计']+qsgj.loc['非流动资产合计']
+        qsgj.loc['流动负债合计'] =qsgj.loc['短期借款']+qsgj.loc['应付票据']+qsgj.loc['应付账款']+qsgj.loc['其他流动负债']
+        qsgj.loc['非流动负债合计'] =qsgj.loc['应付债券']+qsgj.loc['长期借款']
+        qsgj.loc['负债合计'] =qsgj.loc['流动负债合计']+qsgj.loc['非流动负债合计']
+        qsgj.loc['股东权益'] =qsgj.loc['资产总计']+qsgj.loc['负债合计']
+        qsgj.loc[['流动资产合计','非流动资产合计','资产总计','流动负债合计','非流动负债合计','负债合计','股东权益'],'清算比率']=0
+       #
         write = pd.ExcelWriter(outFile)
         fz.to_excel(write,sheet_name='偿还能力',index=True)
         jzl.to_excel(write,sheet_name='竞争力',index=True)
@@ -300,5 +309,8 @@ if __name__ == '__main__':
     # sS =selectStock(X)
     x=0
     test =selectStock(x)
-    test.StockValueAssess('002271.xls','A002271.xls')
+    # test.StockValueAssess('002271.xls','A002271.xls')
+    test.StockValueAssess('002280.xls','A002280.xls')
+    test.StockValueAssess('000651.xls','A000651.xls')
+    test.StockValueAssess('601608.xls','A601608.xls')
 

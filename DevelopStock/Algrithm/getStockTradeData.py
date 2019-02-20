@@ -68,9 +68,6 @@ class stockData():
                 else:
                     codeStr="%06d.SH"%(code)
                 print(hs300Data.ix[hs300Data['ts_code']==codeStr])
-            
-           
-
         else:
             dfH =pd.DataFrame()
             # hs300 =pd.read_excel(cf.HS300)

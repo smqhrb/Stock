@@ -94,17 +94,26 @@ class ReportDownSina:
                     file_url = re.search('http://file.finance.sina.com.cn/211.154.219.97:9494/.*?PDF',thtml) 
                     try: 
                         #print(file_url.group(0)) 
-                        local = './'+sid+'/'+file_url.group(0).split("/")[-2]+'.pdf' 
+                        local = baseDir+'/'+sid+'/'+file_url.group(0).split("/")[-2]+'.pdf' 
                         #调试用作文件占位 
                         # #open(local, 'wb').write(b'success') 
                         #print(local) 
+                        print(file_url.group(0))
                         urllib.request.urlretrieve(file_url.group(0),local,None) 
-                    except: 
-                        print('PDF is not available;'+target_url) 
-                except: 
-                    print('page of report  error:'+target_url) 
-        except: 
+                    except Exception as e: 
+                        # print('PDF is not available;'+target_url) 
+                            # print ('str(Exception):\t', str(Exception))
+                            # print ('str(e):\t\t', str(e))
+                            print ('repr(e):\t', repr(e))
+                            # print ('e.message:\t', e.message)
+                            # print ('traceback.print_exc():'+traceback.print_exc())
+                            # print ('traceback.format_exc():\n%s' % traceback.format_exc())
+                except Exception as e: 
+                    print('page of report  error:'+target_url)
+                    print ('repr(e):\t', repr(e)) 
+        except Exception as e: 
             print('year report list error: '+url)
+            print ('repr(e):\t', repr(e))
 
     def reportDown(self,targetDir='YearReport',type='y'):
         '''
@@ -136,49 +145,7 @@ class ReportDownSina:
             print('%d:%s;'%(reachCount,each))
             url=urlBase%each 
             self.reportDownByStock(url,each,baseDir)
-            # req = urllib.request.Request(url) 
-            # req.add_header('User-Agent','Mozilla/5.0 (Windows NT 6.2; rv:16.0) Gecko/20100101 Firefox/16.0') 
-            # page = urllib.request.urlopen(req) 
-            # try: 
-            #     html = page.read().decode('gbk') 
-            #     target = r'&id=[_0-9_]{7}' 
-            #     target_list = re.findall(target,html) 
-
-            #     if(os.path.exists(baseDir+'/'+each)):
-            #         pass
-            #     else:
-            #         os.mkdir(baseDir+'/'+each) 
-            #     sid = each 
-            #     #print(target_list)
-                 
-            #     for each in target_list: 
-            #         #print(a) #print(each) 
-
-            #         target_url=TARGET_URL%(sid,each) 
-            #         #print(target_url) 
-            #         treq = urllib.request.Request(target_url) 
-            #         #'User-Agent':'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6'
-
-            #         # treq.add_header('User-Agent','Mozilla/5.0 (Windows NT 6.2; rv:16.0) Gecko/20100101 Firefox/16.0') 
-            #         treq.add_header('User-Agent','Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6') 
-            #         tpage = urllib.request.urlopen(treq) 
-            #         try: 
-            #             thtml = tpage.read().decode('gbk') 
-            #             #print(thtml) 
-            #             file_url = re.search('http://file.finance.sina.com.cn/211.154.219.97:9494/.*?PDF',thtml) 
-            #             try: 
-            #                 #print(file_url.group(0)) 
-            #                 local = './'+sid+'/'+file_url.group(0).split("/")[-2]+'.pdf' 
-            #                 #调试用作文件占位 
-            #                 # #open(local, 'wb').write(b'success') 
-            #                 #print(local) 
-            #                 urllib.request.urlretrieve(file_url.group(0),local,None) 
-            #             except: 
-            #                 print('PDF is not available;'+target_url) 
-            #         except: 
-            #             print('page of report  error:'+target_url) 
-            # except: 
-            #     print('year report list error: '+url)
+ 
     def login(self,username,password):
         # import urllib
         # from urllib import parse

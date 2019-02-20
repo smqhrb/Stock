@@ -1,18 +1,28 @@
 # coding=utf-8 
-import urllib2
+# import urllib2
+from urllib import request
+from urllib import parse
+from urllib.request import urlopen
+import http
 import sys, os
 import re
 import string
-from BeautifulSoup import BeautifulSoup
-def encode(s):
-    return s.decode('utf-8').encode(sys.stdout.encoding, 'ignore')
+from bs4 import BeautifulSoup
+# def encode(s):
+#     return s.decode('utf-8').encode(sys.stdout.encoding, 'ignore')
 def getHTML(url):
     #proxy_handler = urllib2.ProxyHandler({'http':'http://211.138.124.211:80'})
     #opener = urllib2.build_opener(proxy_handler)
     #urllib2.install_opener(opener)
-    req = urllib2.Request(url)
-    response = urllib2.urlopen(req, timeout=15)
-    return BeautifulSoup(response, convertEntities=BeautifulSoup.HTML_ENTITIES)
+    req = request.Request(url)
+    response = urlopen(req, timeout=15)
+    # return BeautifulSoup(response, convertEntities=BeautifulSoup.HTML_ENTITIES)
+     
+    try:                                           #添加了try语句
+        thtml = response.read().decode('utf-8')
+    except http.client.IncompleteRead as e:
+        thtml = e.partial
+    return BeautifulSoup(thtml,'lxml')
 def visible(element):
     '''抓取可见的文本元素'''
     if element.parent.name in ['style', 'script', '[document]', 'head', 'title']:
@@ -31,16 +41,16 @@ def validFilename(filename):
 def writeToFile(text, filename, dirname):
     if not os.path.exists(dirname):
         os.makedirs(dirname)
-        print encode('保存到目录'), dirname
+        print (('保存到目录'), dirname)
     filename = validFilename(filename)
-    print encode('保存文章'), filename
+    print (('保存文章'), filename)
     path = os.path.join(dirname, filename)
     if not os.path.exists(path):
         f = open(path, 'w')
         f.write(text)
         f.close()
     else:
-        print filename, encode('已经存在')
+        print (filename, ('已经存在'))
 def formatContent(url, title=''):
     '''格式化文章内容'''
     page = getHTML(url)
@@ -65,7 +75,7 @@ def articlelist(url):
     pages = page.find('ul', {'class':'SG_pages'}).span.string
     page_num = int(re.search('(\d+)', pages).group(1))
     for i in range(1, page_num+1):
-        print encode('生成第%d页文章索引'%i)
+        print (('生成第%d页文章索引'%i))
         if i != 1:
             url = re.sub('(_)\d+(\.html)$', '\g<1>'+str(i)+'\g<2>', url)
             page = getHTML(url)
@@ -78,17 +88,17 @@ def articlelist(url):
 def blog_dld(articles):
     if not isinstance(articles, dict):
         return False
-    print encode('开始下载文章')
+    print (('开始下载文章'))
     for art_title, art_href in articles.items():
         formatContent(art_href, art_title)
 if __name__ == '__main__':
-    sel = raw_input(encode('你要下载的是(1)全部文章还是(2)单篇文章，输入1或者2: '))
+    sel = input(('你要下载的是(1)全部文章还是(2)单篇文章，输入1或者2: '))
     if sel == '1':
-        #articlelist_url = 'http://blog.sina.com.cn/s/articlelist_1303481411_0_1.html'
-        articlelist_url = raw_input(encode('请输入博客文章目录链接: '))
+        articlelist_url = 'http://blog.sina.com.cn/s/articlelist_1303481411_0_1.html'
+        # articlelist_url = input(encode('请输入博客文章目录链接: '))
         articles = articlelist(articlelist_url)
         blog_dld(articles)
     else:
-        #article_url = 'http://blog.sina.com.cn/s/blog_4db18c430100gxc5.html'
-        article_url = raw_input(encode('请输入博客文章链接: '))
+        article_url = 'http://blog.sina.com.cn/s/blog_4db18c430100gxc5.html'
+        # article_url = input(encode('请输入博客文章链接: '))
         formatContent(article_url)

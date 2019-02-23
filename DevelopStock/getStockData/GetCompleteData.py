@@ -206,7 +206,7 @@ class CollectFrom163:
                         #print cells[i].text
                         self.sheet.write(count, i+2, cells[i].text)                                        
                         i=i+1
-                break;
+                break
         return lencell
 
     def GetAllFullAcount(self,df_Code):
@@ -336,6 +336,10 @@ class CollectFrom163:
         
         # self.GetData(ddf,0)
     def parse_data(self,urldata):
+        '''
+        日期,每股净资产,每股收益,每股现金含量,每股资本公积金,固定资产合计,流动资产合计,资产总计,
+        长期负债合计,主营业务收入,财务费用,净利润 
+        '''
         tp = stock_parser()
         tp.feed(urldata)
         data = tp.data
@@ -354,6 +358,8 @@ class CollectFrom163:
 
 
     def get_stock(self,stock_code):
+        '''
+        '''
         headers = {'User-Agent':'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6'}
         url="http://vip.stock.finance.sina.com.cn/corp/go.php/vFD_FinanceSummary/stockid/%(stock_code)s.phtml?qq-pf-to=pcqq.c2c"%({'stock_code':stock_code})
         req = request.Request(url=url,headers=headers)
@@ -362,6 +368,11 @@ class CollectFrom163:
         stock = self.parse_data(data)
         return stock
     def getStockBaseAccount(self,code,fileName):
+        '''
+        paramter :
+            code - stock code like '000651'
+            fileName - xls name like 'test.xls'
+        '''
         stocks = self.get_stock(code)
         ret =[]
         for stock in stocks:

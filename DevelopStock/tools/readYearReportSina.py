@@ -1,103 +1,105 @@
-from  xml.dom import  minidom
-import xlwt
-import os,shutil
-import time,urllib2
-def Xmltoxls(xmlname,xlsname):
-    if os.path.getsize(xmlname)<1024:
-        return False
-    wb=xlwt.Workbook(encoding='utf-8')
-    ws=wb.add_sheet('Table')
-    fp_xml=minidom.parse(xmlname)
-    root=fp_xml.documentElement
-    Row=root.getElementsByTagName('Row')
-    Data=root.getElementsByTagName('Data')
-    col_num=len(Data)/len(Row)
-    row_num= 0
-    for row in Row:
-        Data=row.getElementsByTagName('Data')
-        for i in range(col_num):
-            if len(Data[i].childNodes)==0:
-                ws.write(row_num,i,' ')
-                continue
-            ws.write(row_num,i,Data[i].childNodes[0].nodeValue.strip().encode('utf-8'))
-        row_num+=1
-    wb.save(xlsname)
-    return True
-def xml_Error_C(filename):
-    fp_xml=open(filename)
-    fp_x=''#中文乱码改正
-    for i in range(os.path.getsize(filename)):
-        i+=1
-        a=fp_xml.read(1)
-        if a=='&':
-            fp_xml.seek(-1,1)
-            if fp_xml.read(6)=='&nbsp;':
-                i+=5
-                continue
-            else:
-                fp_xml.seek(-5,1)
-        fp_x+=a
-    fp_xml=open(filename,'w+')
-    fp_xml.write(fp_x)
-    fp_xml.flush()
-    fp_xml.close()
-def errorlog(error):
-    fp_error=open('errorlog.txt','a')
-    fp_error.write(error+'\n')
-    fp_error.close
-fp_code=open('stockcode..txt')
-fp_basic=open('basicdata_url.txt')
-temp='z:\\temp.xml'
-for line in fp_code:#设置代码起始位置
-    if line.split()[0]=='601958':
-        break
-for line in fp_code:#遍历所有代码及名称
-    filepath='basicdata\\'+line.split()[0]+line.split()[1].replace('*','&')#建立文件夹
-    if not os.path.isdir(filepath):
-        os.makedirs(filepath)
-    for url in fp_basic:#抓取所有数据并保存
-        url_f=url.split()[0]+line.split()[0]+('01' if int(line.split()[0])>599999 else '02')+'&exp=1'
-        print 'I am handle '+line+' '+url.split()[1]+' '+'data for you'
-        filename=filepath+'\\'+line.split()[0]+' '+url.split()[1]+'.xls'
-        while True:#get xml data
-            try:
-                u=urllib2.urlopen(url_f)
-                time.sleep(0.3)
-                data=u.read()
-                f=open(temp,'w+')#保存文件
-                f.write(data)
-                f.flush()
-                f.close()
-                break
-            except :
-                print 'Network error,try latter!'
-                time.sleep(10)
-        while True:#xml data to xls data
-            if url.split()[1] in ['News','Notice','Subject']:
-                shutil.move(temp,filename) #   os.rename("oldname","newname")
-                break
-            try:            
-                xml_Error_C(temp)
-                Xmltoxls(temp,filename)
-            except IOError:
-                errorlog('No '+filename)
-            except:
-                shutil.move(temp,filename)
-                errorlog('Not Done '+filename)
-            break
-        time.sleep(0.2)
-    time.sleep(7)
-    fp_basic.seek(0)
-print 'All data have been getted.'
-fp_code.close()
-fp_basic.close()
+# from  xml.dom import  minidom
+# import xlwt
+# import os,shutil
+# import time,urllib2
+# def Xmltoxls(xmlname,xlsname):
+#     if os.path.getsize(xmlname)<1024:
+#         return False
+#     wb=xlwt.Workbook(encoding='utf-8')
+#     ws=wb.add_sheet('Table')
+#     fp_xml=minidom.parse(xmlname)
+#     root=fp_xml.documentElement
+#     Row=root.getElementsByTagName('Row')
+#     Data=root.getElementsByTagName('Data')
+#     col_num=len(Data)/len(Row)
+#     row_num= 0
+#     for row in Row:
+#         Data=row.getElementsByTagName('Data')
+#         for i in range(col_num):
+#             if len(Data[i].childNodes)==0:
+#                 ws.write(row_num,i,' ')
+#                 continue
+#             ws.write(row_num,i,Data[i].childNodes[0].nodeValue.strip().encode('utf-8'))
+#         row_num+=1
+#     wb.save(xlsname)
+#     return True
+# def xml_Error_C(filename):
+#     fp_xml=open(filename)
+#     fp_x=''#中文乱码改正
+#     for i in range(os.path.getsize(filename)):
+#         i+=1
+#         a=fp_xml.read(1)
+#         if a=='&':
+#             fp_xml.seek(-1,1)
+#             if fp_xml.read(6)=='&nbsp;':
+#                 i+=5
+#                 continue
+#             else:
+#                 fp_xml.seek(-5,1)
+#         fp_x+=a
+#     fp_xml=open(filename,'w+')
+#     fp_xml.write(fp_x)
+#     fp_xml.flush()
+#     fp_xml.close()
+# def errorlog(error):
+#     fp_error=open('errorlog.txt','a')
+#     fp_error.write(error+'\n')
+#     fp_error.close
+# fp_code=open('stockcode..txt')
+# fp_basic=open('basicdata_url.txt')
+# temp='z:\\temp.xml'
+# for line in fp_code:#设置代码起始位置
+#     if line.split()[0]=='601958':
+#         break
+# for line in fp_code:#遍历所有代码及名称
+#     filepath='basicdata\\'+line.split()[0]+line.split()[1].replace('*','&')#建立文件夹
+#     if not os.path.isdir(filepath):
+#         os.makedirs(filepath)
+#     for url in fp_basic:#抓取所有数据并保存
+#         url_f=url.split()[0]+line.split()[0]+('01' if int(line.split()[0])>599999 else '02')+'&exp=1'
+#         print ('I am handle '+line+' '+url.split()[1]+' '+'data for you')
+#         filename=filepath+'\\'+line.split()[0]+' '+url.split()[1]+'.xls'
+#         while True:#get xml data
+#             try:
+#                 u=urllib2.urlopen(url_f)
+#                 time.sleep(0.3)
+#                 data=u.read()
+#                 f=open(temp,'w+')#保存文件
+#                 f.write(data)
+#                 f.flush()
+#                 f.close()
+#                 break
+#             except :
+#                 print ('Network error,try latter!')
+#                 time.sleep(10)
+#         while True:#xml data to xls data
+#             if url.split()[1] in ['News','Notice','Subject']:
+#                 shutil.move(temp,filename) #   os.rename("oldname","newname")
+#                 break
+#             try:            
+#                 xml_Error_C(temp)
+#                 Xmltoxls(temp,filename)
+#             except IOError:
+#                 errorlog('No '+filename)
+#             except:
+#                 shutil.move(temp,filename)
+#                 errorlog('Not Done '+filename)
+#             break
+#         time.sleep(0.2)
+#     time.sleep(7)
+#     fp_basic.seek(0)
+# print ('All data have been getted.')
+# fp_code.close()
+# fp_basic.close()
 
 
 ###############
 # coding=utf-8
-import HTMLParser
+from html.parser import HTMLParser  
 
-import urllib2
+from urllib import request
+from urllib import parse
+from urllib.request import urlopen
 import sys
 
 type = sys.getfilesystemencoding()
@@ -138,9 +140,9 @@ class Stock:
                                                self.mgjbgjj,self.gdzchj,self.ldzchj,self.zchj,
                                                self.cqfzhj,self.zyywsr,self.cwfy,self.jlr)
 
-class stock_parser(HTMLParser.HTMLParser):
+class stock_parser(HTMLParser):
     def __init__(self):
-        HTMLParser.HTMLParser.__init__(self)
+        HTMLParser.__init__(self)
         self.handledtags = ['td']
         self.processing = None
         self.data = []
@@ -178,9 +180,9 @@ def parse_data(urldata):
 def get_stock(stock_code):
     headers = {'User-Agent':'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6'}
     url="http://vip.stock.finance.sina.com.cn/corp/go.php/vFD_FinanceSummary/stockid/%(stock_code)s.phtml?qq-pf-to=pcqq.c2c"%({'stock_code':stock_code})
-    req = urllib2.Request(url=url,headers=headers)
-    data = urllib2.urlopen(req).read()
-    data = unicode(data,'GBK').encode('UTF-8').replace("&nbsp;", "-")
+    req = request.Request(url=url,headers=headers)
+    data = str(urlopen(req).read().decode('GBK'))
+    data = data.replace("&nbsp;", "-")
     stocks = parse_data(data)
     return stocks
 
@@ -188,4 +190,4 @@ if __name__ == '__main__':
 
     stocks = get_stock("002122")
     for stock in stocks:
-        print stock
+        print (stock)

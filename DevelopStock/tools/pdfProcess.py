@@ -61,7 +61,7 @@
 # from pdfminer.layout import LAParams
 # from pdfminer.converter import PDFPageAggregator
 # from pdfminer.pdfinterp import PDFTextExtractionNotAllowed
-import pdfplumber 
+
 # def parse():
 #     #rb以二进制读模式打开本地pdf文件 
 #     fn = open('Hell.pdf','rb') #创建一个pdf文档分析器 

@@ -380,7 +380,160 @@ class CollectFrom163:
         df =pd.DataFrame(ret)
         df.set_index(['日期'],inplace=True)
         df1 =df.T
-        df1.to_excel(fileName)        
+        df1.to_excel(fileName)  
+
+    def StockValueAssess(self,srcFile,outFile):
+        '''
+        股票内在价值计算:
+            1.资本结构：
+                货币资金+应收账款+应收票据>负债总额
+                货币资金>负债总额
+                投资收益率>利息率
+                经营活动现金流>负债总额
+                投资性资产(长期股权+交易性金融资产)<经营性资产(总资产-投资性资产)
+                预收账款>>预付账款
+
+                不良资产：
+                    其他应收款 其他预付款 在建工程
+            2.利润分析:
+                收入增长速度>成本增长速度
+                主营业务>>投资收入+其他业务收入
+                盈利能力：
+                    投资利润<营业利润
+                营业利润/营业资产   投资收益/投资资产
+                公司税务变化:
+                    营业税及附加  所得税
+            3.现金流量表：
+                经营活动流入小计 销售收入  --销售应该占大部分
+                经营活动净流量同期比
+            4.盈利能力：
+                ->现金流量表中的销售商品>利润表中的营业收入
+                ->经营活动净现金流>营业利润
+                ->投资活动产生现金净流量>投资收益*30%
+                ->投资活动产生现金净额>负债总额
+                ->货币现金+应收账款>负债总额
+            5.估值:
+                市净率=(市值/(现金+应收票据+投资性房地产))<1.5
+                市盈率=(总市值/(企业净利润-投资收益))<15 ,高成长<25
+                毛利润率=毛利润/总收入<30%(优秀企业)
+        parameter:
+            srcFile: input file of account
+            outFile: result for analyst.
+        '''
+        #read xls 
+        zcfzb =pd.read_excel(srcFile,'资产负债表')
+        zcfzb.set_index('报告日期', inplace=True)
+        cols =zcfzb.columns.values.tolist()
+        for col in cols:
+            zcfzb[col] = zcfzb[col].str.replace(',','')
+            zcfzb[col] = zcfzb[col].str.replace('--','0')
+            # zcfzb[col] = zcfzb[col].str.replace('','0')
+        zcfzb =zcfzb.apply(lambda col:pd.to_numeric(col, errors='coerce'))
+        zcfzb.fillna(0,inplace=True)
+
+        # 
+        lrb =pd.read_excel(srcFile,'利润表')
+        lrb.set_index('报告日期', inplace=True)
+        cols =lrb.columns.values.tolist()
+        for col in cols:
+            lrb[col] = lrb[col].str.replace(',','')
+            lrb[col] = lrb[col].str.replace('--','')
+        lrb =lrb.apply(lambda col:pd.to_numeric(col, errors='coerce'))
+        lrb.fillna(0,inplace=True)
+
+        #
+        xjllb =pd.read_excel(srcFile,'现金流量表')
+        xjllb.set_index('报告日期', inplace=True)
+        cols =xjllb.columns.values.tolist()
+        for col in cols:
+            xjllb[col] = xjllb[col].str.replace(',','')
+            xjllb[col] = xjllb[col].str.replace('--','')
+        xjllb =xjllb.apply(lambda col:pd.to_numeric(col, errors='coerce'))
+        xjllb.fillna(0,inplace=True)
+ 
+        # self.addXlsSheet('002271.xls','result')
+        #偿债能力
+        fz0 =zcfzb.loc['货币资金(万元)']+zcfzb.loc['应收账款(万元)']+zcfzb.loc['应收票据(万元)'] -zcfzb.loc['流动负债合计(万元)']
+        fz1 =zcfzb.loc['货币资金(万元)']-zcfzb.loc['流动负债合计(万元)']
+        fz2 =xjllb.loc['经营活动产生的现金流量净额(万元)']/zcfzb.loc['负债合计(万元)']
+        fz3 =zcfzb.loc['资产总计(万元)']-2*(zcfzb.loc['长期股权投资(万元)']+zcfzb.loc['交易性金融资产(万元)'])
+        fz =pd.DataFrame([fz0,fz1,fz2,fz3],index=['资金加应收减流动负债','货币资金减流动负债合计','经营活动现金/流动负债','经营性资产减投资性资产'])
+        #竞争力
+        jzl0 =zcfzb.loc['预收账款(万元)']-zcfzb.loc['预付款项(万元)']
+        jzl1 =zcfzb.loc['其他应收款(万元)'] 
+        jzl4 =zcfzb.loc['在建工程(万元)']
+        jzl2 =lrb.loc['营业收入(万元)'] -lrb.loc['营业成本(万元)']
+        jzl3 =lrb.loc['营业收入(万元)'] -lrb.loc['投资收益(万元)'] -lrb.loc['其他业务利润(万元)']
+        jzl =pd.DataFrame([jzl0,jzl1,jzl4,jzl2,jzl3],['预收减预付','其他应收款','在建工程','净利润','主收入减一次性收入'])
+        #盈利能力
+        ylnl0 =lrb.loc['营业利润(万元)']-lrb.loc['投资收益(万元)']
+        ylnl1 =lrb.loc['营业利润(万元)']/zcfzb.loc['资产总计(万元)']
+        ylnl2 =lrb.loc['营业税金及附加(万元)']+lrb.loc['所得税费用(万元)']
+        ylnl3 =xjllb.loc['销售商品、提供劳务收到的现金(万元)']/xjllb.loc['经营活动现金流入小计(万元)']
+        ylnl4 =xjllb.loc['经营活动产生的现金流量净额(万元)']/lrb.loc['营业利润(万元)']
+        ylnl5 =xjllb.loc['购建固定资产、无形资产和其他长期资产所支付的现金(万元)']
+        ylnl6 =xjllb.loc['支付的其他与投资活动有关的现金(万元)']
+        ylnl =pd.DataFrame([ylnl0,ylnl1,ylnl2,ylnl3,ylnl4,ylnl5,ylnl6],['营业利润减投资收益','利润率','税金','销售/现金流入','现金流量净额/营业利润','对内投资','对外投资'])
+        #清算估值
+        hbzj =zcfzb.loc['货币资金(万元)']
+        yspj =zcfzb.loc['应收票据(万元)']
+        yszk =zcfzb.loc['应收账款(万元)']
+        ch   =zcfzb.loc['存货(万元)']
+        qtldzc =zcfzb.loc['其他流动资产(万元)']
+        ldzchj =hbzj +yspj +yszk +ch +qtldzc
+        cqgqtz =zcfzb.loc['长期股权投资(万元)']
+        gdzcjz =zcfzb.loc['固定资产净值(万元)']
+        wxzc =zcfzb.loc['无形资产(万元)']
+        qtfldzc =zcfzb.loc['其他非流动资产(万元)']
+        fldzchj =cqgqtz +gdzcjz +wxzc +qtfldzc
+        zchj =ldzchj +fldzchj
+        dqfz =zcfzb.loc['短期借款(万元)']
+        yfpj =zcfzb.loc['应付票据(万元)']
+        yfzk =zcfzb.loc['应付账款(万元)']
+        qtldfz =zcfzb.loc['其他流动负债(万元)']
+        ldfzhj =dqfz +yfpj +yfzk +qtldfz
+        yfzq =zcfzb.loc['应付债券(万元)']
+        cqjk =zcfzb.loc['长期借款(万元)']
+        fldfzhj =yfzq +cqjk 
+        fzhj =ldfzhj +fldfzhj
+        gdqy =zchj -fzhj
+        qsgj =pd.DataFrame([hbzj,yspj,yszk,ch,qtldzc,ldzchj,cqgqtz,gdzcjz,wxzc,qtfldzc,fldzchj,zchj,dqfz,yfpj,yfzk,qtldfz,ldfzhj,yfzq,cqjk,fldfzhj,fzhj,gdqy],
+                           ['货币资金','应收票据','应收账款','存货','其他流动资产','流动资产合计','长期股权投资','固定资产净值','无形资产','其他非流动资产','非流动资产合计','资产总计','短期借款','应付票据','应付账款','其他流动负债','流动负债合计','应付债券','长期借款','非流动负债合计','负债合计','股东权益'])
+        qsgj['清算比率']=[1.0,0.9,0.5,0.7,0.7,0,0.5,0.5,0.8,0.5,0,0,1,1,1,1,0,1,1,0,0,0]
+        qsgj['清算后价值%s'%(cols[0])] =qsgj[cols[0]]*qsgj['清算比率']
+        qsgj.loc['流动资产合计'] =qsgj.loc['货币资金']+qsgj.loc['应收票据']+qsgj.loc['应收账款']+qsgj.loc['存货']+qsgj.loc['其他流动资产']
+        qsgj.loc['非流动资产合计'] =qsgj.loc['长期股权投资']+qsgj.loc['固定资产净值']+qsgj.loc['无形资产']+qsgj.loc['其他非流动资产']
+        qsgj.loc['资产总计'] =qsgj.loc['流动资产合计']+qsgj.loc['非流动资产合计']
+        qsgj.loc['流动负债合计'] =qsgj.loc['短期借款']+qsgj.loc['应付票据']+qsgj.loc['应付账款']+qsgj.loc['其他流动负债']
+        qsgj.loc['非流动负债合计'] =qsgj.loc['应付债券']+qsgj.loc['长期借款']
+        qsgj.loc['负债合计'] =qsgj.loc['流动负债合计']+qsgj.loc['非流动负债合计']
+        qsgj.loc['股东权益'] =qsgj.loc['资产总计']+qsgj.loc['负债合计']
+        qsgj.loc[['流动资产合计','非流动资产合计','资产总计','流动负债合计','非流动负债合计','负债合计','股东权益'],'清算比率']=0
+       #
+        zbfzl =zcfzb.loc['负债合计(万元)']/zcfzb.loc['资产总计(万元)']#资产负债率
+        ldbl =zcfzb.loc['流动资产合计(万元)']/zcfzb.loc['流动负债合计(万元)']#流动比率
+        sdbl =(zcfzb.loc['流动资产合计(万元)']-zcfzb.loc['存货(万元)']-zcfzb.loc['预付款项(万元)']-zcfzb.loc['待摊费用(万元)'])/zcfzb.loc['流动负债合计(万元)']#速动比率
+        mll =(lrb.loc['营业收入(万元)']-lrb.loc['营业成本(万元)'])/lrb.loc['营业收入(万元)']#毛利率
+        jll =lrb.loc['净利润(万元)']/lrb.loc['营业收入(万元)']#净利率
+        
+        # 存货周转率存货周转率（次数）=销售成本/平均存货余额 
+        # 资本周转率:资本周转率=（货币资金+短期投资+应收票据）/长期负债合计×100%
+        zbzzl =zcfzb.loc['货币资金(万元)']+zcfzb.loc['应收票据(万元)']/zcfzb.loc['非流动负债合计(万元)']
+        # 应收款周转率
+        # 净自由现金流:公司自由现金流量(FCFF) =（税后净利润 + 利息费用 + 非现金支出）- 营运资本追加 - 资本性支出
+        zjyxjl =lrb.loc['净利润(万元)']+lrb.loc['利息收入(万元)']-lrb.loc['利息支出(万元)']-zcfzb.loc['非流动资产合计(万元)']
+        ROE =lrb.loc['净利润(万元)']/zcfzb.loc['所有者权益(或股东权益)合计(万元)']
+        ROA =lrb.loc['净利润(万元)']/zcfzb.loc['资产总计(万元)']
+        zb =pd.DataFrame([zbfzl,ldbl,sdbl,mll,jll,ROE,ROA],['资产负债率','流动比率','速动比率','毛利率','净利率','ROE','ROA'])
+        #    
+        write = pd.ExcelWriter(outFile)
+        fz.to_excel(write,sheet_name='偿还能力',index=True)
+        jzl.to_excel(write,sheet_name='竞争力',index=True)
+        ylnl.to_excel(write,sheet_name='盈利能力',index=True)
+        qsgj.to_excel(write,sheet_name='清算估计',index=True)
+        zb.to_excel(write,sheet_name='指标',index=True)
+        
+        write.save()      
 #主函数 
 
 if __name__ == '__main__':

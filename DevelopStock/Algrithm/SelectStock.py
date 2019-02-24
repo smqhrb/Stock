@@ -23,6 +23,8 @@
 import jieba
 # import xlwt
 import xlrd, xlwt
+import os
+from openpyxl import load_workbook
 from xlutils.copy import copy as xl_copy
 from sklearn.decomposition import PCA
 from sklearn.mixture import GaussianMixture
@@ -211,17 +213,18 @@ class selectStock:
  
         # self.addXlsSheet('002271.xls','result')
         #偿债能力
-        fz0 =zcfzb.loc['货币资金(万元)']+zcfzb.loc['应收账款(万元)']+zcfzb.loc['应收票据(万元)'] -zcfzb.loc['负债合计(万元)']
-        fz1 =zcfzb.loc['货币资金(万元)']-zcfzb.loc['负债合计(万元)']
-        fz2 =xjllb.loc['经营活动产生的现金流量净额(万元)']-zcfzb.loc['负债合计(万元)']
+        fz0 =zcfzb.loc['货币资金(万元)']+zcfzb.loc['应收账款(万元)']+zcfzb.loc['应收票据(万元)'] -zcfzb.loc['流动负债合计(万元)']
+        fz1 =zcfzb.loc['货币资金(万元)']-zcfzb.loc['流动负债合计(万元)']
+        fz2 =xjllb.loc['经营活动产生的现金流量净额(万元)']/zcfzb.loc['负债合计(万元)']
         fz3 =zcfzb.loc['资产总计(万元)']-2*(zcfzb.loc['长期股权投资(万元)']+zcfzb.loc['交易性金融资产(万元)'])
-        fz =pd.DataFrame([fz0,fz1,fz2,fz3],index=['资金加应收减总负债','货币资金减负债合计','经营活动现金减负债','经营性资产减投资性资产'])
+        fz =pd.DataFrame([fz0,fz1,fz2,fz3],index=['资金加应收减流动负债','货币资金减流动负债合计','经营活动现金/流动负债','经营性资产减投资性资产'])
         #竞争力
         jzl0 =zcfzb.loc['预收账款(万元)']-zcfzb.loc['预付款项(万元)']
-        jzl1 =zcfzb.loc['其他应收款(万元)'] +zcfzb.loc['在建工程(万元)']
+        jzl1 =zcfzb.loc['其他应收款(万元)'] 
+        jzl4 =zcfzb.loc['在建工程(万元)']
         jzl2 =lrb.loc['营业收入(万元)'] -lrb.loc['营业成本(万元)']
         jzl3 =lrb.loc['营业收入(万元)'] -lrb.loc['投资收益(万元)'] -lrb.loc['其他业务利润(万元)']
-        jzl =pd.DataFrame([jzl0,jzl1,jzl2,jzl3],['预收减预付','不良资产','净利润','主收入减一次性收入'])
+        jzl =pd.DataFrame([jzl0,jzl1,jzl4,jzl2,jzl3],['预收减预付','其他应收款','在建工程','净利润','主收入减一次性收入'])
         #盈利能力
         ylnl0 =lrb.loc['营业利润(万元)']-lrb.loc['投资收益(万元)']
         ylnl1 =lrb.loc['营业利润(万元)']/zcfzb.loc['资产总计(万元)']
@@ -279,7 +282,9 @@ class selectStock:
         # 应收款周转率
         # 净自由现金流:公司自由现金流量(FCFF) =（税后净利润 + 利息费用 + 非现金支出）- 营运资本追加 - 资本性支出
         zjyxjl =lrb.loc['净利润(万元)']+lrb.loc['利息收入(万元)']-lrb.loc['利息支出(万元)']-zcfzb.loc['非流动资产合计(万元)']
-        zb =pd.DataFrame([zbfzl,ldbl,sdbl,mll,jll],['资产负债率','流动比率','速动比率','毛利率','净利率'])
+        ROE =lrb.loc['净利润(万元)']/zcfzb.loc['所有者权益(或股东权益)合计(万元)']
+        ROA =lrb.loc['净利润(万元)']/zcfzb.loc['资产总计(万元)']
+        zb =pd.DataFrame([zbfzl,ldbl,sdbl,mll,jll,ROE,ROA],['资产负债率','流动比率','速动比率','毛利率','净利率','ROE','ROA'])
         #    
         write = pd.ExcelWriter(outFile)
         fz.to_excel(write,sheet_name='偿还能力',index=True)
@@ -299,7 +304,18 @@ class selectStock:
         
         Sheet1 = wb.add_sheet(addSheet)
         wb.save(xlsfile)
-                
+
+    def excelAddSheet(self,dataframe,outfile,name):
+        writer = pd.ExcelWriter(outfile, enginge='openpyxl')
+        if os.path.exists(outfile) != True:
+            dataframe.to_excel(writer, name, index=None)
+        else:
+            book = load_workbook(writer.path)
+            writer.book = book
+            dataframe.to_excel(excel_writer=writer, sheet_name = name, index=None)
+        writer.save()
+        writer.close()
+        
 if __name__ == '__main__':
     # seg_list = jieba.cut("我来到北京清华大学", cut_all=True)
     # print("Full Mode: " + "/ ".join(seg_list)) # 全模式
@@ -326,7 +342,20 @@ if __name__ == '__main__':
     x=0
     test =selectStock(x)
     # test.StockValueAssess('002271.xls','A002271.xls')
-    test.StockValueAssess('002280.xls','A002280.xls')
-    test.StockValueAssess('000651.xls','A000651.xls')
-    test.StockValueAssess('601608.xls','A601608.xls')
+    # # test.StockValueAssess('002280.xls','A002280.xls')
+    # test.StockValueAssess('000651.xls','A000651.xls')
+    # # test.StockValueAssess('601608.xls','A601608.xls')
+    df1 =pd.DataFrame([1,2,3,4])
+    df2 =pd.DataFrame([1,2,3,4])
+    df3 =pd.DataFrame([1,2,3,4])
+    # test.excelAddSheet(df1,'test.xls','a')
+    # test.excelAddSheet(df1,'test.xls','b')
+    # test.excelAddSheet(df1,'test.xls','c')
+    test.addXlsSheet('test.xls','addSheet')
+    test.addXlsSheet('test.xls','q')
+    test.addXlsSheet('test.xls','q1')
+    write = pd.ExcelWriter('test.xls')
+    df1.to_excel(write,sheet_name='addSheet1',index=True)
+    write.save()
+
 

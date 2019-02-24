@@ -270,15 +270,15 @@ class selectStock:
         zbfzl =zcfzb.loc['负债合计(万元)']/zcfzb.loc['资产总计(万元)']#资产负债率
         ldbl =zcfzb.loc['流动资产合计(万元)']/zcfzb.loc['流动负债合计(万元)']#流动比率
         sdbl =(zcfzb.loc['流动资产合计(万元)']-zcfzb.loc['存货(万元)']-zcfzb.loc['预付款项(万元)']-zcfzb.loc['待摊费用(万元)'])/zcfzb.loc['流动负债合计(万元)']#速动比率
-        mll =(zcfzb.loc['营业收入(万元)']-zcfzb.loc['营业成本(万元)'])/zcfzb.loc['营业收入(万元)']#毛利率
-        jll =zcfzb.loc['营业收入(万元)']/zcfzb.loc['营业收入(万元)']#净利率
+        mll =(lrb.loc['营业收入(万元)']-lrb.loc['营业成本(万元)'])/lrb.loc['营业收入(万元)']#毛利率
+        jll =lrb.loc['净利润(万元)']/lrb.loc['营业收入(万元)']#净利率
         
         # 存货周转率存货周转率（次数）=销售成本/平均存货余额 
         # 资本周转率:资本周转率=（货币资金+短期投资+应收票据）/长期负债合计×100%
         zbzzl =zcfzb.loc['货币资金(万元)']+zcfzb.loc['应收票据(万元)']/zcfzb.loc['非流动负债合计(万元)']
         # 应收款周转率
         # 净自由现金流:公司自由现金流量(FCFF) =（税后净利润 + 利息费用 + 非现金支出）- 营运资本追加 - 资本性支出
-        zjyxjl =zcfzb.loc['净利润(万元)']+zcfzb.loc['利息收入(万元)']-zcfzb.loc['利息支出(万元)']-zcfzb.loc['非流动资产合计(万元)']
+        zjyxjl =lrb.loc['净利润(万元)']+lrb.loc['利息收入(万元)']-lrb.loc['利息支出(万元)']-zcfzb.loc['非流动资产合计(万元)']
         zb =pd.DataFrame([zbfzl,ldbl,sdbl,mll,jll],['资产负债率','流动比率','速动比率','毛利率','净利率'])
         #    
         write = pd.ExcelWriter(outFile)

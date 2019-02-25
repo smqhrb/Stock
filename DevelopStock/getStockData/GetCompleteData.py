@@ -72,7 +72,7 @@ class stock_parser(HTMLParser):
             self.processing = None
 ##### 
 class CollectFrom163:
-    def __init__(self):
+    def __init__(self,destPath=".\\Account\\"):
         self.code =""
         self.item =""
         self.filename =""
@@ -83,6 +83,12 @@ class CollectFrom163:
         self.wsLrb = self.wb.add_sheet(u'利润表')
         self.wsXjllb = self.wb.add_sheet(u'现金流量表')
         self.sheet =self.wsZcfzb
+        self.destPath =destPath
+        if os.path.exists(self.destPath):
+            pass
+        else:
+            os.mkdir(destPath)
+        
         
         
 
@@ -90,7 +96,13 @@ class CollectFrom163:
 #code,代码 name,名称 industry,所属行业 area,地区 pe,市盈率 outstanding,流通股本 totals,总股本(万) totalAssets,总资产(万)liquidAssets,流动资产
 # fixedAssets,固定资产 reserved,公积金 reservedPerShare,每股公积金 eps,每股收益 bvps,每股净资 pb,市净率 timeToMarket,上市日期
     def Get_Stock_List(self):
-        self.df = ts.get_stock_basics()
+        
+        if os.path.exists("stockList.xls") is True:
+            self.df =pd.read_excel('stockList.xls')
+        else:
+            self.df = ts.get_stock_basics()
+            write = pd.ExcelWriter('stockList.xls')
+            self.df.to_excel(write,index=True)
         return self.df
 
     def Set_Stock_Code(self,Code):
@@ -247,9 +259,9 @@ class CollectFrom163:
         # Url1 = 'http://quotes.money.163.com/f10/zycwzb_'+Code+'.html?type=year'
         # self.GetZcfzb(Url1,Code)
         if len(self.filename)<=0:
-            self.wb.save(Name+'('+Code+').xls')
+            self.wb.save(self.destPath+Name+'('+Code+').xls')
         else:
-            self.wb.save(self.filename+'_'+Name+'('+Code+').xls')
+            self.wb.save(self.destPath+self.filename+'_'+Name+'('+Code+').xls')
         
 
     def GetData(self,df_Code,count):
@@ -286,7 +298,7 @@ class CollectFrom163:
             LenCell1 = self.Get_3_Cell(Url1,Code,count,headyear)
             count =count+1
         
-        self.wb.save(prefix +Code+'.xls')
+        self.wb.save(self.destPath +prefix +Code+'.xls')
 
     def get_industry_classified(self,classify,count):
         ddf =ts.get_industry_classified()
@@ -332,7 +344,7 @@ class CollectFrom163:
             headyear =1
             count =count+1
   
-        self.wb.save(prefix+'['+classify+'('+ self.text+')].xls')    
+        self.wb.save(self.destPath+prefix+'['+classify+'('+ self.text+')].xls')    
         
         # self.GetData(ddf,0)
     def parse_data(self,urldata):
@@ -367,7 +379,7 @@ class CollectFrom163:
         data = data.replace("&nbsp;", "-")
         stock = self.parse_data(data)
         return stock
-    def getStockBaseAccount(self,code,fileName):
+    def getStockBaseAccount(self,code):
         '''
         paramter :
             code - stock code like '000651'
@@ -380,10 +392,21 @@ class CollectFrom163:
         df =pd.DataFrame(ret)
         df.set_index(['日期'],inplace=True)
         df1 =df.T
-        df1.to_excel(fileName)  
+        # df1.to_excel(fileName) 
+        return df1
 
-    def StockValueAssess(self,srcFile,outFile):
+    def StockValueAssess(self,code,srcFile,outFile):
         '''
+        code : stock code
+        srcFile: code related file
+        outFile: out file
+
+        parameter:
+            srcFile: input file of account
+            outFile: result for analyst.
+        '''
+        '''
+        
         股票内在价值计算:
             1.资本结构：
                 货币资金+应收账款+应收票据>负债总额
@@ -416,9 +439,6 @@ class CollectFrom163:
                 市净率=(市值/(现金+应收票据+投资性房地产))<1.5
                 市盈率=(总市值/(企业净利润-投资收益))<15 ,高成长<25
                 毛利润率=毛利润/总收入<30%(优秀企业)
-        parameter:
-            srcFile: input file of account
-            outFile: result for analyst.
         '''
         #read xls 
         zcfzb =pd.read_excel(srcFile,'资产负债表')
@@ -527,13 +547,45 @@ class CollectFrom163:
         zb =pd.DataFrame([zbfzl,ldbl,sdbl,mll,jll,ROE,ROA],['资产负债率','流动比率','速动比率','毛利率','净利率','ROE','ROA'])
         #    
         write = pd.ExcelWriter(outFile)
+        jbxx =self.getStockBaseAccount(code)
+        jbxx.to_excel(write,sheet_name='基本指标(元)',index=True)
         fz.to_excel(write,sheet_name='偿还能力',index=True)
         jzl.to_excel(write,sheet_name='竞争力',index=True)
         ylnl.to_excel(write,sheet_name='盈利能力',index=True)
         qsgj.to_excel(write,sheet_name='清算估计',index=True)
         zb.to_excel(write,sheet_name='指标',index=True)
+        write.save() 
+
+    def CaculateAssest(self,filePath=None):
+        '''
+
+        '''
+        if filePath is None:
+            filePath =self.destPath
+        pathDir =  os.listdir(filePath)
+        codeList =[]
+        fnameList =[]
+        for allDir in pathDir:
+            child = os.path.join('%s\%s' % (filePath, allDir))
+            if os.path.isfile(child):
+                child =child[child.rfind("\\")+1:]
+                if(child.rfind(")")>0):
+                    name = child[child.rfind("(")+1:child.rfind(")")]
+                    if(len(name)>0):
+                        codeList.append(name)
+                        fnameList.append(child)
+                else:
+                    continue
         
-        write.save()      
+        for code,name in zip(codeList,fnameList):
+            print("read from %s,write to %s"%(filePath +name,filePath+"\\"+'A'+name))
+            # if os.path.exists(filePath+"\\"+'A'+name):
+            #     pass
+            # else:
+                # self.StockValueAssess(code,filePath +name,filePath+"\\"+'A'+name)
+            self.StockValueAssess(code,filePath +name,filePath+"\\"+'A'+name)
+
+
 #主函数 
 
 if __name__ == '__main__':
@@ -550,7 +602,9 @@ if __name__ == '__main__':
 
 
     # stocks = Test.get_stock("002122")
-    Test.getStockBaseAccount("000651",'test.xls')
+    # Test.getStockBaseAccount("000651")
+    # Test.StockValueAssess('000651','000651.xls','A000651.xls')
+    Test.CaculateAssest()
     # ret =[]
     # for stock in stocks:
     #     print (stock)

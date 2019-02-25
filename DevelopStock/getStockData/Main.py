@@ -8,7 +8,7 @@ len1 =len(sys.argv)
 
 def MainOpt():
     try:
-        opts, args = getopt.getopt(sys.argv[1:],'d:t:i:a:c:f:h',['industry=','text=','item=','all=','code =','files=','help'])
+        opts, args = getopt.getopt(sys.argv[1:],'d:t:i:a:c:f:p:h',['industry=','text=','item=','all=','code =','files=','pa =','help'])
     except getopt.GetoptError: 
         print(getopt.GetoptError)
         sys.exit()
@@ -21,6 +21,7 @@ def MainOpt():
     item=""
     text=""
     industry =""
+    pp =""
     for o, a in opts:
         if o in ("-h", "--help"):
             print("-a a           [get all stock account data,-a can not use with -c]       ")
@@ -29,11 +30,13 @@ def MainOpt():
             print("-i type        [set account type, 1- zcfzb ,2 - lrb ,3-xjllb]")
             print("-t accountItem [set accout item]")
             print("-d industry    [set industry item]")
+            print("-p analyst     [get index of account]")
             print("for example:")
             print("      python main.py -a a")
             print("      python main.py -c 000625 -f test")
             print("      python main.py -i 1 -t 所有者权益")
             print("      python main.py -i 1 -d 综合行业 -t 所有者权益")
+            print("      python main.py -p 1")
             sys.exit()
         elif o in ("-a", "--all"):
             all = a
@@ -50,6 +53,8 @@ def MainOpt():
             text = a
         elif o in ("-d","--industry"):
             industry =a
+        elif o in ("-p","--pa"):
+            pp =a
     # print (all) 
     # print (files)
     # print (code)
@@ -76,6 +81,8 @@ def MainOpt():
             allC.get_industry_classified(industry,0)
         else:
             allC.GetData(df,0)
+    elif len(pp)>0:
+        allC.CaculateAssest()
 
 if __name__ == '__main__':
     MainOpt()

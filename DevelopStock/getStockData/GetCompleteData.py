@@ -556,10 +556,69 @@ class CollectFrom163:
         zb.to_excel(write,sheet_name='指标',index=True)
         write.save() 
 
-    def CaculateAssest(self,filePath=None):
+    def getHydbFrom163(self):
+        '''
+        from 163 get  行业对比
         '''
 
+        url_hydb_base ='http://quotes.money.163.com/f10/hydb_%s.html#01g02'
+        url_hydb =url_hydb_base%('000651')
+        headers = {"User-Agent":"Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6"}
+        req = urllib2.Request(url_hydb, headers = headers)
+        try:
+            content = urllib2.urlopen(req).read()
+        except:
+            return
+        soup = BeautifulSoup(content)
+
+        #行业对比
+        tableAll = soup.findAll("table",{"class":"table_bg001 border_box table_sortable"})
+        print(len(tableAll))
+        i =0
+        while i < len(tableAll):
+            table0 =tableAll[i]
+            for row in table0.findAll("tr"):
+                
+                cells = row.findAll("th") 
+                if(len(cells)>0):
+                    j=0
+                    while j <len(cells):
+                        print(cells[j].text)
+                        j =j+1
+                else:
+                    cells = row.findAll("td") 
+                    j=0
+                    while j <len(cells):
+                        print(cells[j].text)
+                        j =j+1
+            i= i+1
+    def getDbfxFrom163(self):
         '''
+        杜邦分析
+        '''
+
+
+        url_dbfx_base ='http://quotes.money.163.com/f10/dbfx_%s.html#01c08'
+        url_dbfx =url_dbfx_base%('000651')
+        headers = {"User-Agent":"Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6"}
+        req = urllib2.Request(url_dbfx, headers = headers)
+        try:
+            content = urllib2.urlopen(req).read()
+        except:
+            return
+        
+        # http://quotes.money.163.com/f10/dbfx_000651.html?date=2018-06-30,2018-03-31#01c08
+        soup = BeautifulSoup(content)
+        optionAll = soup.findAll("select",{"class":"select01"}) 
+
+        tableAll = soup.findAll("td",{"class":"dbbg01"})  
+        for row in  tableAll:
+            print(row)     
+          
+
+    def CaculateAssest(self,filePath=None):
+  
+        
         if filePath is None:
             filePath =self.destPath
         pathDir =  os.listdir(filePath)
@@ -604,7 +663,7 @@ if __name__ == '__main__':
     # stocks = Test.get_stock("002122")
     # Test.getStockBaseAccount("000651")
     # Test.StockValueAssess('000651','000651.xls','A000651.xls')
-    Test.CaculateAssest()
+    Test.getDbfxFrom163()
     # ret =[]
     # for stock in stocks:
     #     print (stock)

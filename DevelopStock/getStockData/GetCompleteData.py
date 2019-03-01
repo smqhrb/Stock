@@ -612,6 +612,7 @@ class CollectFrom163:
         optionAll = soup.findAll("select",{"class":"select01"}) 
 
         tableAll = soup.findAll("td",{"class":"dbbg01"})  
+        tableAll[1].item
         for row in  tableAll:
             print(row)     
           

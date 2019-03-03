@@ -252,3 +252,7 @@ plt.bar(df.index,kk['data_macd'].values,width = 0.2,color='g',label="2nd")  # ç›
 plt.setp(ax1.get_xticklabels())
 plt.grid(True)
 plt.show()
+
+# ax.annotate(u"a", xy = (red_bar.index[0],red_bar.values[0]), xytext = (red_bar.index[0],0.05),
+#             arrowprops = dict(facecolor = "r",ec='r', headlength = 2*self.barWidth, headwidth = 4*self.barWidth, width = self.barWidth),
+#             bbox=dict(boxstyle='round,pad=0.5', fc='r', ec='r',lw=1 ,alpha=0.5))

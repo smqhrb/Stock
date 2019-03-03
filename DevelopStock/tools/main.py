@@ -1,9 +1,11 @@
 import xlwt
 import sys
+import os
 import pandas as pd
 import tushare as ts
 import datetime
 from datetime import timedelta
+from drawStockCurve import stockCurve
 import getopt
 print("Script name：",sys.argv[0])
 print("")
@@ -11,7 +13,7 @@ len1 =len(sys.argv)
 
 def MainOpt():
     try:
-        opts, args = getopt.getopt(sys.argv[1:],'a:f:s:e:h',['all=','files=','start=','end=','help'])
+        opts, args = getopt.getopt(sys.argv[1:],'a:f:s:e:d:h',['all=','files=','start=','end=','draw=','help'])
     except getopt.GetoptError: 
         print(getopt.GetoptError)
         sys.exit()
@@ -20,13 +22,15 @@ def MainOpt():
     allin =""
     start =""
     end =""
+    drawPic =""
     for o, a in opts:
         if o in ("-h", "--help"):
             print("---------help content------------------------------------------------------")
             print("|   -f fname          [get all stock data from config file]       ")
             print("|   -a                [all stock data save to one file 'stock.xls']       ")
-            print("|   -s 20170111       [start time,format YYYYMMDD]       ")
-            print("|   -e 20180111       [end   time,format YYYYMMDD]       ")
+            print("|   -s 20170111       [start time,format YYYYMMDD]                       ")
+            print("|   -e 20180111       [end   time,format YYYYMMDD]                 ")
+            print("|   -d 000882.SZ.xls  [file name for draw KLine Colume MACD]       ")
             
             print("|   for example:")
             print("|      example 1: all stock data write in one file 'stock.xls")
@@ -35,6 +39,8 @@ def MainOpt():
             print("|           python main.py -f stockList.txt -s 20170111 -e 20180111")
             print("|      example 3: default time is now to now -365day")
             print("|           python main.py -f stockList.txt")
+            print("|      example 4: draw Kline Colume MACD")
+            print("|           python main.py -d 000882.SZ.xls")
             print("|                                           ")
             print("|   stock code is 601800.SH or 300298.SZ or 000882.SZ")
             print("---------------------------------------------------------------------------------")
@@ -47,6 +53,8 @@ def MainOpt():
             start =a
         elif o in ("-e","--end"):
             end =a
+        elif o in ("-d","--draw"):
+            drawPic =a
         else:
             sys.exit()
 
@@ -57,7 +65,10 @@ def MainOpt():
         exit()
     elif str=='y':
         pass
-
+    if(len(drawPic)>0):
+        if os.path.exists(drawPic):
+            getXlsDataForDraw(drawPic)
+        exit()
     # files="stockList.txt"
     if len(files)>0:
         print("configure file name ="+files)
@@ -129,7 +140,17 @@ def readStockList(fname):
     print("....Stock Code List............")
     print(contents)
     return contents
-
+def getXlsDataForDraw(fileName):
+    xlsData =pd.read_excel(fileName)
+    df_raw =pd.DataFrame()
+    df_raw['t'] =xlsData['交易日期']
+    df_raw['open']=xlsData['开盘价']
+    df_raw['high']=xlsData['最高价']
+    df_raw['low']=xlsData['最低价']
+    df_raw['close']=xlsData['收盘价']
+    df_raw['volume']=xlsData['成交量 （手）']  
+    drawPic =stockCurve(df_raw)
+    drawPic.drawAll() 
 
 if __name__ == '__main__':
     MainOpt()

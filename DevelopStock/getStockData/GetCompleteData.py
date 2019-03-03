@@ -592,29 +592,55 @@ class CollectFrom163:
                         print(cells[j].text)
                         j =j+1
             i= i+1
+
+    def urlOpenContent(self,urlBase,urlfix):
+        url =urlBase%(urlfix)
+        headers = {"User-Agent":"Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6"}
+        req = urllib2.Request(url, headers = headers)
+        try:
+            content = urllib2.urlopen(req).read()
+        except:
+            return 
+        return content   
+
     def getDbfxFrom163(self):
         '''
         杜邦分析
         '''
 
-
+        
         url_dbfx_base ='http://quotes.money.163.com/f10/dbfx_%s.html#01c08'
-        url_dbfx =url_dbfx_base%('000651')
-        headers = {"User-Agent":"Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6"}
-        req = urllib2.Request(url_dbfx, headers = headers)
-        try:
-            content = urllib2.urlopen(req).read()
-        except:
-            return
+        # url_dbfx =url_dbfx_base%('000651')
+        content =self.urlOpenContent(url_dbfx_base,'000651')
+        # headers = {"User-Agent":"Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6"}
+        # req = urllib2.Request(url_dbfx, headers = headers)
+        # try:
+        #     content = urllib2.urlopen(req).read()
+        # except:
+        #     return
         
         # http://quotes.money.163.com/f10/dbfx_000651.html?date=2018-06-30,2018-03-31#01c08
         soup = BeautifulSoup(content)
         optionAll = soup.findAll("select",{"class":"select01"}) 
-
-        tableAll = soup.findAll("td",{"class":"dbbg01"})  
-        tableAll[1].item
-        for row in  tableAll:
-            print(row)     
+# optionAll[0].contents[1]['value']
+# optionAll[0].contents[1].text
+        tableAllItem = soup.findAll("td",{"class":"dbbg01"})
+        i=0
+        item =[]
+        while i<len(tableAllItem):
+            item.append(tableAllItem[0].text
+        df =pd.DataFrame(columns=item)
+        urlOptionBase ="http://quotes.money.163.com/f10/dbfx_000651.html?date=%s#01c08"
+        k =0
+        while k <len(optionAll):
+            optionValue =optionAll[0].contents[k]['value']
+            if len(optionValue)>4:
+                # urlOption =urlOptionBase%optionValue
+                content =self.urlOpenContent(urlOptionBase,optionValue)
+                soup = BeautifulSoup(content)
+                tableAllValue = soup.findAll("td",{"class":"dbbg02"})
+                for row in  tableAllValue:
+                    print(row)     
           
 
     def CaculateAssest(self,filePath=None):

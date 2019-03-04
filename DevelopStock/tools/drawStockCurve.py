@@ -61,7 +61,6 @@ class stockCurve:
         •dif, dea, red_bar, green_bar 是使用 get_macd_data 方法计算出的MACD指标
         •canvas_w, canvas_h 为期望绘制出的图形宽度和高度，单位是像素
         •xtick_period 为生成x 方向刻度时，每间隔多少个数值，取一个值作为刻度显示出来——如果将全部日期显示出来，x方向的刻度将会是密密麻麻一片黑
-        •title 是图形的标题
         '''
         p_dif=ax.plot(dif.index,dif.values) 
         p_dea=ax.plot(dea.index,dea.values) 
@@ -152,6 +151,14 @@ class stockCurve:
         green_bar=bar[bar<0] 
         return dif,dea,red_bar,green_bar
     def getMacdCrossPoint(self,diff,dea):
+        '''
+        get the cross point,
+        parameter:
+            diff is diff
+            dea is dea
+        return : retU is diff up corss dea
+                 retD is diff down cross dea
+        '''
         crossPoint =diff - dea
         iCount = len(crossPoint)
         retU =[]

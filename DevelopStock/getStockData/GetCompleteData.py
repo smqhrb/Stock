@@ -548,7 +548,16 @@ class CollectFrom163:
         #    
         write = pd.ExcelWriter(outFile)
         jbxx =self.getStockBaseAccount(code)
+        dbfx =self.getDbfxFrom163(code)
+        item,hyfx =self.getHydbFrom163(code)
+
         jbxx.to_excel(write,sheet_name='基本指标(元)',index=True)
+        dbfx.to_excel(write,sheet_name='杜邦分析',index=True)
+        i =0
+        while i<len(hyfx):
+            (hyfx[i]).to_excel(write,sheet_name=item[i],index=True)
+            i =i+1
+
         fz.to_excel(write,sheet_name='偿还能力',index=True)
         jzl.to_excel(write,sheet_name='竞争力',index=True)
         ylnl.to_excel(write,sheet_name='盈利能力',index=True)
@@ -556,44 +565,73 @@ class CollectFrom163:
         zb.to_excel(write,sheet_name='指标',index=True)
         write.save() 
 
-    def getHydbFrom163(self):
+    def getHydbFrom163(self,code):
         '''
         from 163 get  行业对比
         '''
 
         url_hydb_base ='http://quotes.money.163.com/f10/hydb_%s.html#01g02'
-        url_hydb =url_hydb_base%('000651')
+        url_hydb =url_hydb_base%(code)
         headers = {"User-Agent":"Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6"}
         req = urllib2.Request(url_hydb, headers = headers)
         try:
             content = urllib2.urlopen(req).read()
         except:
             return
-        soup = BeautifulSoup(content)
+        soup = BeautifulSoup(content,features="lxml")
 
         #行业对比
+        itemAll = soup.findAll("h2",{"class":"title_01"})
+        i =0
+        retItem =[]
+        while i < len(itemAll):
+            retItem.append(itemAll[i].text)
+            i =i+1
         tableAll = soup.findAll("table",{"class":"table_bg001 border_box table_sortable"})
         print(len(tableAll))
         i =0
+        retDf =[]
         while i < len(tableAll):
             table0 =tableAll[i]
+            oneDf =pd.DataFrame()
+            colName =[]
+            dataContent =[]
             for row in table0.findAll("tr"):
+                
                 
                 cells = row.findAll("th") 
                 if(len(cells)>0):
                     j=0
+                    
                     while j <len(cells):
-                        print(cells[j].text)
+                        colName.append(cells[j].text)
                         j =j+1
+                    # print(colName)
                 else:
                     cells = row.findAll("td") 
                     j=0
+                    dfContent =[]
                     while j <len(cells):
-                        print(cells[j].text)
+                        # print(cells[j].text)
+                        dfContent.append(cells[j].text)
                         j =j+1
+                    # tempt_df =pd.DataFrame(dfContent,columns=colName)
+                    # oneDf.append(tempt_df,ignore_index=True)
+                    dataContent.append(dfContent)
+                    # print(dfContent)
+            oneDf =pd.DataFrame(dataContent,columns=colName)
+            
+            # print(oneDf)
+            retDf.append(oneDf)
             i= i+1
+        return retItem,retDf
 
     def urlOpenContent(self,urlBase,urlfix):
+        '''
+        parameter:
+            url is made by urlBase urlfix
+        return content
+        '''
         url =urlBase%(urlfix)
         headers = {"User-Agent":"Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6"}
         req = urllib2.Request(url, headers = headers)
@@ -603,49 +641,48 @@ class CollectFrom163:
             return 
         return content   
 
-    def getDbfxFrom163(self):
+    def getDbfxFrom163(self,code):
         '''
         杜邦分析
+        parameter 
+            code like '000651'
+        return DataFrame
         '''
-
-        
         url_dbfx_base ='http://quotes.money.163.com/f10/dbfx_%s.html#01c08'
         # url_dbfx =url_dbfx_base%('000651')
         content =self.urlOpenContent(url_dbfx_base,'000651')
-        # headers = {"User-Agent":"Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6"}
-        # req = urllib2.Request(url_dbfx, headers = headers)
-        # try:
-        #     content = urllib2.urlopen(req).read()
-        # except:
-        #     return
-        
-        # http://quotes.money.163.com/f10/dbfx_000651.html?date=2018-06-30,2018-03-31#01c08
-        soup = BeautifulSoup(content)
+        soup = BeautifulSoup(content,features="lxml")
         optionAll = soup.findAll("select",{"class":"select01"}) 
-# optionAll[0].contents[1]['value']
-# optionAll[0].contents[1].text
         tableAllItem = soup.findAll("td",{"class":"dbbg01"})
         i=0
         item =[]
         while i<len(tableAllItem):
-            item.append(tableAllItem[0].text
-        df =pd.DataFrame(columns=item)
+            item.append(tableAllItem[i].text)
+            i = i+1
+        dfRet =pd.DataFrame(columns=item)
         urlOptionBase ="http://quotes.money.163.com/f10/dbfx_000651.html?date=%s#01c08"
         k =0
-        while k <len(optionAll):
-            optionValue =optionAll[0].contents[k]['value']
-            if len(optionValue)>4:
+        while k <len(optionAll[0].contents):
+            
+            if optionAll[0].contents[k].name=='option':
+                optionValue =optionAll[0].contents[k]['value']
                 # urlOption =urlOptionBase%optionValue
                 content =self.urlOpenContent(urlOptionBase,optionValue)
-                soup = BeautifulSoup(content)
+                soup = BeautifulSoup(content,features="lxml")
                 tableAllValue = soup.findAll("td",{"class":"dbbg02"})
-                for row in  tableAllValue:
-                    print(row)     
-          
+                dataRow =[]
+                indexJ =0
+                while indexJ < len(tableAllValue):
+                    dataRow.append(tableAllValue[indexJ].text) 
+                    indexJ =indexJ+1
+                dfRet.loc[optionValue]=dataRow
+            k = k+1
+        print(dfRet)
+        return dfRet
 
     def CaculateAssest(self,filePath=None):
-  
-        
+        '''
+        '''
         if filePath is None:
             filePath =self.destPath
         pathDir =  os.listdir(filePath)
@@ -690,7 +727,13 @@ if __name__ == '__main__':
     # stocks = Test.get_stock("002122")
     # Test.getStockBaseAccount("000651")
     # Test.StockValueAssess('000651','000651.xls','A000651.xls')
-    Test.getDbfxFrom163()
+    # Test.getDbfxFrom163('002122')
+    # item,hyfx =Test.getHydbFrom163('000651')
+    # i =0
+    # while i<len(hyfx):
+    #     print(item[i])
+    #     print(hyfx[i])
+    #     i =i+1
     # ret =[]
     # for stock in stocks:
     #     print (stock)

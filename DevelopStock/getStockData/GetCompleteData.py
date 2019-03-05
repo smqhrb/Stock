@@ -1,10 +1,20 @@
-# 本文计划实现对网页财经上的上市公司财务报表中某个特定财务数据的抓取，
-# 例如历年的应收票据，全部抓取后存放到excel文件中。
-
-
+'''
+功能说明
+来自网上：   1)基本指标(元)  
+            2)杜邦分析
+            3)行业对比:估值水平, 市场表现 , 财务指标 , 公司规模
+            4)资产负债表
+            5)利润表
+            6)现金流量表
+根据三表计算：
+            1)偿还能力
+            2)竞争力
+            3)盈利能力
+            4)清算估计
+            5)指标
+'''
 #coding=utf-8
 import tushare as ts
-#import talib as ta
 import numpy as np
 import pandas as pd
 import os,time,sys,re,datetime
@@ -19,23 +29,26 @@ from urllib import request
 from urllib import parse
 from urllib.request import urlopen
 #####
-class Stock:
+class StockAccountBaseInfo:
+    '''
+    构建股票财务基本信息字符串
+    '''
     def __init__(self,line):
         # 20011231,每股净资产,1.5727,每股收益,0.3438,每股现金含量,11,每股资本公积金,0.5289,
         # 固定资产合计,11,流动资产合计,11,资产总计,11,长期负债合计,16,主营业务收入,11,11,净利润,11
         arr = line.split(",")
-        self.day = arr[0].replace("-","") if arr[0]!='-' else '0'
-        self.mgzjc = arr[2] if arr[2]!='-' else '0'
-        self.mgsy = arr[4] if arr[4]!='-' else '0'
-        self.mgxjhl = arr[6] if arr[6]!='-' else '0'
-        self.mgjbgjj = arr[8] if arr[8]!='-' else '0'
-        self.gdzchj = arr[10] if arr[10]!='-' else '0'
-        self.ldzchj = arr[12] if arr[12]!='-' else '0'
-        self.zchj = arr[14] if arr[14]!='-' else '0'
-        self.cqfzhj = arr[16] if arr[16]!='-' else '0'
-        self.zyywsr = arr[18] if arr[18]!='-' else '0'
-        self.cwfy = arr[19] if arr[19]!='-' else '0'
-        self.jlr = arr[21] if arr[21]!='-' else '0'
+        self.day = arr[0].replace("-","") if arr[0]!='-' else '0'   #日期
+        self.mgzjc = arr[2] if arr[2]!='-' else '0'                 #每股净资产
+        self.mgsy = arr[4] if arr[4]!='-' else '0'                  #每股收益
+        self.mgxjhl = arr[6] if arr[6]!='-' else '0'                #每股现金含量                
+        self.mgjbgjj = arr[8] if arr[8]!='-' else '0'               #每股资本公积金
+        self.gdzchj = arr[10] if arr[10]!='-' else '0'              #固定资产合计
+        self.ldzchj = arr[12] if arr[12]!='-' else '0'              #流动资产合计
+        self.zchj = arr[14] if arr[14]!='-' else '0'                #资产总计                
+        self.cqfzhj = arr[16] if arr[16]!='-' else '0'              #长期负债合计
+        self.zyywsr = arr[18] if arr[18]!='-' else '0'              #主营业务收入
+        self.cwfy = arr[19] if arr[19]!='-' else '0'                #财务费用
+        self.jlr = arr[21] if arr[21]!='-' else '0'                 #净利润
         self.series =pd.Series({'日期':self.day,'每股净资产':self.mgzjc,'每股收益':self.mgsy,'每股现金含量':self.mgxjhl,'每股资本公积金':self.mgjbgjj,'固定资产合计':self.gdzchj,
                      '流动资产合计':self.ldzchj,'资产总计':self.zchj,'长期负债合计':self.cqfzhj,'主营业务收入':self.zyywsr,'财务费用':self.cwfy,'净利润':self.jlr})
     def getSeries(self):
@@ -53,6 +66,9 @@ class Stock:
                                                self.cqfzhj,self.zyywsr,self.cwfy,self.jlr)        
 
 class stock_parser(HTMLParser):
+    '''
+    解析网络响应 -读取财务基本信息
+    '''
     def __init__(self):
         HTMLParser.__init__(self)
         self.handledtags = ['td']
@@ -72,19 +88,33 @@ class stock_parser(HTMLParser):
             self.processing = None
 ##### 
 class CollectFrom163:
+    '''
+    从网络读取财务数据 :
+            1)资产负债表 利润表 现金流量表
+            2)基本指标(元)  
+            3)杜邦分析
+            4)行业对比:估值水平, 市场表现 , 财务指标 , 公司规模
+    计算三表财务数据
+            1)偿还能力
+            2)竞争力
+            3)盈利能力
+            4)清算估计
+            5)指标
+    默认存储目录:.\\Account\\
+    '''
     def __init__(self,destPath=".\\Account\\"):
         self.code =""
         self.item =""
         self.filename =""
         self.text =""
 
-        self.wb = xlwt.Workbook()
-        self.wsZcfzb = self.wb.add_sheet(u'资产负债表')
-        self.wsLrb = self.wb.add_sheet(u'利润表')
-        self.wsXjllb = self.wb.add_sheet(u'现金流量表')
+        self.wb = xlwt.Workbook()                            #生成xls表
+        self.wsZcfzb = self.wb.add_sheet(u'资产负债表')       #填加 资产负债表 
+        self.wsLrb = self.wb.add_sheet(u'利润表')             #填加 利润表 
+        self.wsXjllb = self.wb.add_sheet(u'现金流量表')       #填加 现金流量表 
         self.sheet =self.wsZcfzb
         self.destPath =destPath
-        if os.path.exists(self.destPath):
+        if os.path.exists(self.destPath):                     #检测路径是否存在,不存在则创建路径
             pass
         else:
             os.mkdir(destPath)
@@ -92,17 +122,26 @@ class CollectFrom163:
         
         
 
-#获取股票列表
-#code,代码 name,名称 industry,所属行业 area,地区 pe,市盈率 outstanding,流通股本 totals,总股本(万) totalAssets,总资产(万)liquidAssets,流动资产
-# fixedAssets,固定资产 reserved,公积金 reservedPerShare,每股公积金 eps,每股收益 bvps,每股净资 pb,市净率 timeToMarket,上市日期
     def Get_Stock_List(self):
-        
-        if os.path.exists("stockList.xls") is True:
-            self.df =pd.read_excel('stockList.xls')
+        '''
+        #获取股票列表
+        #code,代码 name,名称 industry,所属行业 area,地区 pe,市盈率 outstanding,流通股本 totals,总股本(万) totalAssets,总资产(万)liquidAssets,流动资产
+        # fixedAssets,固定资产 reserved,公积金 reservedPerShare,每股公积金 eps,每股收益 bvps,每股净资 pb,市净率 timeToMarket,上市日期
+        ''' 
+               
+        if os.path.exists("stockListAccount.xls") is True:     #判断文件 stockList.xls 是否存在,如果存在 则从文件中读取
+            print("------开始读取stockListAccount股票信息")
+            self.df =pd.read_excel('stockListAccount.xls',dtype={'code':'str'})
+            self.df =self.df.set_index('code')
+            print("------结束读取stockListAccount.xls股票信息")
         else:
-            self.df = ts.get_stock_basics()
-            write = pd.ExcelWriter('stockList.xls')
+            print("------开始读取网上股票信息")
+            self.df = ts.get_stock_basics()             #不存在则从网上读取
+            write = pd.ExcelWriter('stockListAccount.xls')     #存储到文件  stockList.xls  
             self.df.to_excel(write,index=True)
+            write.save()
+            print("------结束读取网上股票信息")
+
         return self.df
 
     def Set_Stock_Code(self,Code):
@@ -126,14 +165,18 @@ class CollectFrom163:
 # 网易股票的资产负债表的应收票据的数据其实被拆成了2张表，第一张表是纯表头，第二张表是纯数据。
 
     def GetZcfzb(self,url,code):
+        '''
+        url - 读取链接
+        code -股票代码
+        '''
         headers = {"User-Agent":"Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6"}
         req = urllib2.Request(url, headers = headers)
         try:
             content = urllib2.urlopen(req).read()
         except:
             return
-        soup = BeautifulSoup(content)
-    #所以要在第一张表中先找到应收票据的位置。
+        soup = BeautifulSoup(content,features="lxml")
+        #获取财务报表的表头
         table0 = soup.find("table",{"class":"table_bg001 border_box limit_sale"})
         j =0
         for row in table0.findAll("tr"):
@@ -142,10 +185,11 @@ class CollectFrom163:
             k =len(cells)
             if k<=0:
                 cells =row.findAll("th")
+                
                 self.sheet.write(j, 0, cells[0].text)
                 continue
             self.sheet.write(j, 0, cells[0].text)          
-
+        #获取财务报表的数据
         table = soup.find("table",{"class":"table_bg001 border_box limit_sale scr_table"})
 
         j=0
@@ -157,7 +201,6 @@ class CollectFrom163:
                 i = 0
                 lencell = len(cells)#统计财务报表的年数            
                 while i < len(cells):
-                    #print cells[i].text
                     self.sheet.write(j, i+1, cells[i].text)                                        
                     i=i+1
             else:
@@ -168,7 +211,7 @@ class CollectFrom163:
                     i=i+1
         return lencell
 
-#抓取网页数据
+    #抓取网页数据
     def Get_3_Cell(self,url,code,count,headyear):
         headers = {"User-Agent":"Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6"}
         req = urllib2.Request(url, headers = headers)
@@ -176,7 +219,7 @@ class CollectFrom163:
             content = urllib2.urlopen(req).read()
         except:
             return
-        soup = BeautifulSoup(content)
+        soup = BeautifulSoup(content,features="lxml")
 
         #所以要在第一张表中先找到应收票据的位置。
         table0 = soup.find("table",{"class":"table_bg001 border_box limit_sale"})
@@ -190,7 +233,7 @@ class CollectFrom163:
                     #print position
                     break;
                 
-    #然后到第二张表中去抓对应位置的数据。
+        #然后到第二张表中去抓对应位置的数据。
         lencell=0
         table = soup.find("table",{"class":"table_bg001 border_box limit_sale scr_table"})
 
@@ -221,43 +264,55 @@ class CollectFrom163:
                 break
         return lencell
 
-    def GetAllFullAcount(self,df_Code):
+    def GetAllFullAcount(self,df_Code,type='year'):
+        '''
+        读取所有股票的数据 
+        df_code 是存储股票的
+        '''
         for Code in df_Code.index:
-            Name = df_Code.loc[Code,'name']
-            print(u"股票:"+Name+"(" + Code +")")
-            self.wb = xlwt.Workbook()
-            self.wsZcfzb = self.wb.add_sheet(u'资产负债表')
-            self.wsLrb = self.wb.add_sheet(u'利润表')
-            self.wsXjllb = self.wb.add_sheet(u'现金流量表')
-            #self.wsZycwzb = self.wb.add_sheet(u'主要财务指标')
+
+            Name = df_Code.loc[Code,'name']                     #读取股票的名称
+            print(u"-----开始读取:"+Name+"(" + Code +")")
+            self.wb = xlwt.Workbook()                           #生成新的xls文件
+            self.wsZcfzb = self.wb.add_sheet(u'资产负债表')     #填加 sheet 资产负债表
+            self.wsLrb = self.wb.add_sheet(u'利润表')           #填加 sheet 利润表
+            self.wsXjllb = self.wb.add_sheet(u'现金流量表')     #填加 sheet 现金流量表
             self.sheet =self.wsZcfzb
-            self.GetFullAcount(Code,Name)
+            self.GetFullAcount(Code,Name,type)                 #读取数据 并存储
+            print(u"-----结束读取:"+Name+"(" + Code +")")
             
-    def GetFullAcountTop(self,df_Code,Code):    
+    def GetFullAcountTop(self,df_Code,Code,type='year'):
         Name = df_Code.loc[Code,'name']
-        print(u"股票:"+Name+"(" + Code +")")
-        self.GetFullAcount(Code,Name)        
+        print(u"------开始读取:"+Name+"(" + Code +")")
+        self.GetFullAcount(Code,Name,type)  
+        print(u"------结束读取:"+Name+"(" + Code +")")      
 
 
-    def GetFullAcount(self,Code,Name):
-        
+    def GetFullAcount(self,Code,Name,type ='year'):
+        '''
+        按年度或者报告季读取报表
+        code：股票代码
+        name: 股票名称
+        type: year -按年度读取 ,其他 按报告季节
+        '''
         self.sheet = self.wsZcfzb
         #资产负债表
+        if type=='year':
+            nType ='?type=year'
+        else:
+            nType=''
         
-        Url1 = 'http://quotes.money.163.com/f10/zcfzb_'+Code+'.html?type=year'
+        Url1 = 'http://quotes.money.163.com/f10/zcfzb_'+Code+'.html%s'%(nType) #资产负债表
         self.GetZcfzb(Url1,Code)
-        #wb.save('Get3Data1.xls')
 
         self.sheet = self.wsLrb
-        Url1 = 'http://quotes.money.163.com/f10/lrb_'+Code+'.html?type=year'
+        Url1 = 'http://quotes.money.163.com/f10/lrb_'+Code+'.html%s'%(nType) #利润表
         self.GetZcfzb(Url1,Code)
-        #wb.save('Get3Data1.xls')
+
         self.sheet = self.wsXjllb
-        Url1 = 'http://quotes.money.163.com/f10/xjllb_'+Code+'.html?type=year'
+        Url1 = 'http://quotes.money.163.com/f10/xjllb_'+Code+'.html%s'%(nType) #现金流量表
         self.GetZcfzb(Url1,Code)
-        # self.sheet = self.wsZycwzb
-        # Url1 = 'http://quotes.money.163.com/f10/zycwzb_'+Code+'.html?type=year'
-        # self.GetZcfzb(Url1,Code)
+
         if len(self.filename)<=0:
             self.wb.save(self.destPath+Name+'('+Code+').xls')
         else:
@@ -301,15 +356,11 @@ class CollectFrom163:
         self.wb.save(self.destPath +prefix +Code+'.xls')
 
     def get_industry_classified(self,classify,count):
+        print("------开始读取行业%s"%(classify))
         ddf =ts.get_industry_classified()
         ddf1 =ddf.copy()
         a =ddf1[ddf1['c_name'].isin([classify])] 
         headyear =0
-        # self.wb = xlwt.Workbook()
-        # self.wsZcfzb = self.wb.add_sheet(u'资产负债表')
-        # self.wsLrb = self.wb.add_sheet(u'利润表')
-        # self.wsXjllb = self.wb.add_sheet(u'现金流量表')
-        # self.sheet =self.wsZcfzb      
 
         if (len(self.item)==0 or self.item =='1'):
             self.sheet = self.wsZcfzb             
@@ -323,7 +374,7 @@ class CollectFrom163:
         for ind in a.index:
             Code =a.loc[ind,"code"]
             Name =a.loc[ind,"name"]
-            print("Stock="+Name+"("+Code+")")
+            print("------开始读取 Stock="+Name+"("+Code+")")
 
             self.sheet.write(count, 0, Code)
             self.sheet.write(count, 1, Name)        
@@ -342,10 +393,11 @@ class CollectFrom163:
             
             LenCell1 = self.Get_3_Cell(Url1,Code,count,headyear)
             headyear =1
+            print("------结束读取 Stock="+Name+"("+Code+")")
             count =count+1
   
         self.wb.save(self.destPath+prefix+'['+classify+'('+ self.text+')].xls')    
-        
+        print("------结束读取行业%s"%(classify))
         # self.GetData(ddf,0)
     def parse_data(self,urldata):
         '''
@@ -363,13 +415,13 @@ class CollectFrom163:
             i += 1
             if i%22 ==0 and i>0:
                 line = ",".join(arr)
-                stock = Stock(line)
+                stock = StockAccountBaseInfo(line)
                 stocks.append(stock)
                 arr = []
         return stocks
 
 
-    def get_stock(self,stock_code):
+    def getStockBaseInfo(self,stock_code):
         '''
         '''
         headers = {'User-Agent':'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6'}
@@ -385,7 +437,7 @@ class CollectFrom163:
             code - stock code like '000651'
             fileName - xls name like 'test.xls'
         '''
-        stocks = self.get_stock(code)
+        stocks = self.getStockBaseInfo(code)
         ret =[]
         for stock in stocks:
             ret.append(stock.getSeries())
@@ -441,6 +493,7 @@ class CollectFrom163:
                 毛利润率=毛利润/总收入<30%(优秀企业)
         '''
         #read xls 
+        print('---------开始读取 %s(%s)'%(srcFile,'资产负债表'))
         zcfzb =pd.read_excel(srcFile,'资产负债表')
         zcfzb.set_index('报告日期', inplace=True)
         cols =zcfzb.columns.values.tolist()
@@ -450,8 +503,9 @@ class CollectFrom163:
             # zcfzb[col] = zcfzb[col].str.replace('','0')
         zcfzb =zcfzb.apply(lambda col:pd.to_numeric(col, errors='coerce'))
         zcfzb.fillna(0,inplace=True)
-
+        print('---------结束读取 %s(%s)'%(srcFile,'资产负债表'))
         # 
+        print('---------开始读取 %s(%s)'%(srcFile,'利润表'))
         lrb =pd.read_excel(srcFile,'利润表')
         lrb.set_index('报告日期', inplace=True)
         cols =lrb.columns.values.tolist()
@@ -460,8 +514,9 @@ class CollectFrom163:
             lrb[col] = lrb[col].str.replace('--','')
         lrb =lrb.apply(lambda col:pd.to_numeric(col, errors='coerce'))
         lrb.fillna(0,inplace=True)
-
+        print('---------结束读取 %s(%s)'%(srcFile,'利润表'))
         #
+        print('---------开始读取 %s(%s)'%(srcFile,'现金流量表'))
         xjllb =pd.read_excel(srcFile,'现金流量表')
         xjllb.set_index('报告日期', inplace=True)
         cols =xjllb.columns.values.tolist()
@@ -470,8 +525,9 @@ class CollectFrom163:
             xjllb[col] = xjllb[col].str.replace('--','')
         xjllb =xjllb.apply(lambda col:pd.to_numeric(col, errors='coerce'))
         xjllb.fillna(0,inplace=True)
- 
+        print('---------结束读取 %s(%s)'%(srcFile,'现金流量表'))
         # self.addXlsSheet('002271.xls','result')
+        print('---------开始计算三表数据 -------')
         #偿债能力
         fz0 =zcfzb.loc['货币资金(万元)']+zcfzb.loc['应收账款(万元)']+zcfzb.loc['应收票据(万元)'] -zcfzb.loc['流动负债合计(万元)']
         fz1 =zcfzb.loc['货币资金(万元)']-zcfzb.loc['流动负债合计(万元)']
@@ -545,12 +601,19 @@ class CollectFrom163:
         ROE =lrb.loc['净利润(万元)']/zcfzb.loc['所有者权益(或股东权益)合计(万元)']
         ROA =lrb.loc['净利润(万元)']/zcfzb.loc['资产总计(万元)']
         zb =pd.DataFrame([zbfzl,ldbl,sdbl,mll,jll,ROE,ROA],['资产负债率','流动比率','速动比率','毛利率','净利率','ROE','ROA'])
+        print('---------结束计算三表数据 -------')
         #    
         write = pd.ExcelWriter(outFile)
+        #基本指标(元)
+        print('---------开始读取网站 %s[基本指标(元)] -------'%(code))
         jbxx =self.getStockBaseAccount(code)
+        print('---------结束读取网站 %s[基本指标(元)] -------'%(code))
+        print('---------开始读取网站 %s[杜邦分析]     -------'%(code))
         dbfx =self.getDbfxFrom163(code)
+        print('---------结束读取网站 %s[杜邦分析]     -------'%(code))
+        print('---------开始读取网站 %s[行业分析]     -------'%(code))
         item,hyfx =self.getHydbFrom163(code)
-
+        print('---------结束读取网站 %s[行业分析]     -------'%(code))
         jbxx.to_excel(write,sheet_name='基本指标(元)',index=True)
         dbfx.to_excel(write,sheet_name='杜邦分析',index=True)
         i =0
@@ -580,15 +643,16 @@ class CollectFrom163:
             return
         soup = BeautifulSoup(content,features="lxml")
 
-        #行业对比
+        #获取行业比对 标题
         itemAll = soup.findAll("h2",{"class":"title_01"})
         i =0
         retItem =[]
         while i < len(itemAll):
             retItem.append(itemAll[i].text)
             i =i+1
+        ##获取行业比对 的所有表格
         tableAll = soup.findAll("table",{"class":"table_bg001 border_box table_sortable"})
-        print(len(tableAll))
+        # print(len(tableAll))
         i =0
         retDf =[]
         while i < len(tableAll):
@@ -597,34 +661,30 @@ class CollectFrom163:
             colName =[]
             dataContent =[]
             for row in table0.findAll("tr"):
-                
-                
-                cells = row.findAll("th") 
+                cells = row.findAll("th") #获取表格标题
                 if(len(cells)>0):
                     j=0
-                    
                     while j <len(cells):
                         colName.append(cells[j].text)
                         j =j+1
                     # print(colName)
                 else:
-                    cells = row.findAll("td") 
+                    cells = row.findAll("td") #获取表格内容
                     j=0
                     dfContent =[]
                     while j <len(cells):
                         # print(cells[j].text)
                         dfContent.append(cells[j].text)
                         j =j+1
-                    # tempt_df =pd.DataFrame(dfContent,columns=colName)
-                    # oneDf.append(tempt_df,ignore_index=True)
+
                     dataContent.append(dfContent)
-                    # print(dfContent)
+                   
             oneDf =pd.DataFrame(dataContent,columns=colName)
             
-            # print(oneDf)
+           
             retDf.append(oneDf)
             i= i+1
-        return retItem,retDf
+        return retItem,retDf #返回表格类别名称 和数据
 
     def urlOpenContent(self,urlBase,urlfix):
         '''
@@ -652,14 +712,14 @@ class CollectFrom163:
         # url_dbfx =url_dbfx_base%('000651')
         content =self.urlOpenContent(url_dbfx_base,'000651')
         soup = BeautifulSoup(content,features="lxml")
-        optionAll = soup.findAll("select",{"class":"select01"}) 
-        tableAllItem = soup.findAll("td",{"class":"dbbg01"})
+        optionAll = soup.findAll("select",{"class":"select01"})  #获取所有日期
+        tableAllItem = soup.findAll("td",{"class":"dbbg01"}) #获取所有的项目名称
         i=0
         item =[]
         while i<len(tableAllItem):
             item.append(tableAllItem[i].text)
             i = i+1
-        dfRet =pd.DataFrame(columns=item)
+        dfRet =pd.DataFrame(columns=item) #根据项目名称生成列名字
         urlOptionBase ="http://quotes.money.163.com/f10/dbfx_000651.html?date=%s#01c08"
         k =0
         while k <len(optionAll[0].contents):
@@ -669,7 +729,7 @@ class CollectFrom163:
                 # urlOption =urlOptionBase%optionValue
                 content =self.urlOpenContent(urlOptionBase,optionValue)
                 soup = BeautifulSoup(content,features="lxml")
-                tableAllValue = soup.findAll("td",{"class":"dbbg02"})
+                tableAllValue = soup.findAll("td",{"class":"dbbg02"})#读取每年度的数据
                 dataRow =[]
                 indexJ =0
                 while indexJ < len(tableAllValue):
@@ -677,15 +737,19 @@ class CollectFrom163:
                     indexJ =indexJ+1
                 dfRet.loc[optionValue]=dataRow
             k = k+1
-        print(dfRet)
+        
         return dfRet
 
     def CaculateAssest(self,filePath=None):
         '''
+        股票代码从文件中读取 文件的名字(在括号之间读取股票代码),例如：
+                                  test_长安汽车(000625).xls
+                                  
+        分析结果生成新的文件名字,例如：Atest_长安汽车(000625).xls
         '''
         if filePath is None:
             filePath =self.destPath
-        pathDir =  os.listdir(filePath)
+        pathDir =  os.listdir(filePath) #从目录中读取文件名字
         codeList =[]
         fnameList =[]
         for allDir in pathDir:
@@ -693,7 +757,7 @@ class CollectFrom163:
             if os.path.isfile(child):
                 child =child[child.rfind("\\")+1:]
                 if(child.rfind(")")>0):
-                    name = child[child.rfind("(")+1:child.rfind(")")]
+                    name = child[child.rfind("(")+1:child.rfind(")")]#查找位于股票直接的代码
                     if(len(name)>0):
                         codeList.append(name)
                         fnameList.append(child)
@@ -701,18 +765,15 @@ class CollectFrom163:
                     continue
         
         for code,name in zip(codeList,fnameList):
-            print("read from %s,write to %s"%(filePath +name,filePath+"\\"+'A'+name))
-            # if os.path.exists(filePath+"\\"+'A'+name):
-            #     pass
-            # else:
-                # self.StockValueAssess(code,filePath +name,filePath+"\\"+'A'+name)
+            print("read from %s,write to %s"%(filePath +name,filePath+"\\"+'A'+name))#分析结果的名字 
             self.StockValueAssess(code,filePath +name,filePath+"\\"+'A'+name)
 
 
 #主函数 
 
 if __name__ == '__main__':
-    Test =CollectFrom163()    
+    Test =CollectFrom163()  
+    Test.CaculateAssest()  
     # Test.Set_Stock_fName("test") 
     # Test.Set_Stock_Item("3")
     # Test.Set_Stock_Text("现金及现金等价物净增加额(万元)")
@@ -724,7 +785,7 @@ if __name__ == '__main__':
     # Test.get_industry_classified('家电行业',1)
 
 
-    # stocks = Test.get_stock("002122")
+    # stocks = Test.getStockBaseInfo("002122")
     # Test.getStockBaseAccount("000651")
     # Test.StockValueAssess('000651','000651.xls','A000651.xls')
     # Test.getDbfxFrom163('002122')

@@ -31,7 +31,7 @@ def MainOpt():
             print("-t accountItem [set accout item]")                                           #财务的项目
             print("-d industry    [set industry item]")                                         #行业类别
             print("-p analyst     [get index of account]")                                      #分析财务数据
-            print("-j report      [if with this parameter,read year report ]")               #指定按年还是按报告季度
+            print("-y report      [if with this parameter,read year report ]")               #指定按年还是按报告季度
             print("for example:")
             print("      python main.py -a a")
             print("      python main.py -c 000625 -f QuarterReport")

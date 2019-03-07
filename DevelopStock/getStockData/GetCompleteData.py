@@ -132,11 +132,14 @@ class CollectFrom163:
         if os.path.exists("stockListAccount.xls") is True:     #判断文件 stockList.xls 是否存在,如果存在 则从文件中读取
             print("------开始读取stockListAccount股票信息")
             self.df =pd.read_excel('stockListAccount.xls',dtype={'code':'str'})
+            self.df =self.df.sort_values(by=['code'])
             self.df =self.df.set_index('code')
+            
             print("------结束读取stockListAccount.xls股票信息")
         else:
             print("------开始读取网上股票信息")
             self.df = ts.get_stock_basics()             #不存在则从网上读取
+            self.df =self.df.sort_values(by=['code'])
             write = pd.ExcelWriter('stockListAccount.xls')     #存储到文件  stockList.xls  
             self.df.to_excel(write,index=True)
             write.save()
@@ -231,7 +234,7 @@ class CollectFrom163:
                 if cells[0].text.find(self.text)>=0:
                     position = j
                     #print position
-                    break;
+                    break
                 
         #然后到第二张表中去抓对应位置的数据。
         lencell=0
@@ -269,17 +272,28 @@ class CollectFrom163:
         读取所有股票的数据 
         df_code 是存储股票的
         '''
+        count =1
         for Code in df_Code.index:
 
             Name = df_Code.loc[Code,'name']                     #读取股票的名称
-            print(u"-----开始读取:"+Name+"(" + Code +")")
+
+            if len(self.filename)<=0:
+                fn =(self.destPath+Name+'('+Code+').xls')
+            else:
+                fn =(self.destPath+self.filename+'_'+Name+'('+Code+').xls')
+            if os.path.isfile(fn):
+                print("-----%s:%s 已经存在"%(count,fn))
+                count =count+1
+                continue
+            print(u"-----%s:开始读取:"%(count)+Name+"(" + Code +")")
             self.wb = xlwt.Workbook()                           #生成新的xls文件
             self.wsZcfzb = self.wb.add_sheet(u'资产负债表')     #填加 sheet 资产负债表
             self.wsLrb = self.wb.add_sheet(u'利润表')           #填加 sheet 利润表
             self.wsXjllb = self.wb.add_sheet(u'现金流量表')     #填加 sheet 现金流量表
             self.sheet =self.wsZcfzb
             self.GetFullAcount(Code,Name,type)                 #读取数据 并存储
-            print(u"-----结束读取:"+Name+"(" + Code +")")
+            print(u"-----%s:结束读取:"%(count)+Name+"(" + Code +")")
+            count =count +1
             
     def GetFullAcountTop(self,df_Code,Code,type='year'):
         Name = df_Code.loc[Code,'name']
@@ -312,7 +326,7 @@ class CollectFrom163:
         self.sheet = self.wsXjllb
         Url1 = 'http://quotes.money.163.com/f10/xjllb_'+Code+'.html%s'%(nType) #现金流量表
         self.GetZcfzb(Url1,Code)
-
+        Name =Name.replace('*', '')
         if len(self.filename)<=0:
             self.wb.save(self.destPath+Name+'('+Code+').xls')
         else:
@@ -431,6 +445,7 @@ class CollectFrom163:
         data = data.replace("&nbsp;", "-")
         stock = self.parse_data(data)
         return stock
+
     def getStockBaseAccount(self,code):
         '''
         paramter :
@@ -494,7 +509,7 @@ class CollectFrom163:
         '''
         #read xls 
         print('---------开始读取 %s(%s)'%(srcFile,'资产负债表'))
-        zcfzb =pd.read_excel(srcFile,'资产负债表')
+        zcfzb =pd.read_excel(srcFile,'资产负债表',dtype='str')
         zcfzb.set_index('报告日期', inplace=True)
         cols =zcfzb.columns.values.tolist()
         for col in cols:
@@ -506,7 +521,7 @@ class CollectFrom163:
         print('---------结束读取 %s(%s)'%(srcFile,'资产负债表'))
         # 
         print('---------开始读取 %s(%s)'%(srcFile,'利润表'))
-        lrb =pd.read_excel(srcFile,'利润表')
+        lrb =pd.read_excel(srcFile,'利润表',dtype='str')
         lrb.set_index('报告日期', inplace=True)
         cols =lrb.columns.values.tolist()
         for col in cols:
@@ -517,7 +532,7 @@ class CollectFrom163:
         print('---------结束读取 %s(%s)'%(srcFile,'利润表'))
         #
         print('---------开始读取 %s(%s)'%(srcFile,'现金流量表'))
-        xjllb =pd.read_excel(srcFile,'现金流量表')
+        xjllb =pd.read_excel(srcFile,'现金流量表',dtype='str')
         xjllb.set_index('报告日期', inplace=True)
         cols =xjllb.columns.values.tolist()
         for col in cols:
@@ -743,9 +758,9 @@ class CollectFrom163:
     def CaculateAssest(self,filePath=None):
         '''
         股票代码从文件中读取 文件的名字(在括号之间读取股票代码),例如：
-                                  test_长安汽车(000625).xls
+                                  YearReport_长安汽车(000625).xls
                                   
-        分析结果生成新的文件名字,例如：Atest_长安汽车(000625).xls
+        分析结果生成新的文件名字,例如：AOf_YearReport_长安汽车(000625).xls
         '''
         if filePath is None:
             filePath =self.destPath
@@ -755,7 +770,10 @@ class CollectFrom163:
         for allDir in pathDir:
             child = os.path.join('%s\%s' % (filePath, allDir))
             if os.path.isfile(child):
+                
                 child =child[child.rfind("\\")+1:]
+                if(child.find('AOf')>=0):
+                    continue
                 if(child.rfind(")")>0):
                     name = child[child.rfind("(")+1:child.rfind(")")]#查找位于股票直接的代码
                     if(len(name)>0):
@@ -765,13 +783,15 @@ class CollectFrom163:
                     continue
         
         for code,name in zip(codeList,fnameList):
-            print("read from %s,write to %s"%(filePath +name,filePath+"\\"+'A'+name))#分析结果的名字 
-            self.StockValueAssess(code,filePath +name,filePath+"\\"+'A'+name)
+            print("read from %s,write to %s"%(filePath +name,filePath+"\\"+'AOf_'+name))#分析结果的名字 
+            self.StockValueAssess(code,filePath +name,filePath+"\\"+'AOf_'+name)
 
 
 #主函数 
 
 if __name__ == '__main__':
+    a = pd.Series(['42','42','0','267','1','1','218','46','-225','3','-222','-2','-222','-222','0','-0','-0.01','-0.01'])
+    b =a.str.replace(',','')
     Test =CollectFrom163()  
     Test.CaculateAssest()  
     # Test.Set_Stock_fName("test") 

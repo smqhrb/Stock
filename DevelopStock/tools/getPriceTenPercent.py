@@ -121,7 +121,7 @@ class stockUpTenPercent:
             # stock_data=ts.get_k_data(Code,start=startDay,end=endDay)#读取股票数据
             stock_data=ts.get_k_data(Code)
             # 将数据按照交易日期从远到近排序
-            stock_data.sort('date', inplace=True)
+            stock_data.sort_values('date', inplace=True)
             # ========== DIF DEA MACD
             nDif,nDea,nMacd =self.calcMacd(stock_data)
             stock_data['DIF'] =nDif
@@ -132,20 +132,21 @@ class stockUpTenPercent:
             ma_list = [5, 10,20,31,60,120]
             # 计算简单算术移动平均线MA - 注意：stock_data['close']为股票每天的收盘价
             for ma in ma_list:
-                stock_data['MA_' + str(ma)] = pd.rolling_mean(stock_data['close'], ma)
+                stock_data['MA_' + str(ma)] = stock_data['close'].rolling(ma).mean()
             # 计算指数平滑移动平均线EMA
             for ma in ma_list:
-                stock_data['EMA_' + str(ma)] = pd.ewma(stock_data['close'], span=ma)
+                stock_data['EMA_' + str(ma)] = stock_data['close'].ewm(span=ma).mean() 
             #(ma20, ma31, ma60)(ma31,ma60,ma120) 三线粘合值
             stock_data['Glue20-31-60']= stock_data['MA_20'] -stock_data['MA_31'] -stock_data['MA_60']
             stock_data['Glue31-60-120']= stock_data['MA_31'] -stock_data['MA_60'] -stock_data['MA_120']
             #
             write = pd.ExcelWriter(Code+"("+Name+").xls")
             # 将数据按照交易日期从近到远排序
-            stock_data.sort('date', ascending=False, inplace=True)
+            stock_data.sort_values('date', ascending=False, inplace=True)
             # ========== 将算好的数据输出到csv文件 - 注意：这里请填写输出文件在您电脑中的路径
             stock_data.to_excel(write,sheet_name=Code,index=True)
             write.save()
+            break
 
         def calcMacd(self,data,fast_period=12,slow_period=26,signal_period=9): 
             # data['close'] -- 收盘价 

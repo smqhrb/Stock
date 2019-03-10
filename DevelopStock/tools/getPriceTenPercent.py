@@ -71,7 +71,46 @@ class stockUpTenPercent:
             content = urllib2.urlopen(req).read()
         except:
             return 
-        return content   
+        return content
+
+    def getStockGb(self,code):
+        '''
+        获取流动股本信息
+        '''
+        # stockGbbd ='http://vip.stock.finance.sina.com.cn/corp/go.php/vCI_StockStructure/stockid/000001.phtml'#股本变动
+        stockGbbd ='http://vip.stock.finance.sina.com.cn/corp/go.php/vCI_StockStructure/stockid/%s.phtml'#股本变动
+        content =self.urlOpenContent(stockGbbd,code)
+        soup = BeautifulSoup(content,features="lxml")
+        div = soup.find("div",{"class":"tagmain"})
+        tableAll =div.findAll('table')
+        i =0
+        df =pd.DataFrame()
+        data =[]
+        dateL =[]
+        sc =[]
+        while(i<len(tableAll)):
+            tbody =tableAll[i].find('tbody')
+            tr =tbody.findAll('tr')
+            date =tr[0].findAll('td')#日期
+            stockCount =tr[6].findAll('td')#股数
+            j =1
+            while(j<len(date)):
+                dateL.append(date[j].text)
+                sc.append(stockCount[j].text.replace(' 万股',''))
+                j =j+1
+            i =i+1
+        data.append(dateL)
+        data.append(sc)
+        df =pd.DataFrame(data) 
+        df =df.T
+        df =pd.DataFrame(df,columns=['date','stockCount']) #日期 ,流通股本
+        return df
+
+
+
+
+        
+
     def stock_hs_up(self,rcDay =40):
         '''
         换手率 成交量 流通市值 量比 涨跌幅,
@@ -122,6 +161,10 @@ class stockUpTenPercent:
             stock_data=ts.get_k_data(Code)
             # 将数据按照交易日期从远到近排序
             stock_data.sort_values('date', inplace=True)
+            #volumn ratio 量比
+            stock_data['vol ratio'] =stock_data['volume']/stock_data['v_ma5']
+            # stock_data[换手率]=
+            # stock_data[流通市值]=
             # ========== DIF DEA MACD
             nDif,nDea,nMacd =self.calcMacd(stock_data)
             stock_data['DIF'] =nDif
@@ -139,6 +182,7 @@ class stockUpTenPercent:
             #(ma20, ma31, ma60)(ma31,ma60,ma120) 三线粘合值
             stock_data['Glue20-31-60']= stock_data['MA_20'] -stock_data['MA_31'] -stock_data['MA_60']
             stock_data['Glue31-60-120']= stock_data['MA_31'] -stock_data['MA_60'] -stock_data['MA_120']
+
             #
             write = pd.ExcelWriter(Code+"("+Name+").xls")
             # 将数据按照交易日期从近到远排序
@@ -148,20 +192,21 @@ class stockUpTenPercent:
             write.save()
             break
 
-        def calcMacd(self,data,fast_period=12,slow_period=26,signal_period=9): 
-            # data['close'] -- 收盘价 
-            # 收盘价按照日期升序( data['date'] )排列 
-            # 返回值都是 Series 
-            fast_ewm=data['close'].ewm(span=fast_period).mean() 
-            slow_ewm=data['close'].ewm(span=slow_period).mean() 
-            dif=fast_ewm-slow_ewm 
-            dea=dif.ewm(span=signal_period).mean() 
-            # 一般概念里，macd柱是 (dif-dea)*2，实际上只是为了扩大显示效果 
-            # # 实测后发现，也可以不乘以2，效果也足够清楚了 
-            macd=(dif-dea)*2 
-            # 将bar 分成红绿柱分别导出数据， 
-            return dif,dea,macd
+    def calcMacd(self,data,fast_period=12,slow_period=26,signal_period=9): 
+        # data['close'] -- 收盘价 
+        # 收盘价按照日期升序( data['date'] )排列 
+        # 返回值都是 Series 
+        fast_ewm=data['close'].ewm(span=fast_period).mean() 
+        slow_ewm=data['close'].ewm(span=slow_period).mean() 
+        dif=fast_ewm-slow_ewm 
+        dea=dif.ewm(span=signal_period).mean() 
+        # 一般概念里，macd柱是 (dif-dea)*2，实际上只是为了扩大显示效果 
+        # # 实测后发现，也可以不乘以2，效果也足够清楚了 
+        macd=(dif-dea)*2 
+        # 将bar 分成红绿柱分别导出数据， 
+        return dif,dea,macd
 if __name__ == '__main__':
     Test =stockUpTenPercent()
-    Test.stock_hs_up()
+    Test.getStockGb('000651')
+    # Test.stock_hs_up()
 

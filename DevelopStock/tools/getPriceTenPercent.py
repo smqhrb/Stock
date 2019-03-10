@@ -15,7 +15,6 @@ from urllib.request import urlopen
 import json
 from datetime import timedelta
 
-stockHsUp ="http://vip.stock.finance.sina.com.cn/quotes_service/api/json_v2.php/Market_Center.getHQNodeData?page=%s&num=40&sort=changepercent&asc=0&node=hs_a&symbol=&_s_r_a=auto"
 class stockUpTenPercent:
     '''
     目标:近40天涨停全部股票 按文件单独存储到xls文件中
@@ -93,24 +92,40 @@ class stockUpTenPercent:
             j =1
             while(j<len(date)):
                 dateL.append(date[j].text)
-                sc.append(stockCount[j].text.replace(' 万股',''))
+                stCC =stockCount[j].text.replace(' 万股','')
+                stCC =stCC.replace('--','0')
+                sc.append(stCC)
                 j =j+1
             i =i+1
+
         arr =np.array(sc)
         float_arr = arr.astype(np.float64)
 
         data={"date":dateL,'stockCnt':float_arr}
         df =pd.DataFrame(data) 
         df.sort_values('date', inplace=True)
-        # print(df)
-        # df.loc[df.date>'1998-06-02',['close']]=1
+
         return df
+
     def stock_hs_up(self,rcDay =40):
         '''
         换手率 成交量 流通市值 量比 涨跌幅,
         ma5 ma10 ma20 ma31 ma60 ma120 dif dea macd
         (ma20, ma31, ma60)(ma31,ma60,ma120) 三线粘合值
         m5斜率 m10斜率 m20斜率 m31斜率 m60斜率 m120斜率
+
+        [date open	close	high	low	volume	code	exchange	FlowOfEquity	v_ma5	QRR	turnover	
+        amount	
+        DIF	DEA	MACD	
+        MA_5	MA_10	MA_20	MA_31	MA_60	MA_120	
+        EMA_5	EMA_10	EMA_20  EMA_31	EMA_60	EMA_120	
+        Glue20-31-60	Glue31-60-120]
+
+        exchange:涨幅(%)
+        FlowOfEquity :流动股本(万股)
+        QRR:量比
+        turnover:换手率
+        amount:流通市值
         '''
 
         now_time = datetime.datetime.now()#现在
@@ -122,32 +137,39 @@ class stockUpTenPercent:
         codeCntTop40 =0
         for Code in df_Code.index:
             Name =df_Code.loc[Code,'name']
+            industry =df_Code.loc[Code,'industry']
+            area =df_Code.loc[Code,'area']
+            pathName = "%s%s(%s_%s_%s).xls"%(self.destPath,Code,Name,industry,area)
+
             # stock_data=ts.get_k_data(Code,start=startDay,end=endDay)#读取股票数据
             stock_data=ts.get_k_data(Code)
             # 将数据按照交易日期从远到近排序
             stock_data.sort_values('date', inplace=True)
             #判定是否在最近40天
-            stock_data['pt_change'] =(stock_data['close']-stock_data['close'].shift(1))/stock_data['close'].shift(1)
-            check40 =stock_data[-40:]
+            stock_data['exchange'] =(stock_data['close']-stock_data['close'].shift(1))/stock_data['close'].shift(1)
+            check40 =stock_data[0-rcDay:]
             ZT =0.098 #涨停阈值
             
-            check40T =check40.loc[check40.pt_change>ZT]
+            check40T =check40.loc[check40.exchange>ZT]
             if(len(check40T)==0):
                 continue
             codeCntTop40 =codeCntTop40+1
+            if os.path.isfile(pathName):
+                print("-----%s:%s 已经存在"%(codeCntTop40,pathName))
+                continue
             print('------%s 正在读取近40天涨停的股票之一 :%s(%s)------'%(codeCntTop40,Code,Name))
             stockCountB =self.getStockGb(Code)#流动股本
             loop =0
-            stock_data['gb'] =0
+            stock_data['FlowOfEquity'] =0
             while loop<len(stockCountB):
-                stock_data.loc[stock_data.date>stockCountB['date'].iloc[loop],['gb']]=stockCountB['stockCnt'].iloc[loop]
+                stock_data.loc[stock_data.date>=stockCountB['date'].iloc[loop],['FlowOfEquity']]=stockCountB['stockCnt'].iloc[loop]
                 loop =loop+1
             
             #volumn ratio 量比
             stock_data['v_ma5'] =stock_data['volume'].rolling(5).mean()
-            stock_data['vol ratio'] =stock_data['volume']/stock_data['v_ma5']
-            stock_data['changeRatio']= stock_data['volume']/stock_data['gb']#换手率
-            stock_data['amount']=stock_data['close']*stock_data['gb']#流通市值
+            stock_data['QRR'] =stock_data['volume']/stock_data['v_ma5']#量比
+            stock_data['turnover']= stock_data['volume']/stock_data['FlowOfEquity']#换手率
+            stock_data['amount']=stock_data['close']*stock_data['FlowOfEquity']#流通市值
             # ========== DIF DEA MACD
             nDif,nDea,nMacd =self.calcMacd(stock_data)
             stock_data['DIF'] =nDif
@@ -163,19 +185,25 @@ class stockUpTenPercent:
             for ma in ma_list:
                 stock_data['EMA_' + str(ma)] = stock_data['close'].ewm(span=ma).mean() 
             #(ma20, ma31, ma60)(ma31,ma60,ma120) 三线粘合值
-            stock_data['Glue20-31-60']= stock_data['MA_20'] -2*stock_data['MA_31'] +stock_data['MA_60']
-            stock_data['Glue31-60-120']= stock_data['MA_31'] -2*stock_data['MA_60'] +stock_data['MA_120']
+            stock_data['Glue20-31-60'] =0
+            stock_data.loc[np.abs(stock_data['MA_20'] -2*stock_data['MA_31'] +stock_data['MA_60'])<0.05,['Glue20-31-60']]=1
+            stock_data['Glue20-31-60'] =stock_data['Glue20-31-60']*stock_data['MA_20']
+            stock_data['Glue31-60-120'] =0
+            stock_data.loc[np.abs(stock_data['MA_31'] -2*stock_data['MA_60'] +stock_data['MA_120'])<0.05,['Glue31-60-120']]=1
+            stock_data['Glue31-60-120'] =stock_data['Glue31-60-120']*stock_data['MA_31']
+            # stock_data['Glue20-31-60']= np.abs(stock_data['MA_20'] -2*stock_data['MA_31'] +stock_data['MA_60'])<0.05
+            # stock_data['Glue31-60-120']= stock_data['MA_31'] -2*stock_data['MA_60'] +stock_data['MA_120']
             print('------%s 完成读取近40天涨停的股票之一 :%s(%s)------'%(codeCntTop40,Code,Name))
             #
-            pathName =self.destPath + Code+"("+Name+").xls"
+            
             write = pd.ExcelWriter(pathName)
             # 将数据按照交易日期从近到远排序
             stock_data.sort_values('date', ascending=False, inplace=True)
             # ========== 将算好的数据输出到csv文件 - 注意：这里请填写输出文件在您电脑中的路径
             stock_data.to_excel(write,sheet_name=Code,index=True)
             write.save()
-            print('------%s 完成读取近40天涨停的股票之一 :%s(%s) 写入%s------'%(codeCntTop40,Code,Name,pathName))
-            break
+            print('------%s 近40天涨停的股票之一 :%s(%s) 写入%s------'%(codeCntTop40,Code,Name,pathName))
+            # break
 
     def calcMacd(self,data,fast_period=12,slow_period=26,signal_period=9): 
         # data['close'] -- 收盘价 
@@ -191,8 +219,6 @@ class stockUpTenPercent:
         # 将bar 分成红绿柱分别导出数据， 
         return dif,dea,macd
 if __name__ == '__main__':
-    Test =stockUpTenPercent()
-    # dd =Test.getStockGb('000651')
-
-    Test.stock_hs_up()
+    Main =stockUpTenPercent()
+    Main.stock_hs_up()
 

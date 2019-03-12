@@ -185,14 +185,40 @@ class stockUpTenPercent:
             for ma in ma_list:
                 stock_data['EMA_' + str(ma)] = stock_data['close'].ewm(span=ma).mean() 
             #(ma20, ma31, ma60)(ma31,ma60,ma120) 三线粘合值
+            # M5:=MA(C,5);
+            # M10:=MA(C,10);
+            # M20:=MA(C,20);
+            # A:=MAX(M5,MAX(M10,M20));
+            # B:=MIN(M5,MIN(M10,M20));
+            # 三线粘合:=(A-B)/B*100
+            #N:=3;
             stock_data['Glue20-31-60'] =0
-            stock_data.loc[np.abs(stock_data['MA_20'] -2*stock_data['MA_31'] +stock_data['MA_60'])<0.05,['Glue20-31-60']]=1
-            stock_data['Glue20-31-60'] =stock_data['Glue20-31-60']*stock_data['MA_20']
+            A =stock_data[['MA_20','MA_31','MA_60']].max(axis=1)
+            B =stock_data[['MA_20','MA_31','MA_60']].min(axis=1)
+            stock_data['Glue20-31-60'] =(A-B)/B*100
             stock_data['Glue31-60-120'] =0
-            stock_data.loc[np.abs(stock_data['MA_31'] -2*stock_data['MA_60'] +stock_data['MA_120'])<0.05,['Glue31-60-120']]=1
-            stock_data['Glue31-60-120'] =stock_data['Glue31-60-120']*stock_data['MA_31']
-            # stock_data['Glue20-31-60']= np.abs(stock_data['MA_20'] -2*stock_data['MA_31'] +stock_data['MA_60'])<0.05
-            # stock_data['Glue31-60-120']= stock_data['MA_31'] -2*stock_data['MA_60'] +stock_data['MA_120']
+            A =stock_data[['MA_31','MA_60','MA_120']].max(axis=1)
+            B =stock_data[['MA_31','MA_60','MA_120']].min(axis=1)     
+            stock_data['Glue31-60-120'] =(A-B)/B*100      
+            #####
+            #  m5斜率 m10斜率 m20斜率 m31斜率 m60斜率 m120斜率
+            '''
+            MA1:=MA(CLOSE,10);
+            m10斜率:=(ATAN((MA1/REF(MA1,1)-1)*100)*180/3.14115926);
+            '''
+            (ATAN((MA1/REF(MA1,1)-1)*100)*180/3.14115926)
+            REF_MA5 =stock_data['MA5'].shift(1)
+            stock_data['Slope_M5'] =np.arctan2(((stock_data['MA5']/REF_MA5)-1)*100)*180/3.14115926
+            REF_MA10 =stock_data['MA10'].shift(1)
+            stock_data['Slope_M10'] =np.arctan2(((stock_data['MA10']/REF_MA10)-1)*100)*180/3.14115926
+            REF_MA10 =stock_data['MA20'].shift(1)
+            stock_data['Slope_M20'] =np.arctan2(((stock_data['MA20']/REF_MA20)-1)*100)*180/3.14115926
+            REF_MA31 =stock_data['MA31'].shift(1)
+            stock_data['Slope_M31'] =np.arctan2(((stock_data['MA31']/REF_MA31)-1)*100)*180/3.14115926
+            REF_MA10 =stock_data['MA60'].shift(1)
+            stock_data['Slope_M60'] =np.arctan2(((stock_data['MA60']/REF_MA60)-1)*100)*180/3.14115926
+            REF_MA10 =stock_data['MA120'].shift(1)
+            stock_data['Slope_M120'] =np.arctan2(((stock_data['MA5']/REF_MA5)-1)*100)*180/3.14115926
             print('------%s 完成读取近40天涨停的股票之一 :%s(%s)------'%(codeCntTop40,Code,Name))
             #
             
@@ -204,7 +230,21 @@ class stockUpTenPercent:
             write.save()
             print('------%s 近40天涨停的股票之一 :%s(%s) 写入%s------'%(codeCntTop40,Code,Name,pathName))
             # break
+    def glue3K(self,df):
+        '''
+        三线粘合
+            
+        M5:=MA(C,5);
+        M10:=MA(C,10);
+        M20:=MA(C,20);
+        A:=MAX(M5,MAX(M10,M20));
+        B:=MIN(M5,MIN(M10,M20));
+        三线粘合:=LLV((A-B)/B*100<N,3) AND M5>REF(M5,1);
+        REF代表过去的意思，用法是：REF(X,A),引用A周期前的X值例如：REF(CLOSE,1)表示上一周期的收盘价，在日线上就是昨收。
+        '''
+       
 
+ 
     def calcMacd(self,data,fast_period=12,slow_period=26,signal_period=9): 
         # data['close'] -- 收盘价 
         # 收盘价按照日期升序( data['date'] )排列 

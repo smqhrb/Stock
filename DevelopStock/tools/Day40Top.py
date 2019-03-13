@@ -202,23 +202,13 @@ class stockUpTenPercent:
             stock_data['Glue31-60-120'] =(A-B)/B*100      
             #####
             #  m5斜率 m10斜率 m20斜率 m31斜率 m60斜率 m120斜率
-            '''
-            MA1:=MA(CLOSE,10);
-            m10斜率:=(ATAN((MA1/REF(MA1,1)-1)*100)*180/3.14115926);
-            '''
-            (ATAN((MA1/REF(MA1,1)-1)*100)*180/3.14115926)
-            REF_MA5 =stock_data['MA5'].shift(1)
-            stock_data['Slope_M5'] =np.arctan2(((stock_data['MA5']/REF_MA5)-1)*100)*180/3.14115926
-            REF_MA10 =stock_data['MA10'].shift(1)
-            stock_data['Slope_M10'] =np.arctan2(((stock_data['MA10']/REF_MA10)-1)*100)*180/3.14115926
-            REF_MA10 =stock_data['MA20'].shift(1)
-            stock_data['Slope_M20'] =np.arctan2(((stock_data['MA20']/REF_MA20)-1)*100)*180/3.14115926
-            REF_MA31 =stock_data['MA31'].shift(1)
-            stock_data['Slope_M31'] =np.arctan2(((stock_data['MA31']/REF_MA31)-1)*100)*180/3.14115926
-            REF_MA10 =stock_data['MA60'].shift(1)
-            stock_data['Slope_M60'] =np.arctan2(((stock_data['MA60']/REF_MA60)-1)*100)*180/3.14115926
-            REF_MA10 =stock_data['MA120'].shift(1)
-            stock_data['Slope_M120'] =np.arctan2(((stock_data['MA5']/REF_MA5)-1)*100)*180/3.14115926
+
+            stock_data['Slope_M5'] =self.ma_slope(stock_data['MA_5'])#np.arctan2(((stock_data['MA5']/REF_MA5)-1)*100)*180/3.14115926
+            stock_data['Slope_M10'] =self.ma_slope(stock_data['MA_10'])#np.arctan2(((stock_data['MA10']/REF_MA10)-1)*100)*180/3.14115926
+            stock_data['Slope_M20'] =self.ma_slope(stock_data['MA_20'])#np.arctan2(((stock_data['MA20']/REF_MA20)-1)*100)*180/3.14115926
+            stock_data['Slope_M31'] =self.ma_slope(stock_data['MA_31'])#np.arctan2(((stock_data['MA31']/REF_MA31)-1)*100)*180/3.14115926
+            stock_data['Slope_M60'] =self.ma_slope(stock_data['MA_60'])#np.arctan2(((stock_data['MA60']/REF_MA60)-1)*100)*180/3.14115926
+            stock_data['Slope_M120'] =self.ma_slope(stock_data['MA_120'])#np.arctan2(((stock_data['MA5']/REF_MA5)-1)*100)*180/3.14115926
             print('------%s 完成读取近40天涨停的股票之一 :%s(%s)------'%(codeCntTop40,Code,Name))
             #
             
@@ -230,6 +220,15 @@ class stockUpTenPercent:
             write.save()
             print('------%s 近40天涨停的股票之一 :%s(%s) 写入%s------'%(codeCntTop40,Code,Name,pathName))
             # break
+    def ma_slope(self,MA):
+        '''
+        MA1:=MA(CLOSE,10);
+        m10斜率:=(ATAN((MA1/REF(MA1,1)-1)*100)*180/3.14115926);
+        '''
+        REF_MA =MA.shift(1)
+        slopeMa =np.arctan2((MA -REF_MA)*100,REF_MA)*180/3.1415926
+        return slopeMa
+
     def glue3K(self,df):
         '''
         三线粘合

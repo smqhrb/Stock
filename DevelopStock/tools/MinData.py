@@ -16,9 +16,6 @@ import xlwt
 from bs4 import BeautifulSoup 
 import urllib.request as urllib2
 import getopt
-UrlBase_Minute ="http://vip.stock.finance.sina.com.cn/quotes_service/view/vMS_tradedetail.php?symbol=sz000651&date=2019-03-11&page=79"
-# UrlBase_History ="http://vip.stock.finance.sina.com.cn/quotes_service/view/vMS_tradehistory.php?symbol=sz000651&date=2019-03-08"
-UrlBase_History ="http://vip.stock.finance.sina.com.cn/quotes_service/view/vMS_tradehistory.php?symbol=sz000651&date=2019-03-08&page=7"
 class StockMinuteData:
     def __init__(self,destPath=".\\Minutes\\"):
         self.destPath =destPath
@@ -33,7 +30,6 @@ class StockMinuteData:
             url is made by urlBase urlfix
         return content
         '''
-        # url =urlBase%(urlfix)
         headers = {"User-Agent":"Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6"}
         req = urllib2.Request(url, headers = headers)
         while True:
@@ -63,14 +59,12 @@ class StockMinuteData:
         k=1
         dk=pd.DataFrame()
         while(k<=idTSpan):
-            data =self.getStockMiuteTrade(code,dateL,k,'1')
+            data =self.getStockMiuteTrade(code,dateL,80-k,'1')
             percent = round(1.0 * k / idTSpan * 100,2)
             print('        当前进度 : %s [%d/%d]'%(str(percent)+'%',k,idTSpan),end='\r')
             dk =dk.append(data,ignore_index=True)
             k =k+1
         df =dk
-        
-        # print(df)
         return df,dateL
     def getStockLoopToday(self,code):
         print("------开始读取股票(%s)今天的分时数据"%code)
@@ -87,7 +81,6 @@ class StockMinuteData:
     def getStockLoopHistory(self,code,day):
         print("------开始读取股票(%s)%s的分时数据"%(code,day))
         now_time = datetime.datetime.now()
-        # nowTimeStr =now_time.strftime('%Y-%m-%d')
         destDay =datetime.datetime.strptime(day,"%Y-%m-%d")
         dayDelay =now_time - destDay
         dk=pd.DataFrame()
@@ -96,7 +89,7 @@ class StockMinuteData:
             k=1
             
             while(k<=idTSpan):
-                data =self.getStockMiuteTrade(code,day,k,'2')
+                data =self.getStockMiuteTrade(code,day,80 -k,'2')
                 percent = round(1.0 * k / idTSpan * 100,2)
                 print('        当前进度 : %s [%d/%d]'%(str(percent)+'%',k,idTSpan),end='\r')
 
@@ -127,11 +120,9 @@ class StockMinuteData:
         if(type=='1'):
             UrlBase ="http://vip.stock.finance.sina.com.cn/quotes_service/view/vMS_tradedetail.php?symbol=%s&date=%s&page=%s"
         else:
-            # UrlBase ="http://vip.stock.finance.sina.com.cn/quotes_service/view/vMS_tradehistory.php?symbol=%s&date=%s&page=%s"
             UrlBase ="http://market.finance.sina.com.cn/transHis.php?symbol=%s&date=%s&page=%s"
         content =self.urlOpenContent(UrlBase%(code,dateL,id))
-        # print(UrlBase%(code,dateL,id))
-        
+         
         if(len(content)<=0):
             df =pd.DataFrame()
             return df
@@ -259,6 +250,3 @@ class StockMinuteData:
 if __name__ == '__main__':
     Main =StockMinuteData()
     Main.MainOpt()
-    # Main.getStockLoopToday('sz000651')
-    # Main.getStockMiuteTrade('sz000651','2017-03-31','2','2')
-    # Main.getTushare()

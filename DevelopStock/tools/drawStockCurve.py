@@ -12,10 +12,23 @@ import matplotlib.dates as mdate
 import matplotlib.ticker as ticker 
 
 class stockCurve:
+    '''
+    data columns in DataFrame :t volume close open
+
+    df_raw['t'] =zcfzb['交易日期']
+    df_raw['open']=zcfzb['开盘价']
+    df_raw['high']=zcfzb['最高价']
+    df_raw['low']=zcfzb['最低价']
+    df_raw['close']=zcfzb['收盘价']
+    df_raw['volume']=zcfzb['成交量 （手）']
+
+    draw K-Line,Volume,Mace diagram
+    '''
     def __init__(self,data):
-        tmpT =data.t.values
-        data[data['volume']==0]=np.nan 
-        data.dropna() 
+        tmpT =data.t.values#交易日期
+        data[data['volume']==0]=np.nan #将0 值清除
+        data.dropna() #删除nan数据
+        #
         data['t'] =tmpT
         data.sort_values(by='t',ascending=True,inplace=True) 
         # 注意，data.index 必须是升序 
@@ -23,17 +36,21 @@ class stockCurve:
         # 要单独把index的顺序反过来 
         data.index=data.index[::-1] 
         # data['t']=pd.to_datetime(data['t'],format="%Y%m%d")
-        data['t']=pd.to_datetime(data['t'], format = "%Y%m%d", errors = 'coerce')
+        data['t']=pd.to_datetime(data['t'], format = "%Y%m%d", errors = 'coerce')#将字符串日期变成datetime
         # print(data.head(10))
         self.data =data
         self.title_font=FontProperties(family='YouYuan',size=18) 
         mpl.rcParams['axes.unicode_minus']=False
         self.xSplice =50
         self.barWidth =0.4
-        self.crossUp =0
-        self.crossDn =0
+        self.crossUp =0#向上交
+        self.crossDn =0#向下交
+        self.title =""
 
     def format_date(self,x,pos=None): 
+        '''
+        数轴上日期的显示格式
+        '''
         if x<0 or x>len(self.date_tickers)-1: 
             return '' 
         tmp =self.date_tickers[int(x)]
@@ -42,6 +59,9 @@ class stockCurve:
         return strTmp
 
     def drawKline(self,fig,ax):
+        '''
+        draw K-line using mpf.candlestick_ohlc
+        '''
         fig.subplots_adjust(bottom=0.1)
         tmpData =self.data
         self.date_tickers =tmpData.t.values
@@ -64,21 +84,23 @@ class stockCurve:
         '''
         p_dif=ax.plot(dif.index,dif.values) 
         p_dea=ax.plot(dea.index,dea.values) 
+        #draw MACD 
         ax.bar(red_bar.index, red_bar.values,width = self.barWidth ,color='#d62728',alpha=1.0,edgecolor='r' ) 
         ax.bar(green_bar.index, green_bar.values,width = self.barWidth ,color='#889966') 
 
         ax.xaxis.set_major_locator(ticker.MultipleLocator(self.xSplice)) 
         ax.xaxis.set_major_formatter(ticker.FuncFormatter(self.format_date)) 
+        #note angle
         for tick in ax.get_xticklabels():
             tick.set_rotation(45)
 
         ax.legend((p_dif[0],p_dea[0]),[u'DIF',u'DEA']) 
 
-        dist_max =(self.macdMax - self.macdMin)*0.05
-        for x,y in zip(self.crossUp,dif[self.crossUp]):
+        dist_max =(self.macdMax - self.macdMin)*0.05#set y axis offset
+        for x,y in zip(self.crossUp,dif[self.crossUp]):#up cross flag
              ax.annotate(u"", xy = (x,y), xytext = (x,y+dist_max),
                         arrowprops = dict(facecolor = "r",ec='r',headwidth = 4,headlength = 4, width = 4,shrink =0.4))
-        for x,y in zip(self.crossDn,dif[self.crossDn]):
+        for x,y in zip(self.crossDn,dif[self.crossDn]):#down cross flag
             ax.annotate(u"", xy = (x,y), xytext = (x,y+dist_max),
                         arrowprops = dict(facecolor = "g",ec='g', headwidth = 4,headlength = 4,width = 4,shrink =0.4))
 
@@ -86,13 +108,15 @@ class stockCurve:
         
 
     def drawColume(self,ax):
-        
+        '''
+        draw volume 
+        '''
         # ax.xaxis.set_major_formatter(mdate.DateFormatter('%Y%m%d'))
         colData =self.data
         self.date_tickers =colData.t.values
 
-        red_bar=colData[colData['close']>=colData['open']] 
-        green_bar=colData[colData['close']<colData['open']] 
+        red_bar=colData[colData['close']>=colData['open']] #red pillar
+        green_bar=colData[colData['close']<colData['open']] #green pillar
 
         # ax.bar(colData.index,colData['volume'].values,width = self.barWidth,color='g',label="2nd")  # 直方图的画法
         ax.bar(red_bar.index,red_bar['volume'].values,width = self.barWidth,color='r',label="2nd",alpha=1.0,edgecolor='r')
@@ -102,11 +126,13 @@ class stockCurve:
         plt.grid(True)
        
     def drawAll(self):
-
-        dif,dea,red_bar,green_bar=self.calcMacd()
+        '''
+        draw K-line,Volume,MACD in here
+        '''
+        dif,dea,red_bar,green_bar=self.calcMacd()#calc macd dif dea
         self.macdMax =np.array([dif.max(), dea.max(), red_bar.max(), green_bar.max()]).max()
         self.macdMin =np.array([dif.min(), dea.min(), red_bar.min(), green_bar.min()]).min()
-        self.crossUp,self.crossDn =self.getMacdCrossPoint(dif,dea)
+        self.crossUp,self.crossDn =self.getMacdCrossPoint(dif,dea)#calc dif dea cross pt
 
         canvas_w =1024
         canvas_h =768
@@ -117,7 +143,7 @@ class stockCurve:
 
         # ax0figsize =figsize[0]/2,figsize[1]/2
         ax0 = fig.add_subplot(311)
-        
+        ax0.set_title(self.title,fontsize=12,color='r')
         # ax0.rcParams['figure.figsize']=(canvas_w,canvas_h/2)
         self.drawKline(fig,ax0)
 
@@ -174,8 +200,15 @@ class stockCurve:
             i=i+1
         return np.array(retU),np.array(retD)
 
+    def setTitleOfPic(self,title):
+        '''
+        pic titile
+        '''
+        self.title =title
+
 if __name__ == '__main__':
     zcfzb =pd.read_excel("000882.SZ.xls")
+    
     # df_raw = zcfzb[['交易日期',  '开盘价','最高价','最低价','收盘价','成交量 （手）']]
     df_raw =pd.DataFrame()
     df_raw['t'] =zcfzb['交易日期']
@@ -186,6 +219,7 @@ if __name__ == '__main__':
     df_raw['volume']=zcfzb['成交量 （手）']
     # print(df_raw)
     test =stockCurve(df_raw)
+    test.setTitleOfPic("000882.SZ")
     test.drawAll()
 
 

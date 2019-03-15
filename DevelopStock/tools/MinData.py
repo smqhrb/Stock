@@ -17,7 +17,10 @@ from bs4 import BeautifulSoup
 import urllib.request as urllib2
 import getopt
 class StockMinuteData:
-    def __init__(self,destPath=".\\Minutes\\"):
+    def __init__(self,destPath=".\\Minutes\\",uiDlg =None):
+        self.uiDlg =uiDlg
+        # self.UiList =[]
+        # self.UiProcessBar =0
         self.destPath =destPath
         if os.path.exists(self.destPath):                     #检测路径是否存在,不存在则创建路径
             pass
@@ -38,7 +41,9 @@ class StockMinuteData:
                 time.sleep(random.randint(0,3))
                 break
             except:
-                print("超时重试") 
+                print("超时重试")
+                # self.UiList.append("超时重试") 
+                self.uiDlg.addListViewMessage("超时重试")
         return content
     def getStockLoop(self,code):
         '''
@@ -51,6 +56,7 @@ class StockMinuteData:
         startTime =startL.strftime("%Y-%m-%d %H:%M:%S")
         if(dateTimeNow<startTime):
             print('-----%s<%s,没有开始交易'%(dateTimeNow,startTime))
+            self.uiDlg.addListViewMessage('-----%s<%s,没有开始交易'%(dateTimeNow,startTime))
             return pd.DataFrame()
         sSpan =(now_time -startL)#计算距离 09:25:00 的时间
         idTSpan =math.ceil(sSpan.seconds/3.0)#每三秒一个界面 共同79个界面
@@ -61,6 +67,8 @@ class StockMinuteData:
         while(k<=idTSpan):
             data =self.getStockMiuteTrade(code,dateL,80-k,'1')
             percent = round(1.0 * k / idTSpan * 100,2)
+           
+            self.uiDlg.setProcessBarPos(percent)
             print('        当前进度 : %s [%d/%d]'%(str(percent)+'%',k,idTSpan),end='\r')
             dk =dk.append(data,ignore_index=True)
             k =k+1
@@ -68,8 +76,10 @@ class StockMinuteData:
         return df,dateL
     def getStockLoopToday(self,code):
         print("------开始读取股票(%s)今天的分时数据"%code)
+        self.uiDlg.addListViewMessage("------开始读取股票(%s)今天的分时数据"%code)
         dk,day =self.getStockLoop(code)
         print("------结束读取股票(%s)今天的分时数据"%code)
+        self.uiDlg.addListViewMessage("------结束读取股票(%s)今天的分时数据"%code)
         if(len(dk)<=0):
             return
         pathName ="%s%s(%s).xls"%(self.destPath,code,day)
@@ -77,9 +87,11 @@ class StockMinuteData:
         dk.to_excel(write,sheet_name=code,index=True)
         write.save()
         print("------股票(%s)今天的分时数据,写入%s"%(code,pathName))
+        self.uiDlg.addListViewMessage("------股票(%s)今天的分时数据,写入%s"%(code,pathName))
 
     def getStockLoopHistory(self,code,day):
         print("------开始读取股票(%s)%s的分时数据"%(code,day))
+        self.uiDlg.addListViewMessage("------开始读取股票(%s)%s的分时数据"%(code,day))
         now_time = datetime.datetime.now()
         destDay =datetime.datetime.strptime(day,"%Y-%m-%d")
         dayDelay =now_time - destDay
@@ -91,6 +103,7 @@ class StockMinuteData:
             while(k<=idTSpan):
                 data =self.getStockMiuteTrade(code,day,80 -k,'2')
                 percent = round(1.0 * k / idTSpan * 100,2)
+                self.uiDlg.setProcessBarPos(percent)
                 print('        当前进度 : %s [%d/%d]'%(str(percent)+'%',k,idTSpan),end='\r')
 
                 if(len(data)>0):
@@ -100,12 +113,14 @@ class StockMinuteData:
         else:
             dk,day =self.getStockLoop(code)
         print("------结束读取股票(%s)%s的分时数据"%(code,day))
+        self.uiDlg.addListViewMessage("------结束读取股票(%s)%s的分时数据"%(code,day))
         pathName ="%s%s(%s).xls"%(self.destPath,code,day)
         write = pd.ExcelWriter(pathName)
         # ========== 将算好的数据输出到xls文件 - 注意：这里请填写输出文件在您电脑中的路径
         dk.to_excel(write,sheet_name=code,index=True)
         write.save()  
         print("------股票(%s)%s的分时数据,写入%s"%(code,day,pathName))
+        self.uiDlg.addListViewMessage("------股票(%s)%s的分时数据,写入%s"%(code,day,pathName))
         return dk
       
    
@@ -234,7 +249,8 @@ class StockMinuteData:
             print(".................全部结束.................")
         else:
             print("...在文件中没有股票代码或者文件不存在 ,退出....")
-            exit()        
+            exit() 
+           
     def readStockList(self,fname=''):
         contents =[]
         f = open(fname)

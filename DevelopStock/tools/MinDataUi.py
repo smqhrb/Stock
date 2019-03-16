@@ -8,13 +8,15 @@ import time
 from MinData import StockMinuteData
 from datetime import datetime, date, timedelta
 import threading
+from PyQt5.QtWidgets import QMessageBox
+
 class MinDataUi_Dialog(Ui_dialog):#QtWidgets.QWidget
     def setupUi(self,Dialog):
-        Dialog.setObjectName("分时数据提取")
-        self.Main =StockMinuteData(uiDlg=self)
+        # self.Main =StockMinuteData(uiDlg=self)
         super().setupUi(Dialog)
-        self.dqljwj.clicked.connect(self.on_dqljwj_click)#self.myButton.clicked.connect(self.msg)  
-        self.dqljwj_2.clicked.connect(self.on_dqljwj_2_click)
+        Dialog.setObjectName("dlg")
+        # self.dqljwj.clicked.connect(self.on_dqljwj_click)#self.myButton.clicked.connect(self.msg)  
+        self.dqljwj_2.clicked.connect(self.on_dqljwj_2_click)#查询
         self.listView.clicked.connect(self.on_listview_click)
         self.ljxz.clicked.connect(self.on_ljxz_click)
         #
@@ -25,7 +27,11 @@ class MinDataUi_Dialog(Ui_dialog):#QtWidgets.QWidget
         self.dateEdit.setDate(QDate.fromString(start, 'yyyy-MM-dd'))#start time
         self.dateEdit_2.setDate(QDate.fromString(end, 'yyyy-MM-dd'))#end time
         # 
-        self.xzlsFs.clicked.connect(self.on_xzlsFs_click)
+        # self.xzlsFs.clicked.connect(self.on_xzlsFs_click)
+        self.xzlsFs_2.clicked.connect(self.on_xzlsFs_2_click)
+        self.xzdtfs.clicked.connect(self.on_xzdtfs_click)
+        self.hbbb.clicked.connect(self.on_hbbb_click)
+        self.xzlsFs_3.clicked.connect(self.on_xzlsFs_3_click)#提示打开股票代码文件 填加代码
         # 
         # self.listView_2 = QtWidgets.QListView(self.groupBox)
         #实例化列表模型，添加数据
@@ -38,20 +44,104 @@ class MinDataUi_Dialog(Ui_dialog):#QtWidgets.QWidget
         #设置列表视图的模型
         self.listView_2.setModel(self.qsL)
         self.progressBar.setValue(0)
+        self.progressBar_2.setValue(0)
 
-    
-    def on_xzlsFs_click(self):
-        startDay =self.dateEdit.dateTime()
-        start =startDay.toString('yyyy-MM-dd')
-        endDay = self.dateEdit_2.dateTime()
-        end =endDay.toString('yyyy-MM-dd')
-        code =self.gpdmEdit.text()
-        if(len(code)==8):
-            t = threading.Thread(target=getDataWithDay, args=(code,start,end,self), name='funciton')
-            t.start()
 
-            # self.getDataWithDay(code,start,end)
+        #
+        self.savePath =None
+        self.Main =StockMinuteData()
+        if(self.savePath is None):
+            self.savePath =self.Main.destPath
+        self.bclj_2.setText(self.savePath)
+        # self.dqlj.setText(self.savePath)
+        self.Main.signal.connect(self.callbacklog)
+        self.th1 =None#合并xls
+        self.th2 =None#下载数据
         
+
+    def on_xzlsFs_3_click(self):
+        reply = QMessageBox.information(self,"标题",
+                                "请打开文件stockList.txt,填加股票代码。股票代码例如：sz000651",
+                                QMessageBox.Yes)
+                
+    def on_hbbb_click(self):
+        code =self.gpdmHb.text()
+        if(self.th1 is None):
+            self.th1 = threading.Thread(target=self.Main.MergeMinData, args=(code,), name='hbbb')
+            self.th1.start() 
+        else:
+            if(self.th1.is_alive() ==False):
+                self.th1 = threading.Thread(target=self.Main.MergeMinData, args=(code,), name='hbbb')
+                self.th1.start() 
+
+           
+    def on_xzdtfs_click(self):
+        '''
+        当天分时
+        '''
+        self.downData('1')
+
+
+    def on_xzlsFs_2_click(self):
+        '''
+        多个股票下载历史分时
+        '''
+        self.downData('2')
+
+    def downData(self,typeL):
+        '''
+        股票下载
+        '''
+        startDay =self.dateEdit.dateTime()
+        startTime =startDay.toString('yyyy-MM-dd')
+        endDay = self.dateEdit_2.dateTime()
+        endTime =endDay.toString('yyyy-MM-dd')
+        # Main =StockMinuteData()
+        # if(self.savePath is None):
+        #     self.savePath =Main.destPath
+        # Main.setPara('',startTime,endTime,typeL,self.savePath,"stockList.txt")
+        # Main.signal.connect(self.callbacklog)
+        # Main.start()
+        # Main.getDataWithTimeSpan(startTime,endTime)
+        
+        if(self.th2 is None):
+            self.Main.setPara('',startTime,endTime,typeL,self.savePath,"stockList.txt")
+            self.th2 = threading.Thread(target=self.Main.getDataWithTimeSpan, args=(startTime,endTime), name='funciton')
+            self.th2.start()
+        else:
+            if(self.th2.is_alive()==False):
+                self.Main.setPara('',startTime,endTime,typeL,self.savePath,"stockList.txt")
+                self.th2 = threading.Thread(target=self.Main.getDataWithTimeSpan, args=(startTime,endTime), name='funciton')
+                self.th2.start()
+
+
+    # def on_xzlsFs_click(self):
+    #     '''
+    #     下载历史分时
+    #     '''
+    #     startDay =self.dateEdit.dateTime()
+    #     startTime =startDay.toString('yyyy-MM-dd')
+    #     endDay = self.dateEdit_2.dateTime()
+    #     endTime =endDay.toString('yyyy-MM-dd')
+    #     code =self.gpdmEdit.text()
+    #     if(len(code)==8):
+    #         # t = threading.Thread(target=getDataWithDay, args=(code,start,end,self), name='funciton')
+    #         # t.start()
+    #         Main =StockMinuteData()
+    #         Main.setPara(code,startTime,endTime,1,self.savePath,"stockList.txt")
+    #         Main.signal.connect(self.callbacklog)
+    #         Main.start()
+
+
+    #         # self.getDataWithDay(code,start,end)
+    def callbacklog(self, msg,processInt,processHb):
+        # 奖回调数据输出到文本框
+        listText =msg.replace('------','')
+        now_time = datetime.now()
+        dateL =now_time.strftime('%H:%M:%S')
+        if(len(listText)>0):
+            self.addListViewMessage("[%s]:%s"%(dateL,listText))
+        self.setProcessBarPos(processInt,processHb)        
 
 
     def on_listview_click(self,qModelIndex):
@@ -59,24 +149,42 @@ class MinDataUi_Dialog(Ui_dialog):#QtWidgets.QWidget
         txtN =txtN[0:8]
         self.gpdmHb.setText(txtN)
 
-    def on_ljxz_click(self):
+    def on_ljxz_click(self): 
+        fLag =True
+        if(self.th2 is None):
+            pass
+        else:
+            if(self.th2.is_alive()==True):
+                fLag =False
+        if(self.th1 is None):
+            pass
+        else:
+            if(self.th1.is_alive()==True):
+                fLag =False        
+        if(fLag == False):
+            return
         self.savePath = QtWidgets.QFileDialog.getExistingDirectory(self,  
                             "浏览",  
                             ".\\")
-        self.Main.destPath =self.savePath+'/'
-        self.bclj_2.setText(self.Main.destPath)
+        # self.Main.destPath =self.savePath+'/'
+        if(len(self.savePath)>0):
+            self.Main.destPath=self.savePath+'/'
+            self.bclj_2.setText(self.Main.destPath)
 
 
 
-    def on_dqljwj_click(self):
-        download_path = QtWidgets.QFileDialog.getExistingDirectory(self,  
-                            "浏览",  
-                            ".\\")
-        self.dqlj.setText(download_path)
+    # def on_dqljwj_click(self):
+    #     download_path = QtWidgets.QFileDialog.getExistingDirectory(self,  
+    #                         "浏览",  
+    #                         ".\\")
+    #     self.dqlj.setText(download_path)
 
 
     def on_dqljwj_2_click(self):
-        path =self.dqlj.text()
+        '''
+        查询指定文件路径下的文件合并
+        '''
+        path =self.bclj_2.text()
         files = os.listdir(path)
         self.strlist=[]
         for fi in files:
@@ -84,12 +192,11 @@ class MinDataUi_Dialog(Ui_dialog):#QtWidgets.QWidget
             if os.path.isdir(fi_d):
                 continue
             else:
-                fi_d =fi_d.replace(path+'\\','')
-                self.strlist.append(fi_d)
+                fi_d =fi_d.replace(path+'/','')
+                if(fi_d.find('.xls')>0):
+                    self.strlist.append(fi)
         #实例化列表模型，添加数据
         slm=QStringListModel()
-        
-        
 
         #设置模型列表视图，加载数据列表
         slm.setStringList(self.strlist)
@@ -99,68 +206,18 @@ class MinDataUi_Dialog(Ui_dialog):#QtWidgets.QWidget
 
  
     def addListViewMessage(self,msg):
-        # self.item_1=QStandardItem(QIcon("./image/save.ico"), "普通员工A");
-        #  self.item_2 = QStandardItem(QIcon("./image/save.ico"), "普通员工B");
- 
-        #  model=QStandardItemModel()
-        #  model.appendRow(self.item_1)
-        #  model.appendRow(self.item_2)
-        #  listView.setModel(model)
         self.Test.append(msg)
         #设置模型列表视图，加载数据列表
         self.qsL.setStringList(self.Test)
         
         pass
-    def setProcessBarPos(self,processBar):
+    def setProcessBarPos(self,processBar,processHb):
         self.progressBar.setValue(processBar)
-def getDataWithDay(code,start,end,uiL):
-    startDay =datetime.strptime(start,"%Y-%m-%d")
-    endDay =datetime.strptime(end,"%Y-%m-%d")
-    dayDelay = endDay -startDay
-    k=0
-    readDay =startDay
-    while(k<=dayDelay.days):
-        day =readDay.strftime('%Y-%m-%d')
-        readDay =readDay + timedelta(days=1)
-        uiL.Main.getStockLoopHistory(code,day)
-        k =k+1 
-    # def start_login(self):
-    #     # 创建线程
-    #     self.thread = Runthread()
-    #     # 连接信号
-    #     self.thread._signal.connect(self.callbacklog)
-    #     # 开始线程
-    #     self.thread.start()
-
-    # def callbacklog(self, msg):
-    #     # 奖回调数据输出到文本框
-    #     self.textEdit_log.setText(self.textEdit_log.toPlainText()+ "\n"+ msg+ "   "+
-    #                               time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()));
-
-# class Runthread(QtCore.QThread):
-#     # python3,pyqt5与之前的版本有些不一样
-#     #  通过类成员对象定义信号对象
-#     _signal = pyqtSignal(str)
-
-#     def __init__(self, parent=None):
-#         super(Runthread, self).__init__()
-
-#     def __del__(self):
-#         self.wait()
-
-#     def run(self):
-#         # 处理你要做的业务逻辑，这里是通过一个回调来处理数据，这里的逻辑处理写自己的方法
-#         # wechat.start_auto(self.callback)
-#         # self._signal.emit(msg);  可以在这里写信号焕发
-
-#     def callback(self, msg):
-#         # 信号焕发，我是通过我封装类的回调来发起的
-#         # self._signal.emit(msg);
+        self.progressBar_2.setValue(processHb)
 
         
 if __name__ == "__main__":
     import sys
-    
     app = QtWidgets.QApplication(sys.argv)
     Dialog = QtWidgets.QDialog()
     ui = MinDataUi_Dialog()

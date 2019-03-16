@@ -7,6 +7,7 @@ import random
 import os,time,sys,re,datetime
 import math
 from datetime import timedelta
+# from datetime import datetime
 from urllib import request
 from urllib import parse
 from urllib.request import urlopen
@@ -16,17 +17,124 @@ import xlwt
 from bs4 import BeautifulSoup 
 import urllib.request as urllib2
 import getopt
-class StockMinuteData:
-    def __init__(self,destPath=".\\Minutes\\",uiDlg =None):
-        self.uiDlg =uiDlg
+from PyQt5.QtCore import QTimer, QThread, pyqtSignal
+class StockMinuteData(QThread):
+    signal = pyqtSignal(str,int,int)
+    def __del__(self):
+        self.wait()
+
+    def run(self):
+        # 进行任务操作
+        self.getDataWithTimeSpan(self.startTime,self.endTime)
+                
+
+    def __init__(self,destPath="./Minutes/"):
+        super(StockMinuteData,self).__init__()
+        # self.uiDlg =uiDlg
         # self.UiList =[]
         # self.UiProcessBar =0
+        self.typeW =0
+        self.percent =0
+        self.percentHb =0
         self.destPath =destPath
         if os.path.exists(self.destPath):                     #检测路径是否存在,不存在则创建路径
             pass
         else:
             os.mkdir(destPath)
-        pass  
+        pass
+
+    def setPara(self,code,start,end,worktype,path,cfName):
+        self.code =code
+        self.startTime =start
+        self.endTime =end
+        self.typeW =worktype
+        self.cfName =cfName
+        self.pathName =path
+
+    def MergeMinData(self,code):
+        '''
+        合并文件xls 格式：sz000651(2019-03-14).xls
+        '''
+        dk=pd.DataFrame()
+        self.percentHb =0
+        if(len(code)>0):
+            self.EmitMsgToUi("------开始合并股票代码%s的xls文件-----"%(code))
+        else:
+            self.EmitMsgToUi("------合并股票代码不存在-----")
+            return
+        lists = os.listdir(self.destPath) #列出文件夹下所有的目录与文件
+        # lists.sort(key=lambda fn: os.path.getmtime(self.destPath+'\\' + fn))
+        nameSort =[]
+        LenAll =len(lists)
+
+        for i in range(0,LenAll):
+            fName =lists[i]
+            path = os.path.join(self.destPath,lists[i])
+            if os.path.isfile(path): 
+                sCode =fName[0:8]
+                tDate =fName[9:19]
+                if(sCode == code):
+                    if(fName.find('HB')>=0):
+                        continue
+                    data =pd.read_excel(path)
+                    self.percentHb =round(1.0 * i/ LenAll * 100,2)
+                    self.EmitMsgToUi("------合并股票代码%s的%s-----"%(code,fName))
+                    data['日期'] = tDate
+                    dk =dk.append(data,ignore_index=True)   
+                    nameSort.append(tDate)
+        if(len(dk)<=0):
+            self.EmitMsgToUi("------内容为空结束合并股票代码%s-----"%(code))
+            return
+        df =dk[['日期','成交时间','成交价','价格变动','成交量(手)','成交额(元)','性质']]
+        self.percentHb =100
+        
+        nameSort.sort(reverse=False)
+        aLen =len(nameSort)
+        if aLen>0:
+            pathName ="%s%s(%s - %s)HB.xls"%(self.destPath,code,nameSort[0],nameSort[aLen -1])
+            write = pd.ExcelWriter(pathName)
+            df.to_excel(write,sheet_name=code,index=True)
+            write.save()
+            self.EmitMsgToUi("------完成合并股票代码%s,写入%s-----"%(code,pathName)) 
+        self.EmitMsgToUi("------结束合并股票代码%s的xls文件-----"%(code))                  
+                
+
+    # def getDataWithDay(self,code,start,end):
+    #     startDay =datetime.datetime.strptime(start,"%Y-%m-%d")
+    #     endDay =datetime.datetime.strptime(end,"%Y-%m-%d")
+    #     dayDelay = endDay -startDay
+    #     k=0
+    #     readDay =startDay
+    #     while(k<=dayDelay.days):
+    #         day =readDay.strftime('%Y-%m-%d')
+    #         readDay =readDay + timedelta(days=1)
+    #         self.getStockLoopHistory(code,day)
+    #         k =k+1 
+
+    def getDataWithTimeSpan(self,startT,endT):
+        files =self.cfName
+        if(os.path.exists(files)==False):
+            self.EmitMsgToUi("------股票配置文件stockList.txt不存在")
+            return
+
+        stockCodeList =self.readStockList(files)
+        for code in stockCodeList:
+            if self.typeW =='1' :
+                self.getStockLoopToday(code)
+            else:
+                print("------[开始时间%s,结束时间%s]"%(startT,endT))
+                self.EmitMsgToUi("------[开始时间%s,结束时间%s]"%(startT,endT))
+                startDay =datetime.datetime.strptime(startT,"%Y-%m-%d")
+                endDay =datetime.datetime.strptime(endT,"%Y-%m-%d")
+                dayDelay = endDay -startDay
+                k=0
+                readDay =startDay
+                while(k<=dayDelay.days):
+                    day =readDay.strftime('%Y-%m-%d')
+                    readDay =readDay + timedelta(days=1)
+                    self.getStockLoopHistory(code,day)
+                    k =k+1
+
     def urlOpenContent(self,url):
         '''
         parameter:
@@ -43,7 +151,7 @@ class StockMinuteData:
             except:
                 print("超时重试")
                 # self.UiList.append("超时重试") 
-                self.uiDlg.addListViewMessage("超时重试")
+                self.EmitMsgToUi("超时重试")
         return content
     def getStockLoop(self,code):
         '''
@@ -56,8 +164,8 @@ class StockMinuteData:
         startTime =startL.strftime("%Y-%m-%d %H:%M:%S")
         if(dateTimeNow<startTime):
             print('-----%s<%s,没有开始交易'%(dateTimeNow,startTime))
-            self.uiDlg.addListViewMessage('-----%s<%s,没有开始交易'%(dateTimeNow,startTime))
-            return pd.DataFrame()
+            self.EmitMsgToUi('-----%s<%s,没有开始交易'%(dateTimeNow,startTime))
+            return pd.DataFrame(),dateL
         sSpan =(now_time -startL)#计算距离 09:25:00 的时间
         idTSpan =math.ceil(sSpan.seconds/3.0)#每三秒一个界面 共同79个界面
         if(idTSpan>=79):
@@ -67,8 +175,8 @@ class StockMinuteData:
         while(k<=idTSpan):
             data =self.getStockMiuteTrade(code,dateL,80-k,'1')
             percent = round(1.0 * k / idTSpan * 100,2)
-           
-            self.uiDlg.setProcessBarPos(percent)
+            self.percent =percent
+            self.EmitMsgToUi('')
             print('        当前进度 : %s [%d/%d]'%(str(percent)+'%',k,idTSpan),end='\r')
             dk =dk.append(data,ignore_index=True)
             k =k+1
@@ -76,10 +184,11 @@ class StockMinuteData:
         return df,dateL
     def getStockLoopToday(self,code):
         print("------开始读取股票(%s)今天的分时数据"%code)
-        self.uiDlg.addListViewMessage("------开始读取股票(%s)今天的分时数据"%code)
+        self.percent =0
+        self.EmitMsgToUi("------开始读取股票(%s)今天的分时数据"%code)
         dk,day =self.getStockLoop(code)
         print("------结束读取股票(%s)今天的分时数据"%code)
-        self.uiDlg.addListViewMessage("------结束读取股票(%s)今天的分时数据"%code)
+        self.EmitMsgToUi("------结束读取股票(%s)今天的分时数据"%code)
         if(len(dk)<=0):
             return
         pathName ="%s%s(%s).xls"%(self.destPath,code,day)
@@ -87,11 +196,19 @@ class StockMinuteData:
         dk.to_excel(write,sheet_name=code,index=True)
         write.save()
         print("------股票(%s)今天的分时数据,写入%s"%(code,pathName))
-        self.uiDlg.addListViewMessage("------股票(%s)今天的分时数据,写入%s"%(code,pathName))
+        self.EmitMsgToUi("------股票(%s)今天的分时数据,写入%s"%(code,pathName))
+
+    def EmitMsgToUi(self,msg):
+        '''
+        向界面发送信息
+        '''
+        self.signal.emit(msg,self.percent,self.percentHb)
 
     def getStockLoopHistory(self,code,day):
         print("------开始读取股票(%s)%s的分时数据"%(code,day))
-        self.uiDlg.addListViewMessage("------开始读取股票(%s)%s的分时数据"%(code,day))
+        self.percent =0
+        strT ="------开始读取股票(%s)%s的分时数据"%(code,day)
+        self.EmitMsgToUi(strT)
         now_time = datetime.datetime.now()
         destDay =datetime.datetime.strptime(day,"%Y-%m-%d")
         dayDelay =now_time - destDay
@@ -103,7 +220,8 @@ class StockMinuteData:
             while(k<=idTSpan):
                 data =self.getStockMiuteTrade(code,day,80 -k,'2')
                 percent = round(1.0 * k / idTSpan * 100,2)
-                self.uiDlg.setProcessBarPos(percent)
+                self.percent =percent
+                self.EmitMsgToUi('')
                 print('        当前进度 : %s [%d/%d]'%(str(percent)+'%',k,idTSpan),end='\r')
 
                 if(len(data)>0):
@@ -113,14 +231,14 @@ class StockMinuteData:
         else:
             dk,day =self.getStockLoop(code)
         print("------结束读取股票(%s)%s的分时数据"%(code,day))
-        self.uiDlg.addListViewMessage("------结束读取股票(%s)%s的分时数据"%(code,day))
+        self.EmitMsgToUi("------结束读取股票(%s)%s的分时数据"%(code,day))
         pathName ="%s%s(%s).xls"%(self.destPath,code,day)
         write = pd.ExcelWriter(pathName)
         # ========== 将算好的数据输出到xls文件 - 注意：这里请填写输出文件在您电脑中的路径
         dk.to_excel(write,sheet_name=code,index=True)
         write.save()  
         print("------股票(%s)%s的分时数据,写入%s"%(code,day,pathName))
-        self.uiDlg.addListViewMessage("------股票(%s)%s的分时数据,写入%s"%(code,day,pathName))
+        self.EmitMsgToUi("------股票(%s)%s的分时数据,写入%s"%(code,day,pathName))
         return dk
       
    
@@ -131,7 +249,6 @@ class StockMinuteData:
             id 1~79
         '''
         #
-        
         if(type=='1'):
             UrlBase ="http://vip.stock.finance.sina.com.cn/quotes_service/view/vMS_tradedetail.php?symbol=%s&date=%s&page=%s"
         else:
@@ -249,10 +366,12 @@ class StockMinuteData:
             print(".................全部结束.................")
         else:
             print("...在文件中没有股票代码或者文件不存在 ,退出....")
+            self.EmitMsgToUi("...在文件中没有股票代码或者文件不存在")
             exit() 
            
     def readStockList(self,fname=''):
         contents =[]
+        
         f = open(fname)
         lines = f.readlines()
         for code in lines:
@@ -261,6 +380,7 @@ class StockMinuteData:
                 contents.append(k)
         f.close()
         print("....Stock Code List............")
+        self.EmitMsgToUi("....Stock Code List............")
         print(contents)
         return contents            
 if __name__ == '__main__':

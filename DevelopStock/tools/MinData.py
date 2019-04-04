@@ -7,7 +7,7 @@ import random
 import os,time,sys,re,datetime
 import math
 from datetime import timedelta
-# from datetime import datetime
+
 from urllib import request
 from urllib import parse
 from urllib.request import urlopen
@@ -18,7 +18,7 @@ from bs4 import BeautifulSoup
 import urllib.request as urllib2
 import getopt
 from PyQt5.QtCore import QTimer, QThread, pyqtSignal
-class StockMinuteData(QThread):
+class StockMinuteData(QThread):#继承于线程
     signal = pyqtSignal(str,int,int)
     def __del__(self):
         self.wait()
@@ -30,9 +30,6 @@ class StockMinuteData(QThread):
 
     def __init__(self,destPath="./Minutes/"):
         super(StockMinuteData,self).__init__()
-        # self.uiDlg =uiDlg
-        # self.UiList =[]
-        # self.UiProcessBar =0
         self.typeW =0
         self.percent =0
         self.percentHb =0
@@ -44,6 +41,9 @@ class StockMinuteData(QThread):
         pass
 
     def setPara(self,code,start,end,worktype,path,cfName):
+        '''
+        UI set parameters
+        '''
         self.code =code
         self.startTime =start
         self.endTime =end
@@ -63,7 +63,6 @@ class StockMinuteData(QThread):
             self.EmitMsgToUi("------合并股票代码不存在-----")
             return
         lists = os.listdir(self.destPath) #列出文件夹下所有的目录与文件
-        # lists.sort(key=lambda fn: os.path.getmtime(self.destPath+'\\' + fn))
         nameSort =[]
         LenAll =len(lists)
 
@@ -74,7 +73,7 @@ class StockMinuteData(QThread):
                 sCode =fName[0:8]
                 tDate =fName[9:19]
                 if(sCode == code):
-                    if(fName.find('HB')>=0):
+                    if(fName.find('HB')>=0):# 含有HB是区分与其他的一次数据
                         continue
                     data =pd.read_excel(path)
                     self.percentHb =round(1.0 * i/ LenAll * 100,2)
@@ -98,25 +97,14 @@ class StockMinuteData(QThread):
             self.EmitMsgToUi("------完成合并股票代码%s,写入%s-----"%(code,pathName)) 
         self.EmitMsgToUi("------结束合并股票代码%s的xls文件-----"%(code))                  
                 
-
-    # def getDataWithDay(self,code,start,end):
-    #     startDay =datetime.datetime.strptime(start,"%Y-%m-%d")
-    #     endDay =datetime.datetime.strptime(end,"%Y-%m-%d")
-    #     dayDelay = endDay -startDay
-    #     k=0
-    #     readDay =startDay
-    #     while(k<=dayDelay.days):
-    #         day =readDay.strftime('%Y-%m-%d')
-    #         readDay =readDay + timedelta(days=1)
-    #         self.getStockLoopHistory(code,day)
-    #         k =k+1 
-
     def getDataWithTimeSpan(self,startT,endT):
+        '''
+        如果配合文件不存在就不进行数据下载
+        '''
         files =self.cfName
         if(os.path.exists(files)==False):
             self.EmitMsgToUi("------股票配置文件stockList.txt不存在")
             return
-
         stockCodeList =self.readStockList(files)
         for code in stockCodeList:
             if self.typeW =='1' :
@@ -159,7 +147,7 @@ class StockMinuteData(QThread):
         '''
         now_time = datetime.datetime.now()
         dateL =now_time.strftime('%Y-%m-%d')
-        startL =datetime.datetime.strptime(dateL+ " 09:25:00", "%Y-%m-%d %H:%M:%S")
+        startL =datetime.datetime.strptime(dateL+ " 09:25:00", "%Y-%m-%d %H:%M:%S")#一天的起始日期
         dateTimeNow =now_time.strftime("%Y-%m-%d %H:%M:%S")
         startTime =startL.strftime("%Y-%m-%d %H:%M:%S")
         if(dateTimeNow<startTime):

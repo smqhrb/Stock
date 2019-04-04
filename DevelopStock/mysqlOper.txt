@@ -1,4 +1,8 @@
-﻿1.run: cmd
+﻿https://blog.csdn.net/chenchunlin526/article/details/51207537
+mysqld -install
+https://www.cnblogs.com/fanbi/p/6432838.html
+sc delete mysql #delete mysql service
+1.run: cmd
 2.start db:  net start mysql ;stop db: net stop mysql
 3.login DB:  mysql -hlocalhost -uroot -p
    root/smq1234

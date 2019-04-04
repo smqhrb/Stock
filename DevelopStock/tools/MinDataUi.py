@@ -12,10 +12,10 @@ from PyQt5.QtWidgets import QMessageBox
 
 class MinDataUi_Dialog(Ui_dialog):#QtWidgets.QWidget
     def setupUi(self,Dialog):
-        # self.Main =StockMinuteData(uiDlg=self)
+
         super().setupUi(Dialog)
         Dialog.setObjectName("dlg")
-        # self.dqljwj.clicked.connect(self.on_dqljwj_click)#self.myButton.clicked.connect(self.msg)  
+
         self.dqljwj_2.clicked.connect(self.on_dqljwj_2_click)#查询
         self.listView.clicked.connect(self.on_listview_click)
         self.ljxz.clicked.connect(self.on_ljxz_click)
@@ -27,13 +27,12 @@ class MinDataUi_Dialog(Ui_dialog):#QtWidgets.QWidget
         self.dateEdit.setDate(QDate.fromString(start, 'yyyy-MM-dd'))#start time
         self.dateEdit_2.setDate(QDate.fromString(end, 'yyyy-MM-dd'))#end time
         # 
-        # self.xzlsFs.clicked.connect(self.on_xzlsFs_click)
+
         self.xzlsFs_2.clicked.connect(self.on_xzlsFs_2_click)
         self.xzdtfs.clicked.connect(self.on_xzdtfs_click)
         self.hbbb.clicked.connect(self.on_hbbb_click)
         self.xzlsFs_3.clicked.connect(self.on_xzlsFs_3_click)#提示打开股票代码文件 填加代码
         # 
-        # self.listView_2 = QtWidgets.QListView(self.groupBox)
         #实例化列表模型，添加数据
         self.qsL=QStringListModel()
         self.Test=[]
@@ -96,14 +95,7 @@ class MinDataUi_Dialog(Ui_dialog):#QtWidgets.QWidget
         startTime =startDay.toString('yyyy-MM-dd')
         endDay = self.dateEdit_2.dateTime()
         endTime =endDay.toString('yyyy-MM-dd')
-        # Main =StockMinuteData()
-        # if(self.savePath is None):
-        #     self.savePath =Main.destPath
-        # Main.setPara('',startTime,endTime,typeL,self.savePath,"stockList.txt")
-        # Main.signal.connect(self.callbacklog)
-        # Main.start()
-        # Main.getDataWithTimeSpan(startTime,endTime)
-        
+       
         if(self.th2 is None):
             self.Main.setPara('',startTime,endTime,typeL,self.savePath,"stockList.txt")
             self.th2 = threading.Thread(target=self.Main.getDataWithTimeSpan, args=(startTime,endTime), name='funciton')
@@ -114,26 +106,6 @@ class MinDataUi_Dialog(Ui_dialog):#QtWidgets.QWidget
                 self.th2 = threading.Thread(target=self.Main.getDataWithTimeSpan, args=(startTime,endTime), name='funciton')
                 self.th2.start()
 
-
-    # def on_xzlsFs_click(self):
-    #     '''
-    #     下载历史分时
-    #     '''
-    #     startDay =self.dateEdit.dateTime()
-    #     startTime =startDay.toString('yyyy-MM-dd')
-    #     endDay = self.dateEdit_2.dateTime()
-    #     endTime =endDay.toString('yyyy-MM-dd')
-    #     code =self.gpdmEdit.text()
-    #     if(len(code)==8):
-    #         # t = threading.Thread(target=getDataWithDay, args=(code,start,end,self), name='funciton')
-    #         # t.start()
-    #         Main =StockMinuteData()
-    #         Main.setPara(code,startTime,endTime,1,self.savePath,"stockList.txt")
-    #         Main.signal.connect(self.callbacklog)
-    #         Main.start()
-
-
-    #         # self.getDataWithDay(code,start,end)
     def callbacklog(self, msg,processInt,processHb):
         # 奖回调数据输出到文本框
         listText =msg.replace('------','')
@@ -150,6 +122,9 @@ class MinDataUi_Dialog(Ui_dialog):#QtWidgets.QWidget
         self.gpdmHb.setText(txtN)
 
     def on_ljxz_click(self): 
+        '''
+        判断线程是否在运行，如果运行不进行路径设置
+        '''
         fLag =True
         if(self.th2 is None):
             pass
@@ -166,18 +141,9 @@ class MinDataUi_Dialog(Ui_dialog):#QtWidgets.QWidget
         self.savePath = QtWidgets.QFileDialog.getExistingDirectory(self,  
                             "浏览",  
                             ".\\")
-        # self.Main.destPath =self.savePath+'/'
         if(len(self.savePath)>0):
             self.Main.destPath=self.savePath+'/'
             self.bclj_2.setText(self.Main.destPath)
-
-
-
-    # def on_dqljwj_click(self):
-    #     download_path = QtWidgets.QFileDialog.getExistingDirectory(self,  
-    #                         "浏览",  
-    #                         ".\\")
-    #     self.dqlj.setText(download_path)
 
 
     def on_dqljwj_2_click(self):

@@ -207,8 +207,22 @@ class LHB:
     '''
     def __init__(self):
         pass
-    def getStockLHB(self):
-        df =ts.cap_tops()
+    def getStockLHB(self,days =5):
+        '''
+        输入：
+        days：统计周期5、10、30和60日，默认为5日
+        输出:
+            code：代码
+            name:名称
+            count：上榜次数
+            bamount：累积购买额(万)
+            samount：累积卖出额(万)
+            net：净额(万)
+            bcount：买入席位数
+            scount：卖出席位数
+        '''
+        df =ts.cap_tops(days)#5
+
         print(df)
 # code：代码
 # name:名称

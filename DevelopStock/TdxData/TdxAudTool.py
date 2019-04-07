@@ -1,0 +1,284 @@
+# pyuic5 MinDataUi.ui -o MinDataUiBase.py
+import os
+from PyQt5 import QtCore, QtGui, QtWidgets
+from TdxAudToolBase import Ui_Dialog
+#from PyQt5.QtCore import QStringListModel
+#from PyQt5.QtCore import QDate
+from PyQt5.QtCore import *
+from PyQt5.QtWidgets import *
+from PyQt5.QtGui import *
+import time
+import datetime
+
+from datetime import datetime, date, timedelta
+import threading
+from PyQt5.QtWidgets import QMessageBox
+from processTdxDay import *
+
+class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
+    signal = pyqtSignal(str,int)
+    def setupUi(self,Dialog):
+
+        super().setupUi(Dialog)
+        Dialog.setObjectName("dlg")
+        #QStandardItemModel model = new QStandardItemModel()
+        # self.tv_lhb.setModel(model)
+        # model.setColumnCount(2)
+        # model.setHeaderData(0,Qt::Horizontal,"卡号")
+        # model.setHeaderData(1,Qt::Horizontal,"姓名")
+            #实例化列表模型，添加数据
+        self.qsL=QStringListModel()
+        self.Test=[]
+        self.processInt =0
+        self.setProcessBarPos(0)
+        self.MAX_THREAD_NUM =20
+        #设置模型列表视图，加载数据列表
+        self.qsL.setStringList(self.Test)
+
+        #设置列表视图的模型
+        self.lv_msg.setModel(self.qsL)    
+        self.signal.connect(self.callbacklog)
+        self.th2 =None
+        self.threadList =[]
+        #设置数据层次结构，4行4列
+        self.model=QStandardItemModel()
+
+        self.btn_lhb.clicked.connect(self.on_btn_lhb_click)
+        self.btn_tdx_path.clicked.connect(self.on_btn_tdx_path_click)
+        self.btn_read_stock.clicked.connect(self.on_btn_read_stock_click)
+        self.btn_clearMsg.clicked.connect(self.on_btn_clearMsg_click)
+
+    def on_btn_clearMsg_click(self):
+        self.Test.clear()
+
+    def on_btn_tdx_path_click(self):
+        '''
+        判断线程是否在运行，如果运行不进行路径设置
+        '''
+        self.savePath = QtWidgets.QFileDialog.getExistingDirectory(self,  
+                            "浏览",  
+                            "./")
+        if(len(self.savePath)>0):
+            self.le_tdx_path.setText(self.savePath+'/')  
+            self.le_read_path.setText(self.savePath+'/vipdoc/sz/lday')  
+
+    def on_btn_read_stock_click(self):
+        '''
+        读取通达信/vipdoc/sz/lday目录下的日线数据
+        '''
+        if(self.th2 is None):
+            self.addListViewMessage("线程启动")
+            self.th2 = threading.Thread(target=self.processData, args=(), name='funciton')
+            self.th2.start()
+        else:
+            if(self.th2.is_alive()==False):
+                self.addListViewMessage("线程启动")
+                self.th2 = threading.Thread(target=self.processData, args=(), name='funciton')
+                self.th2.start()
+            else:
+                self.addListViewMessage("线程正在运行")
+
+
+
+    def processData(self):
+        source =self.le_read_path.text()
+        td =TdxData() 
+        file_list = os.listdir(source)
+        
+        self.processInt =0
+        if(self.rb_lhb.isChecked()):
+            target ="./lhb" #数据存储目录
+            self.le_outpath.setText(target)
+            self.ifPathExist(target)
+            if self.dataLhb is None:
+                self.EmitMsgToUi('')
+                return
+            else:
+                self.EmitMsgToUi("开始读取龙虎榜上的股票数据")
+                self.walkThroughtLhb(td,source,target)#遍历龙虎榜数据
+                self.EmitMsgToUi("结束读取龙虎榜上的股票数据")
+
+        
+        if(self.rb_all.isChecked()):
+            target="./lday"
+            self.le_outpath.setText(target)
+            self.EmitMsgToUi("开始通信达目录%s下的所有股票数据"%source)
+            total =len(file_list)
+            i =0
+            for f in file_list:
+                i =i+1
+                self.processInt =round(1.0 * i/ total * 100,2)
+    ##########
+                th =threading.Thread(target=self.thread_day2csv_all, args=(td,source,tdxCode,target,target_prefix), name='funciton')
+                self.threadList.append(th)
+                if((total -i)>=self.MAX_THREAD_NUM):
+                    if(len(self.threadList)>=self.MAX_THREAD_NUM):
+                        for x in self.threadList:
+                            x.start()
+                        x.join()
+                        self.threadList.clear()
+                else:
+                    for x in self.threadList:
+                        x.start()
+                    x.join()
+                    self.threadList.clear()        
+    ##########
+                self.EmitMsgToUi("开始读取%s的数据"%f)
+                td.day2csv(source, f, target)  
+            self.EmitMsgToUi("结束通信达目录%s下的所有股票数据"%source)      
+
+        # if(self.rb_set_stock.isChecked()):
+        #     df =lhb.getStockLHB(30)
+    def EmitMsgToUi(self,msg):
+        '''
+        向界面发送信息
+        '''
+        self.signal.emit(msg,self.processInt)
+
+    def walkThroughtLhb(self,td,source,target):
+        if (self.dataLhb is None):
+            return 
+        total =len(self.dataLhb)
+        target_prefix ='lhb_'
+        for i in range(0, total):
+            self.processInt =round(1.0 * i/ total * 100,2)
+            code = self.dataLhb.iloc[i]['code']
+            if(code >='600000'):
+                tdxCode ="sh%s.day"%code
+            else:
+                tdxCode ="sz%s.day"%code
+            tfName =target + os.sep + target_prefix +tdxCode + '.xls'
+            if(self.ifFileExist(tfName)==False):
+                # if(td.day2csv(source, tdxCode, target,target_prefix)==True):
+                #     self.EmitMsgToUi("成功读取龙虎榜上股票 %s/%s 的数据"%(source,tdxCode))
+                # else:
+                #     self.EmitMsgToUi("在通达信的目录中不存在 %s/%s 的数据"%(source,tdxCode))
+                th =threading.Thread(target=self.thread_day2csv_lhb, args=(td,source,tdxCode,target,target_prefix), name='funciton')
+                self.threadList.append(th)
+                if((total -i)>=self.MAX_THREAD_NUM):
+                    if(len(self.threadList)>=self.MAX_THREAD_NUM):
+                        for x in self.threadList:
+                            x.start()
+                        x.join()
+                        self.threadList.clear()
+                else:
+                    for x in self.threadList:
+                        x.start()
+                    x.join()
+                    self.threadList.clear()                    
+                        
+            else:
+                self.EmitMsgToUi("龙虎榜上股票 %s 的数据已经存在"%(tfName))
+
+    def thread_day2csv_all(self,td,source,fn,target,target_prefix):
+        self.EmitMsgToUi("开始读取%s的数据"%f)
+        td.day2csv(source, fn, target,target_prefix)  
+
+    def thread_day2csv_lhb(self,td,source,fn,target,target_prefix):
+        if(td.day2csv(source, fn, target,target_prefix)==True):
+            self.EmitMsgToUi("成功读取龙虎榜上股票 %s/%s 的数据"%(source,fn))
+        else:
+            self.EmitMsgToUi("在通达信的目录中不存在 %s/%s 的数据"%(source,fn))
+
+    def ifPathExist(self,path):
+        '''
+        检测路径是否存在 如果存在跳过，如果不存在生成
+        '''
+        if(os.path.exists(path)==False):
+            os.mkdir(path)
+        else:
+            pass
+
+    def ifFileExist(self,fn):
+        '''
+        检测路径是否存在 如果存在跳过，如果不存在生成
+        '''
+        if(os.path.exists(fn)==False):
+            return False
+        else:
+            return True         
+
+    def on_btn_lhb_click(self):
+        '''
+        龙虎榜数据
+        '''
+        lhb =LHB_LT()
+        dayType ="None"
+        if(self.rb_5day.isChecked()):
+            dayType ="5日"
+            df =lhb.getStockLHB(5)
+        if(self.rb_10day.isChecked()):
+            dayType ="10日"
+            df =lhb.getStockLHB(10)
+        if(self.rb_30day.isChecked()):
+            dayType ="30日"
+            df =lhb.getStockLHB(30)
+        if(self.rb_60day.isChecked()):
+            dayType ="60日"
+            df =lhb.getStockLHB(60)
+        self.dataLhb =df
+
+        self.model.setHorizontalHeaderLabels(['代码','名称','上榜次数','累积购买额(万)','累积卖出额(万)','净额(万)','买入席位数','卖出席位数'])
+        row =0
+        if (df is None):
+            self.addListViewMessage("读取龙虎榜 %s 没有数据返回"%(dayType))
+            return 
+        for i in range(0, len(df)):
+            # print df.iloc[i]['c1'], df.iloc[i]['c2']
+            rowContent =df.iloc[i]
+            item=QStandardItem(rowContent['code'])
+            self.model.setItem(row,0,item)
+            item=QStandardItem(rowContent['name'])
+            self.model.setItem(row,1,item)
+            item=QStandardItem(str(rowContent['count']))
+            self.model.setItem(row,2,item)
+            item=QStandardItem(str(rowContent['bamount']))
+            self.model.setItem(row,3,item)
+            item=QStandardItem(str(rowContent['samount']))
+            self.model.setItem(row,4,item)
+            item=QStandardItem(str(rowContent['net']))
+            self.model.setItem(row,5,item)
+            item=QStandardItem(str(rowContent['bcount']))
+            self.model.setItem(row,6,item)
+            item=QStandardItem(str(rowContent['scount']))
+            self.model.setItem(row,7,item)
+            row =row +1
+        self.tv_lhb.setModel(self.model)                
+        self.addListViewMessage("读取龙虎榜 %s 成功"%(dayType))
+  
+    def callbacklog(self, msg,processInt):
+        '''
+        # 回调数据输出到信息列表
+        '''
+        if(len(msg)>0):
+            self.addListViewMessage(msg)
+        self.setProcessBarPos(processInt)        
+
+ 
+    def addListViewMessage(self,msg):
+        '''
+        向信息列表填加信息msg
+        '''
+        now_time = datetime.datetime.now()
+        dateL =now_time.strftime('%H:%M:%S')
+        if(len(msg)>0):
+            nMsg ="[%s]:%s"%(dateL,msg)
+            self.Test.append(nMsg)
+            # #设置模型列表视图，加载数据列表
+            self.qsL.setStringList(self.Test)
+        
+    def setProcessBarPos(self,processBar):
+        '''
+        设置进度条位置
+        '''
+        self.progressBar.setValue(processBar)
+
+        
+if __name__ == "__main__":
+    import sys
+    app = QtWidgets.QApplication(sys.argv)
+    Dialog = QtWidgets.QDialog()
+    ui = TdxAudTool_Dialog()
+    ui.setupUi(Dialog)
+    Dialog.show()
+    sys.exit(app.exec_())

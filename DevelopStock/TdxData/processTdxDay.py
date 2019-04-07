@@ -26,34 +26,35 @@ class TdxData:
     '''
     def __init__(self):
         pass
-    def day2csv(self,source_dir, file_name, target_dir):
+    def ifFileExist(self,fn):
+        '''
+        检测路径是否存在 如果存在跳过，如果不存在生成
+        '''
+        if(os.path.exists(fn)==False):
+            return False
+        else:
+            return True  
+    def day2csv(self,source_dir, file_name, target_dir,target_prefix=""):
         '''
         获取输入级从通达信的日线数据
         日线数据位于：new_tdx/vipdoc/sz/lday/,new_tdx/vipdoc/sh/lday/
         '''
         # 以二进制方式打开源文件
-        source_file = open(source_dir + os.sep + file_name, 'rb')
+        srFn = source_dir +os.sep+  file_name 
+        if(self.ifFileExist(srFn) ==False):
+            return False
+
+        source_file = open(srFn, 'rb')
         buf = source_file.read()
         source_file.close()
     
-        # 打开目标文件，后缀名为CSV
-        #target_file = open(target_dir + os.sep + file_name + '.xls', 'wb+')
-        target_file = target_dir + os.sep + file_name + '.xls'
+        # 打开目标文件，后缀名为xls
+        target_file = target_dir + os.sep + target_prefix +file_name + '.xls'
         buf_size = len(buf)
         rec_count = int(buf_size / 32)
         begin = 0
         end = 32
-        # header = str('date') + ', ' + str('open') + ', ' + str('high') + ', ' + str('low') + ', ' \
-        #     + str('close') + ', ' + str('amount') + ', ' + str('vol') + ', ' + str('str07') + '\n'
-        #target_file.write(header)
-# 　　第1项，交易日期
-#   　第2项，开盘价
-# 　　第3项，最高价
-# 　　第4项，最低价
-# 　　第5项，收盘价
-# 　　第6项，成交金额
-# 　　第7项，成交量
-# 　　第8项，未使用
+
         dayTrade =[]
         
         for i in range(rec_count):
@@ -61,32 +62,26 @@ class TdxData:
             # I: unsigned int
             # f: float
             a = unpack('IIIIIfII', buf[begin:end])
-            # line = str(a[0]) + ', ' + str(a[1] / 100.0) + ', ' + str(a[2] / 100.0) + ', ' \
-            #     + str(a[3] / 100.0) + ', ' + str(a[4] / 100.0) + ', ' + str(a[5] / 10.0) + ', ' \
-            #     + str(a[6]) + ', ' + str(a[7]) + ', ' + '\n'
-            date =str(a[0]) 
+            date =str(a[0]) #交易日期
             date_time = datetime.datetime.strptime(date,'%Y%m%d')
             date= date_time.strftime('%Y-%m-%d')
-            openPrice =(a[1] / 100.0)
-            highPrice =(a[2] / 100.0)
-            lowPrice =(a[3] / 100.0)
-            closePrice =(a[4] / 100.0)
-            amount =(a[5] / 10.0)
-            volume =(a[6])
+            openPrice =(a[1] / 100.0)#开盘价
+            highPrice =(a[2] / 100.0)#最高价
+            lowPrice =(a[3] / 100.0)#最低价
+            closePrice =(a[4] / 100.0)#收盘价
+            amount =(a[5] / 10.0)#成交金额
+            volume =(a[6])#成交量
 
             dayTrade.append([date,openPrice,highPrice,lowPrice,closePrice,amount,volume])
-           # target_file.write(line)
             begin += 32
             end += 32
         dayTdx =pd.DataFrame(dayTrade)
-        #   jbxx.to_excel(write,sheet_name='基本指标(元)',index=True)
         dayTdx.rename(columns={0:'date',1:'open',2:'high',3:'low',4:'close',5:'amount',6:'volume'},inplace=True)#
-        #dayTdx.set_index('date',inplace=True)
-        dayTdx.sort_values('date', ascending=False, inplace=True)
+        
         dayTdx.set_index(pd.DatetimeIndex(pd.to_datetime(dayTdx.date)), inplace=True)
         # # 周数据
         weekTdx =self.periodChange(dayTdx,'W')
-        # 月数据
+        # 月数据dayTdx.sort_values('date', ascending=False, inplace=True)
         monthTdx =self.periodChange(dayTdx,'M')
         #计算均线 布林 MACD  均线斜率 均线粘合
 
@@ -102,12 +97,39 @@ class TdxData:
         weekTdx.to_excel(write,sheet_name='周')
         monthTdx.to_excel(write,sheet_name='月')
         write.save()
+        return True
+
+    def fz2csv(self,source_dir, file_name, target_dir):
+        '''
+        通达信5分钟线*.lc5文件和*.lc1文件
+        '''
+        source_file = open(source_dir + os.sep + file_name, 'rb')
+        buf = source_file.read()
+        source_file.close()
+
+        # 打开目标文件，后缀名为xls
+        target_file = target_dir + os.sep + file_name + '.xls'
+        buf_size = len(buf)
+        rec_count = int(buf_size / 32)
+        begin = 0
+        end = 32
+        minTrade =[]
+
+        for i in range(rec_count):
+            a=unpack('hhfffffii',buf[begin:end])
+            minTrade.append([str(int(a[0]/2048)+2004)+'-'+str(int(a[0]%2048/100)).zfill(2)+'-'+str(a[0]%20480).zfill(2),str(int(a[1]/60)).zfill(2)+':'+str(a[1]%60).zfill(2)+':00',a[2],a[3],a[4],a[5],a[6],a[7]])
+            end=end+32
+            end=end+32
+        minTdx = pd.DataFrame(minTrade, columns=['date','time','open','high','low','close','amount','volume'])
+        minTdx.sort_values('date', ascending=False, inplace=True)
+        minTdx.to_excel(target_file,sheet_name=file_name)
+
 
     def indicatorCalc(self,stock_data):
         '''
         计算指数 MACD MA 三线粘合 斜率
         '''
-        nDif,nDea,nMacd =self.calcMacd(stock_data)
+        nDif,nDea,nMacd =self.calcMacd(stock_data)#MACD(12,26,9)
         stock_data['DIF'] =nDif
         stock_data['DEA'] =nDea
         stock_data['MACD'] =nMacd
@@ -117,9 +139,11 @@ class TdxData:
         # 计算简单算术移动平均线MA - 注意：stock_data['close']为股票每天的收盘价
         for ma in ma_list:
             stock_data['MA_' + str(ma)] = stock_data['close'].rolling(ma).mean()
+
         # 计算指数平滑移动平均线EMA
-        for ma in ma_list:
-            stock_data['EMA_' + str(ma)] = stock_data['close'].ewm(span=ma).mean() 
+        # for ma in ma_list:
+        #     stock_data['EMA_' + str(ma)] = stock_data['close'].ewm(span=ma).mean() 
+        
         #(ma20, ma31, ma60)(ma31,ma60,ma120) 三线粘合值
         # M5:=MA(C,5);
         # M10:=MA(C,10);
@@ -138,14 +162,14 @@ class TdxData:
         stock_data['Glue31-60-120'] =(A-B)/B*100      
         #####
         #  m5斜率 m10斜率 m20斜率 m31斜率 m60斜率 m120斜率
-        stock_data['Slope_M5'] =self.ma_slope(stock_data['MA_5'])#np.arctan2(((stock_data['MA5']/REF_MA5)-1)*100)*180/3.14115926
-        stock_data['Slope_M10'] =self.ma_slope(stock_data['MA_10'])#np.arctan2(((stock_data['MA10']/REF_MA10)-1)*100)*180/3.14115926
-        stock_data['Slope_M20'] =self.ma_slope(stock_data['MA_20'])#np.arctan2(((stock_data['MA20']/REF_MA20)-1)*100)*180/3.14115926
-        stock_data['Slope_M31'] =self.ma_slope(stock_data['MA_31'])#np.arctan2(((stock_data['MA31']/REF_MA31)-1)*100)*180/3.14115926
-        stock_data['Slope_M60'] =self.ma_slope(stock_data['MA_60'])#np.arctan2(((stock_data['MA60']/REF_MA60)-1)*100)*180/3.14115926
-        stock_data['Slope_M120'] =self.ma_slope(stock_data['MA_120'])#np.arctan2(((stock_data['MA5']/REF_MA5)-1)*100)*180/3.14115926
+        stock_data['Slope_M5'] =self.ma_slope(stock_data['MA_5'])
+        stock_data['Slope_M10'] =self.ma_slope(stock_data['MA_10'])
+        stock_data['Slope_M20'] =self.ma_slope(stock_data['MA_20'])
+        stock_data['Slope_M31'] =self.ma_slope(stock_data['MA_31'])
+        stock_data['Slope_M60'] =self.ma_slope(stock_data['MA_60'])
+        stock_data['Slope_M120'] =self.ma_slope(stock_data['MA_120'])
         #布林线
-        self.bollinger(stock_data,20)
+        self.bollinger(stock_data,20)#BOLL(20)
         return stock_data
     def ma_slope(self,MA):
         '''
@@ -201,16 +225,17 @@ class TdxData:
             df.ix[i, 'LB'] = df.ix[i, 'BOLL'] - 2 * np.std(df.close.values[i-n+1:i+1], ddof=1)
         return df
 import tushare as ts
-class LHB:
+class LHB_LT:
     '''
-    获取龙虎榜数据
+    获取龙虎榜数据和行业龙头
     '''
     def __init__(self):
         pass
     def getStockLHB(self,days =5):
         '''
+        个股上榜统计
         输入：
-        days：统计周期5、10、30和60日，默认为5日
+            days：统计周期5、10、30和60日，默认为5日
         输出:
             code：代码
             name:名称
@@ -222,60 +247,15 @@ class LHB:
             scount：卖出席位数
         '''
         df =ts.cap_tops(days)#5
-
-        print(df)
-# code：代码
-# name:名称
-# count：上榜次数
-# bamount：累积购买额(万)
-# samount：累积卖出额(万)
-# net：净额(万)
-# bcount：买入席位数
-# scount：卖出席位数
-    # def urlOpenContent(self,urlBase,urlfix=""):
-    #     '''
-    #     parameter:
-    #         url is made by urlBase urlfix
-    #     return content
-    #     '''
-    #     url =urlBase
-    #     headers = {"User-Agent":"Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6"}
-    #     req = urllib2.Request(url, headers = headers)
-    #     try:
-    #         content = urllib2.urlopen(req).read()
-    #     except:
-    #         return 
-    #     return content
-    # def getStockLHB(self):
-    #     '''
-    #     获取流动股本信息
-    #     http://data.eastmoney.com/stock/stockstatistic.html
-    #     '''
-
-    #     # stockGbbd ='http://vip.stock.finance.sina.com.cn/corp/go.php/vCI_StockStructure/stockid/000001.phtml'#股本变动
-    #     emLHB ='http://data.eastmoney.com/stock/stockstatistic.html'#股本变动
-    #     content =self.urlOpenContent(emLHB)
-    #     soup = BeautifulSoup(content,features="lxml")
-    #     table = soup.find("table",{"id":"tab-1"})
-    #     tbody =table.find("tbody")
-    #     tr =tbody.findAll("tr")
-    #     i=0
-    #     while(i<len(tr)):
-    #         td = tr[i].findAll("td")
-    #         if(len(td)>0):
-    #             ind =td[0].text
-    #         i =i+1
-            
-
-
-        
+        return df
 
 if __name__ == '__main__':
-    # source = 'D:\\new_tdx\\vipdoc\\sz\\lday\\'
+    # source = 'D:\\new_tdx\\vipdoc\\sz\\lday'
     # target = 'E:\\Project\\Stock\\testTdx'
     # td =TdxData() 
     # file_list = os.listdir(source)
     # for f in file_list:
     #     td.day2csv(source, f, target)
-    lhb =LHB()
-    lhb.getStockLHB()
+    # lhb =LHB()
+    # lhb.getStockLHB()
+    pass

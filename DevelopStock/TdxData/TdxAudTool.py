@@ -14,12 +14,16 @@ from datetime import datetime, date, timedelta
 import threading
 from PyQt5.QtWidgets import QMessageBox
 from processTdxDay import *
-
+from multiprocessing import Process
+str_msg =[]
 class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
     signal = pyqtSignal(str,int)
+    def __init__(self):
+        super(TdxAudTool_Dialog,self).__init__()
+        super().setupUi(Dialog)
     def setupUi(self,Dialog):
 
-        super().setupUi(Dialog)
+        # super().setupUi(Dialog)
         Dialog.setObjectName("dlg")
         #QStandardItemModel model = new QStandardItemModel()
         # self.tv_lhb.setModel(model)
@@ -31,9 +35,11 @@ class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
         self.Test=[]
         self.processInt =0
         self.setProcessBarPos(0)
-        self.MAX_THREAD_NUM =20
+        self.MAX_THREAD_NUM =5#最多并发数
         #设置模型列表视图，加载数据列表
-        self.qsL.setStringList(self.Test)
+        global str_msg
+        self.qsL.setStringList(str_msg)
+        # self.qsL.setStringList(self.Test)
 
         #设置列表视图的模型
         self.lv_msg.setModel(self.qsL)    
@@ -48,8 +54,19 @@ class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
         self.btn_read_stock.clicked.connect(self.on_btn_read_stock_click)
         self.btn_clearMsg.clicked.connect(self.on_btn_clearMsg_click)
 
+        self.timer=QTimer()
+        self.timer.timeout.connect(self.currTime)
+        self.timer.start(1000)
+    def currTime(self):
+        global str_msg
+        self.qsL.setStringList(str_msg)
+
     def on_btn_clearMsg_click(self):
-        self.Test.clear()
+        # self.Test.clear()
+        global str_msg
+        self.qsL.setStringList(str_msg)
+
+        pass
 
     def on_btn_tdx_path_click(self):
         '''
@@ -77,7 +94,7 @@ class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
                 self.th2.start()
             else:
                 self.addListViewMessage("线程正在运行")
-
+        #self.processData()
 
 
     def processData(self):
@@ -153,7 +170,8 @@ class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
                 #     self.EmitMsgToUi("成功读取龙虎榜上股票 %s/%s 的数据"%(source,tdxCode))
                 # else:
                 #     self.EmitMsgToUi("在通达信的目录中不存在 %s/%s 的数据"%(source,tdxCode))
-                th =threading.Thread(target=self.thread_day2csv_lhb, args=(td,source,tdxCode,target,target_prefix), name='funciton')
+                # th =threading.Thread(target=self.thread_day2csv_lhb, args=(td,source,tdxCode,target,target_prefix), name='funciton')
+                th =Process(target=hello, args=(td,source,tdxCode,target,target_prefix))
                 self.threadList.append(th)
                 if((total -i)>=self.MAX_THREAD_NUM):
                     if(len(self.threadList)>=self.MAX_THREAD_NUM):
@@ -261,11 +279,14 @@ class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
         '''
         now_time = datetime.datetime.now()
         dateL =now_time.strftime('%H:%M:%S')
+        global str_msg
         if(len(msg)>0):
             nMsg ="[%s]:%s"%(dateL,msg)
-            self.Test.append(nMsg)
+            str_msg.append(nMsg)
+            self.qsL.setStringList(str_msg)
+            # self.Test.append(nMsg)
             # #设置模型列表视图，加载数据列表
-            self.qsL.setStringList(self.Test)
+            # self.qsL.setStringList(self.Test)
         
     def setProcessBarPos(self,processBar):
         '''
@@ -273,9 +294,18 @@ class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
         '''
         self.progressBar.setValue(processBar)
 
+def hello(td,source,fn,target,target_prefix):
+    global str_msg
+    if(td.day2csv(source, fn, target,target_prefix)==True):
+        str_msg.append("成功读取龙虎榜上股票 %s/%s 的数据"%(source,fn))
+        print('sucess')
+    else:
+        print('fail')
+        str_msg.append("在通达信的目录中不存在 %s/%s 的数据"%(source,fn))
         
 if __name__ == "__main__":
     import sys
+    
     app = QtWidgets.QApplication(sys.argv)
     Dialog = QtWidgets.QDialog()
     ui = TdxAudTool_Dialog()

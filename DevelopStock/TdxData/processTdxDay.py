@@ -11,6 +11,7 @@ import datetime
 import xlwt
 import xlrd
 import numpy as np
+#from numba import jit
 #
 # import urllib.request as urllib2
 
@@ -20,6 +21,7 @@ import numpy as np
 # from urllib import parse
 # from urllib.request import urlopen
 #
+
 class TdxData:
     '''
     读取通达信的日线数据
@@ -34,6 +36,7 @@ class TdxData:
             return False
         else:
             return True  
+    #@jit
     def day2csv(self,source_dir, file_name, target_dir,target_prefix=""):
         '''
         获取输入级从通达信的日线数据
@@ -124,7 +127,7 @@ class TdxData:
         minTdx.sort_values('date', ascending=False, inplace=True)
         minTdx.to_excel(target_file,sheet_name=file_name)
 
-
+    #@jit
     def indicatorCalc(self,stock_data):
         '''
         计算指数 MACD MA 三线粘合 斜率
@@ -171,6 +174,8 @@ class TdxData:
         #布林线
         self.bollinger(stock_data,20)#BOLL(20)
         return stock_data
+
+   # @jit
     def ma_slope(self,MA):
         '''
         MA1:=MA(CLOSE,10);
@@ -201,7 +206,8 @@ class TdxData:
         period_stock_data['volume'] = stock_data['volume'].resample(period_type).sum()#,how='sum')
         period_stock_data['amount'] = stock_data['amount'].resample(period_type).sum()#,how='sum')
         return  period_stock_data  
-
+    
+    #@jit
     def calcMacd(self,data,fast_period=12,slow_period=26,signal_period=9): 
         # data['close'] -- 收盘价 
         # 收盘价按照日期升序( data['date'] )排列 
@@ -216,6 +222,7 @@ class TdxData:
         # 将bar 分成红绿柱分别导出数据， 
         return dif,dea,macd
 # 布林指标
+   # @jit
     def bollinger(self,df,n):
         for i in range(len(df)):
             if i < n-1:
@@ -249,13 +256,13 @@ class LHB_LT:
         df =ts.cap_tops(days)#5
         return df
 
-if __name__ == '__main__':
-    # source = 'D:\\new_tdx\\vipdoc\\sz\\lday'
-    # target = 'E:\\Project\\Stock\\testTdx'
-    # td =TdxData() 
-    # file_list = os.listdir(source)
-    # for f in file_list:
-    #     td.day2csv(source, f, target)
-    # lhb =LHB()
-    # lhb.getStockLHB()
-    pass
+# if __name__ == '__main__':
+#     # source = 'D:\\new_tdx\\vipdoc\\sz\\lday'
+#     # target = 'E:\\Project\\Stock\\testTdx'
+#     # td =TdxData() 
+#     # file_list = os.listdir(source)
+#     # for f in file_list:
+#     #     td.day2csv(source, f, target)
+#     # lhb =LHB()
+#     # lhb.getStockLHB()
+#     pass

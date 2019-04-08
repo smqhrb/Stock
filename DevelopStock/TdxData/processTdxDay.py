@@ -11,6 +11,7 @@ import datetime
 import xlwt
 import xlrd
 import numpy as np
+from dbOper import *
 #from numba import jit
 #
 # import urllib.request as urllib2
@@ -27,6 +28,7 @@ class TdxData:
     读取通达信的日线数据
     '''
     def __init__(self):
+        self.mydb =mysqlDB()
         pass
     def ifFileExist(self,fn):
         '''
@@ -93,10 +95,12 @@ class TdxData:
        
         # ========== 将算好的数据输出到xls文件 - 注意：这里请填写输出文件在您电脑中的路径
         dayTdx =self.indicatorCalc(dayTdx)
+        self.mydb.to_sql(dayTdx,'dayData')
         weekTdx =self.indicatorCalc(weekTdx)
         monthTdx =self.indicatorCalc(monthTdx)
         
         dayTdx.to_excel(write,sheet_name=file_name)
+
         weekTdx.to_excel(write,sheet_name='周')
         monthTdx.to_excel(write,sheet_name='月')
         write.save()

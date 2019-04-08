@@ -10,12 +10,15 @@ from PyQt5.QtGui import *
 import time
 import datetime
 
+from  Qt5WithMatplot import *
 from datetime import datetime, date, timedelta
 import threading
 from PyQt5.QtWidgets import QMessageBox
 from processTdxDay import *
-from multiprocessing import Process
-str_msg =[]
+
+from multiprocessing import Process,Queue
+# str_msg =[]
+str_msgQ = Queue()
 class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
     signal = pyqtSignal(str,int)
     def __init__(self):
@@ -37,9 +40,8 @@ class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
         self.setProcessBarPos(0)
         self.MAX_THREAD_NUM =5#最多并发数
         #设置模型列表视图，加载数据列表
-        global str_msg
-        self.qsL.setStringList(str_msg)
-        # self.qsL.setStringList(self.Test)
+
+        self.qsL.setStringList(self.Test)
 
         #设置列表视图的模型
         self.lv_msg.setModel(self.qsL)    
@@ -56,15 +58,88 @@ class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
 
         self.timer=QTimer()
         self.timer.timeout.connect(self.currTime)
-        self.timer.start(1000)
+        self.timer.start(2000)
+
+        # quit = QAction("Quit", self)
+        # quit.triggered.connect(self.closeEvent)
+        # menubar = self.menuBar()
+        # fmenu = menubar.addMenu("File")
+        # fmenu.addAction(quit)  
+        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.rejected.connect(self.reject) 
+        # self.closed.connect(self.accept)   
+        #####draw pic
+                #第五步：定义MyFigure类的一个实例
+        self.F = MyFigure(width=3, height=2, dpi=100)
+        #self.F.plotsin()
+        self.plotcos()
+        #第六步：在GUI的groupBox中创建一个布局，用于添加MyFigure类的实例（即图形）后其他部件。
+        self.gridlayout = QGridLayout(self.groupBox_pic)  # 继承容器groupBox
+        self.gridlayout.addWidget(self.F,0,1)
+        self.plotother()
+        #####
+        ##############
+    def plotcos(self):
+        t = np.arange(0.0, 5.0, 0.01)
+        s = np.cos(2 * np.pi * t)
+        self.F.axes.plot(t, s)
+        self.F.fig.suptitle("cos")
+    def plotother(self):
+        F1 = MyFigure(width=5, height=4, dpi=100)
+        F1.fig.suptitle("Figuer_4")
+        F1.axes1 = F1.fig.add_subplot(221)
+        x = np.arange(0, 50)
+        y = np.random.rand(50)
+        F1.axes1.hist(y, bins=50)
+        F1.axes1.plot(x, y)
+        F1.axes1.bar(x, y)
+        F1.axes1.set_title("hist")
+        F1.axes2 = F1.fig.add_subplot(222)
+
+        ## 调用figure下面的add_subplot方法，类似于matplotlib.pyplot下面的subplot方法
+        x = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        y = [23, 21, 32, 13, 3, 132, 13, 3, 1]
+        F1.axes2.plot(x, y)
+        F1.axes2.set_title("line")
+        # 散点图
+        F1.axes3 = F1.fig.add_subplot(223)
+        F1.axes3.scatter(np.random.rand(20), np.random.rand(20))
+        F1.axes3.set_title("scatter")
+        # 折线图
+        F1.axes4 = F1.fig.add_subplot(224)
+        x = np.arange(0, 5, 0.1)
+        F1.axes4.plot(x, np.sin(x), x, np.cos(x))
+        F1.axes4.set_title("sincos")
+        self.gridlayout.addWidget(F1, 0, 2)
+        ##############
+    def accept(self):
+        print("accept")
+        self.close()
+    def reject(self):
+        print("reject")
+        self.close()
+
     def currTime(self):
-        global str_msg
-        self.qsL.setStringList(str_msg)
+        self.setProcessBarPos(self.processInt)     
+        if(str_msgQ.qsize()>0):
+            str_msg =str_msgQ.get()
+            self.addListViewMessage(str_msg)
+               
+
+
+    # def closeEvent(self, QCloseEvent):#重写关闭窗口事件
+    #     print("重写关闭窗口事件closeEvent")
+    def closeEvent(self,event):
+        reply =QMessageBox.question(self,"提示","后台还有进程运行，你确认退出么？",QMessageBox.Yes|QMessageBox.No,QMessageBox.No)
+        if reply==QMessageBox.Yes:
+            Dialog.accept()
+        else:
+            Dialog.ignore()
 
     def on_btn_clearMsg_click(self):
-        # self.Test.clear()
-        global str_msg
-        self.qsL.setStringList(str_msg)
+        self.Test.clear()
+        # global str_msg
+        self.qsL.setStringList(self.Test)
 
         pass
 
@@ -86,11 +161,13 @@ class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
         if(self.th2 is None):
             self.addListViewMessage("线程启动")
             self.th2 = threading.Thread(target=self.processData, args=(), name='funciton')
+            self.th2.setDaemon(True)
             self.th2.start()
         else:
             if(self.th2.is_alive()==False):
                 self.addListViewMessage("线程启动")
                 self.th2 = threading.Thread(target=self.processData, args=(), name='funciton')
+                self.th2.setDaemon(True)
                 self.th2.start()
             else:
                 self.addListViewMessage("线程正在运行")
@@ -117,31 +194,38 @@ class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
 
         
         if(self.rb_all.isChecked()):
+            global str_msgQ
             target="./lday"
             self.le_outpath.setText(target)
+            self.ifPathExist(target)
             self.EmitMsgToUi("开始通信达目录%s下的所有股票数据"%source)
             total =len(file_list)
             i =0
             for f in file_list:
                 i =i+1
                 self.processInt =round(1.0 * i/ total * 100,2)
+                # self.setProcessBarPos(self.processInt)
+                target_prefix ="tdx_"
     ##########
-                th =threading.Thread(target=self.thread_day2csv_all, args=(td,source,tdxCode,target,target_prefix), name='funciton')
+                # th =threading.Thread(target=thread_day2csv_all, args=(td,source,tdxCode,target,target_prefix), name='funciton')
+                th =Process(target=thread_day2csv_all, args=(str_msgQ,td,source,f,target,target_prefix))
                 self.threadList.append(th)
                 if((total -i)>=self.MAX_THREAD_NUM):
                     if(len(self.threadList)>=self.MAX_THREAD_NUM):
                         for x in self.threadList:
+                            x.daemon=True
                             x.start()
                         x.join()
                         self.threadList.clear()
                 else:
                     for x in self.threadList:
+                        x.daemon=True
                         x.start()
                     x.join()
                     self.threadList.clear()        
     ##########
-                self.EmitMsgToUi("开始读取%s的数据"%f)
-                td.day2csv(source, f, target)  
+                # self.EmitMsgToUi("开始读取%s的数据"%f)
+                # td.day2csv(source, f, target)  
             self.EmitMsgToUi("结束通信达目录%s下的所有股票数据"%source)      
 
         # if(self.rb_set_stock.isChecked()):
@@ -153,12 +237,14 @@ class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
         self.signal.emit(msg,self.processInt)
 
     def walkThroughtLhb(self,td,source,target):
+        global str_msgQ
         if (self.dataLhb is None):
             return 
         total =len(self.dataLhb)
         target_prefix ='lhb_'
         for i in range(0, total):
             self.processInt =round(1.0 * i/ total * 100,2)
+            # self.setProcessBarPos(self.processInt)
             code = self.dataLhb.iloc[i]['code']
             if(code >='600000'):
                 tdxCode ="sh%s.day"%code
@@ -171,16 +257,18 @@ class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
                 # else:
                 #     self.EmitMsgToUi("在通达信的目录中不存在 %s/%s 的数据"%(source,tdxCode))
                 # th =threading.Thread(target=self.thread_day2csv_lhb, args=(td,source,tdxCode,target,target_prefix), name='funciton')
-                th =Process(target=hello, args=(td,source,tdxCode,target,target_prefix))
+                th =Process(target=thread_day2csv_lhb, args=(str_msgQ,td,source,tdxCode,target,target_prefix))
                 self.threadList.append(th)
                 if((total -i)>=self.MAX_THREAD_NUM):
                     if(len(self.threadList)>=self.MAX_THREAD_NUM):
                         for x in self.threadList:
+                            x.daemon=True
                             x.start()
                         x.join()
                         self.threadList.clear()
                 else:
                     for x in self.threadList:
+                        x.daemon=True
                         x.start()
                     x.join()
                     self.threadList.clear()                    
@@ -188,15 +276,15 @@ class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
             else:
                 self.EmitMsgToUi("龙虎榜上股票 %s 的数据已经存在"%(tfName))
 
-    def thread_day2csv_all(self,td,source,fn,target,target_prefix):
-        self.EmitMsgToUi("开始读取%s的数据"%f)
-        td.day2csv(source, fn, target,target_prefix)  
+    # def thread_day2csv_all(self,td,source,fn,target,target_prefix):
+    #     self.EmitMsgToUi("开始读取%s的数据"%f)
+    #     td.day2csv(source, fn, target,target_prefix)  
 
-    def thread_day2csv_lhb(self,td,source,fn,target,target_prefix):
-        if(td.day2csv(source, fn, target,target_prefix)==True):
-            self.EmitMsgToUi("成功读取龙虎榜上股票 %s/%s 的数据"%(source,fn))
-        else:
-            self.EmitMsgToUi("在通达信的目录中不存在 %s/%s 的数据"%(source,fn))
+    # def thread_day2csv_lhb(self,td,source,fn,target,target_prefix):
+    #     if(td.day2csv(source, fn, target,target_prefix)==True):
+    #         self.EmitMsgToUi("成功读取龙虎榜上股票 %s/%s 的数据"%(source,fn))
+    #     else:
+    #         self.EmitMsgToUi("在通达信的目录中不存在 %s/%s 的数据"%(source,fn))
 
     def ifPathExist(self,path):
         '''
@@ -282,11 +370,9 @@ class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
         global str_msg
         if(len(msg)>0):
             nMsg ="[%s]:%s"%(dateL,msg)
-            str_msg.append(nMsg)
-            self.qsL.setStringList(str_msg)
-            # self.Test.append(nMsg)
-            # #设置模型列表视图，加载数据列表
-            # self.qsL.setStringList(self.Test)
+            self.Test.append(nMsg)
+            #设置模型列表视图，加载数据列表
+            self.qsL.setStringList(self.Test)
         
     def setProcessBarPos(self,processBar):
         '''
@@ -294,15 +380,18 @@ class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
         '''
         self.progressBar.setValue(processBar)
 
-def hello(td,source,fn,target,target_prefix):
-    global str_msg
+def thread_day2csv_lhb(q,td,source,fn,target,target_prefix):
+    
     if(td.day2csv(source, fn, target,target_prefix)==True):
-        str_msg.append("成功读取龙虎榜上股票 %s/%s 的数据"%(source,fn))
-        print('sucess')
-    else:
-        print('fail')
-        str_msg.append("在通达信的目录中不存在 %s/%s 的数据"%(source,fn))
+        q.put("成功读取龙虎榜上股票 %s/%s 的数据"%(source,fn))
         
+    else:
+        
+        q.put("在通达信的目录中不存在 %s/%s 的数据"%(source,fn))
+def thread_day2csv_all(q,td,source,fn,target,target_prefix):
+    td.day2csv(source, fn, target,target_prefix) 
+    q.put("成功读取%s的数据"%fn)
+
 if __name__ == "__main__":
     import sys
     

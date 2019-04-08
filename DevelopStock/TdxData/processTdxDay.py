@@ -205,6 +205,8 @@ class TdxData:
         #周线的volume和money等于那一周中volume和money各自的和
         period_stock_data['volume'] = stock_data['volume'].resample(period_type).sum()#,how='sum')
         period_stock_data['amount'] = stock_data['amount'].resample(period_type).sum()#,how='sum')
+        ##
+        period_stock_data.dropna(axis=0, how='any', inplace=True)
         return  period_stock_data  
     
     #@jit
@@ -256,13 +258,14 @@ class LHB_LT:
         df =ts.cap_tops(days)#5
         return df
 
-# if __name__ == '__main__':
-#     # source = 'D:\\new_tdx\\vipdoc\\sz\\lday'
-#     # target = 'E:\\Project\\Stock\\testTdx'
-#     # td =TdxData() 
-#     # file_list = os.listdir(source)
-#     # for f in file_list:
-#     #     td.day2csv(source, f, target)
-#     # lhb =LHB()
-#     # lhb.getStockLHB()
-#     pass
+if __name__ == '__main__':
+    source = 'D:\\new_tdx\\vipdoc\\sz\\lday'
+    target = 'E:\\Project\\Stock\\testTdx'
+    td =TdxData() 
+    file_list = os.listdir(source)
+    td.day2csv(source, 'sz002307.day', target)
+    # for f in file_list:
+    #     td.day2csv(source, f, target)
+    # lhb =LHB()
+    # lhb.getStockLHB()
+    pass

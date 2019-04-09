@@ -46,6 +46,7 @@ class TdxData:
         '''
         # 以二进制方式打开源文件
         srFn = source_dir +os.sep+  file_name 
+        code =file_name[2:8]
         if(self.ifFileExist(srFn) ==False):
             return False
 
@@ -77,11 +78,11 @@ class TdxData:
             amount =(a[5] / 10.0)#成交金额
             volume =(a[6])#成交量
 
-            dayTrade.append([date,openPrice,highPrice,lowPrice,closePrice,amount,volume])
+            dayTrade.append([code,date,openPrice,highPrice,lowPrice,closePrice,amount,volume])
             begin += 32
             end += 32
         dayTdx =pd.DataFrame(dayTrade)
-        dayTdx.rename(columns={0:'date',1:'open',2:'high',3:'low',4:'close',5:'amount',6:'volume'},inplace=True)#
+        dayTdx.rename(columns={0:'code',1:'date',2:'open',3:'high',4:'low',5:'close',6:'amount',7:'volume'},inplace=True)#
         
         dayTdx.set_index(pd.DatetimeIndex(pd.to_datetime(dayTdx.date)), inplace=True)
         # # 周数据
@@ -95,13 +96,16 @@ class TdxData:
        
         # ========== 将算好的数据输出到xls文件 - 注意：这里请填写输出文件在您电脑中的路径
         dayTdx =self.indicatorCalc(dayTdx)
-        self.mydb.to_sql(dayTdx,'dayData')
+        
+
         weekTdx =self.indicatorCalc(weekTdx)
         monthTdx =self.indicatorCalc(monthTdx)
         
+        self.mydb.to_sql(dayTdx,'day_k')
         dayTdx.to_excel(write,sheet_name=file_name)
-
+        self.mydb.to_sql(weekTdx,'week_k')
         weekTdx.to_excel(write,sheet_name='周')
+        self.mydb.to_sql(monthTdx,'month_k')
         monthTdx.to_excel(write,sheet_name='月')
         write.save()
         return True
@@ -159,14 +163,14 @@ class TdxData:
         # B:=MIN(M5,MIN(M10,M20));
         # 三线粘合:=(A-B)/B*100
         #N:=3;
-        stock_data['Glue20-31-60'] =0
+        stock_data['Glue20_31_60'] =0
         A =stock_data[['MA_20','MA_31','MA_60']].max(axis=1)
         B =stock_data[['MA_20','MA_31','MA_60']].min(axis=1)
-        stock_data['Glue20-31-60'] =(A-B)/B*100
-        stock_data['Glue31-60-120'] =0
+        stock_data['Glue20_31_60'] =(A-B)/B*100
+        stock_data['Glue31_60_120'] =0
         A =stock_data[['MA_31','MA_60','MA_120']].max(axis=1)
         B =stock_data[['MA_31','MA_60','MA_120']].min(axis=1)     
-        stock_data['Glue31-60-120'] =(A-B)/B*100      
+        stock_data['Glue31_60_120'] =(A-B)/B*100      
         #####
         #  m5斜率 m10斜率 m20斜率 m31斜率 m60斜率 m120斜率
         stock_data['Slope_M5'] =self.ma_slope(stock_data['MA_5'])

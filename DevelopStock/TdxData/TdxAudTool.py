@@ -72,18 +72,18 @@ class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
                 #第五步：定义MyFigure类的一个实例
         self.F = MyFigure(width=3, height=2, dpi=100)
         #self.F.plotsin()
-        self.plotcos()
+        # self.plotcos()
         #第六步：在GUI的groupBox中创建一个布局，用于添加MyFigure类的实例（即图形）后其他部件。
         self.gridlayout = QGridLayout(self.groupBox_pic)  # 继承容器groupBox
         self.gridlayout.addWidget(self.F,0,1)
         self.plotother()
         #####
         ##############
-    def plotcos(self):
-        t = np.arange(0.0, 5.0, 0.01)
-        s = np.cos(2 * np.pi * t)
-        self.F.axes.plot(t, s)
-        self.F.fig.suptitle("cos")
+    # def plotcos(self):
+    #     t = np.arange(0.0, 5.0, 0.01)
+    #     s = np.cos(2 * np.pi * t)
+    #     self.F.axes.plot(t, s)
+    #     self.F.fig.suptitle("cos")
     def plotother(self):
         F1 = MyFigure(width=5, height=4, dpi=100)
         F1.fig.suptitle("Figuer_4")

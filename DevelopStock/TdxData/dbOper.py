@@ -16,8 +16,12 @@ class mysqlDB:
         return df
 
     def to_sql(self,dataf,tbl):
-        try: 
-            dataf.to_sql(name =tbl,  con=self.con, if_exists='append',index= False)#name='rumousdata', con=con, if_exists='append', index=False
-        except Exception as e:
-            print('Error is ' + str(e))
-            #self.con.rollback()        
+        rowCnt =len(dataf)
+        for i in range(rowCnt):
+            try: 
+                dataf.iloc[i:i+1].to_sql(name =tbl,  con=self.con, if_exists='append',index= False)
+                # dataf.to_sql(name =tbl,  con=self.con, if_exists='append',index= False)#name='rumousdata', con=con, if_exists='append', index=False
+            except Exception as e:
+                pass
+                # print('Error is ' + str(e))
+                #self.con.rollback()        

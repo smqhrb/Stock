@@ -30,6 +30,16 @@ class TdxData:
     def __init__(self):
         self.mydb =mysqlDB()
         pass
+    def __getstate__(self):
+        """ This is called before pickling. """
+        state = self.__dict__.copy()
+        # del state['mydb']
+        return state
+
+    def __setstate__(self, state):
+        """ This is called while unpickling. """
+        self.__dict__.update(state)
+
     def ifFileExist(self,fn):
         '''
         检测路径是否存在 如果存在跳过，如果不存在生成
@@ -84,7 +94,7 @@ class TdxData:
         dayTdx =pd.DataFrame(dayTrade)
         dayTdx.rename(columns={0:'code',1:'date',2:'open',3:'high',4:'low',5:'close',6:'amount',7:'volume'},inplace=True)#
         
-        dayTdx.set_index(pd.DatetimeIndex(pd.to_datetime(dayTdx.date)), inplace=True)
+        dayTdx.set_index(pd.DatetimeIndex(pd.to_datetime(dayTdx.t)), inplace=True)
         # # 周数据
         weekTdx =self.periodChange(dayTdx,'W')
         # 月数据dayTdx.sort_values('date', ascending=False, inplace=True)

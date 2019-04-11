@@ -55,6 +55,20 @@ class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
         self.btn_tdx_path.clicked.connect(self.on_btn_tdx_path_click)
         self.btn_read_stock.clicked.connect(self.on_btn_read_stock_click)
         self.btn_clearMsg.clicked.connect(self.on_btn_clearMsg_click)
+        self.btn_getValue.clicked.connect(self.on_btn_getValue_click)
+        # 
+        now_time = datetime.datetime.now()#现在
+        end = now_time.strftime("%Y-%m-%d")
+        yesterday =now_time +timedelta(days = -1) 
+        start =yesterday.strftime('%Y-%m-%d')
+        self.dateEdit_Start.setDate(QDate.fromString(start, 'yyyy-MM-dd'))#start time
+        self.dateEdit_End.setDate(QDate.fromString(end, 'yyyy-MM-dd'))#end time
+        # 
+        self.comboBox.addItem('日')
+        self.comboBox.addItem('周')
+        self.comboBox.addItem('月')
+        self.comboBox.currentIndexChanged.connect(self.comb_selectionchange)
+        # 
 
         self.timer=QTimer()
         self.timer.timeout.connect(self.currTime)
@@ -70,48 +84,165 @@ class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
         # self.closed.connect(self.accept)   
         #####draw pic
                 #第五步：定义MyFigure类的一个实例
-        self.F = MyFigure(width=3, height=2, dpi=100)
+        self.Myfig = MyFigure(width=5, height=4, dpi=100)
+        # self.Myfig.axesU = self.Myfig.fig.add_subplot(211)
+        # self.Myfig.axesD = self.Myfig.fig.add_subplot(212)
+        # F1 = MyFigure(width=5, height=4, dpi=100)
+        # F1.fig.suptitle("Figuer_4")
+        # F1.axes1 = F1.fig.add_subplot(221)
+        
         #self.F.plotsin()
         # self.plotcos()
         #第六步：在GUI的groupBox中创建一个布局，用于添加MyFigure类的实例（即图形）后其他部件。
         self.gridlayout = QGridLayout(self.groupBox_pic)  # 继承容器groupBox
-        self.gridlayout.addWidget(self.F,0,1)
-        self.plotother()
+        self.gridlayout.addWidget(self.Myfig,0,1)
+        # self.plotother()
         #####
         ##############
+    
     # def plotcos(self):
     #     t = np.arange(0.0, 5.0, 0.01)
     #     s = np.cos(2 * np.pi * t)
     #     self.F.axes.plot(t, s)
     #     self.F.fig.suptitle("cos")
-    def plotother(self):
-        F1 = MyFigure(width=5, height=4, dpi=100)
-        F1.fig.suptitle("Figuer_4")
-        F1.axes1 = F1.fig.add_subplot(221)
-        x = np.arange(0, 50)
-        y = np.random.rand(50)
-        F1.axes1.hist(y, bins=50)
-        F1.axes1.plot(x, y)
-        F1.axes1.bar(x, y)
-        F1.axes1.set_title("hist")
-        F1.axes2 = F1.fig.add_subplot(222)
+    # def plotother(self):
+    #     F1 = MyFigure(width=5, height=4, dpi=100)
+    #     F1.fig.suptitle("Figuer_4")
+    #     F1.axes1 = F1.fig.add_subplot(221)
+    #     x = np.arange(0, 50)
+    #     y = np.random.rand(50)
+    #     F1.axes1.hist(y, bins=50)
+    #     F1.axes1.plot(x, y)
+    #     F1.axes1.bar(x, y)
+    #     F1.axes1.set_title("hist")
+    #     F1.axes2 = F1.fig.add_subplot(222)
 
-        ## 调用figure下面的add_subplot方法，类似于matplotlib.pyplot下面的subplot方法
-        x = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-        y = [23, 21, 32, 13, 3, 132, 13, 3, 1]
-        F1.axes2.plot(x, y)
-        F1.axes2.set_title("line")
-        # 散点图
-        F1.axes3 = F1.fig.add_subplot(223)
-        F1.axes3.scatter(np.random.rand(20), np.random.rand(20))
-        F1.axes3.set_title("scatter")
-        # 折线图
-        F1.axes4 = F1.fig.add_subplot(224)
-        x = np.arange(0, 5, 0.1)
-        F1.axes4.plot(x, np.sin(x), x, np.cos(x))
-        F1.axes4.set_title("sincos")
-        self.gridlayout.addWidget(F1, 0, 2)
-        ##############
+    #     ## 调用figure下面的add_subplot方法，类似于matplotlib.pyplot下面的subplot方法
+    #     x = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    #     y = [23, 21, 32, 13, 3, 132, 13, 3, 1]
+    #     F1.axes2.plot(x, y)
+    #     F1.axes2.set_title("line")
+    #     # 散点图
+    #     F1.axes3 = F1.fig.add_subplot(223)
+    #     F1.axes3.scatter(np.random.rand(20), np.random.rand(20))
+    #     F1.axes3.set_title("scatter")
+    #     # 折线图
+    #     F1.axes4 = F1.fig.add_subplot(224)
+    #     x = np.arange(0, 5, 0.1)
+    #     F1.axes4.plot(x, np.sin(x), x, np.cos(x))
+    #     F1.axes4.set_title("sincos")
+    #     self.gridlayout.addWidget(F1, 0, 2)
+    #     ##############
+    def comb_selectionchange(self):
+        print(self.comboBox.currentText())
+
+    def on_btn_getValue_click(self):
+        startDay =self.dateEdit_Start.dateTime()
+        startTime =startDay.toString('yyyy-MM-dd')
+        endDay = self.dateEdit_End.dateTime()
+        endTime =endDay.toString('yyyy-MM-dd')
+        curSel =self.comboBox.currentText()
+        codeU =self.lineEdit_CodeUp.text()
+        codeD =self.lineEdit_CodeDn.text()
+        td =TdxData()
+
+        if(curSel =="日"):
+            tb_name='day_k'
+        if(curSel =="周"):
+            tb_name='week_k'
+        if(curSel =="月"):
+            tb_name='month_k'
+        if(len(codeU)>0):
+            sql ="select * from %s where code ='%s' and date between '%s' and '%s'"%(tb_name,codeU,startTime,endTime)
+            data0 =td.mydb.read_sql_query(sql)
+            data0.rename(columns={'date':'t'}, inplace = True)
+        if(len(codeD)>0):
+            sql ="select * from %s where code ='%s' and date between '%s' and '%s'"%(tb_name,codeD,startTime,endTime)
+            data1 =td.mydb.read_sql_query(sql)
+            data1.rename(columns={'date':'t'}, inplace = True)
+        
+        d0 =self.Myfig.prepare_data(data0)
+        d1 =self.Myfig.prepare_data(data1)
+        self.Myfig.drawAll(self.getSelect(),d0,d1)
+
+    def getSelect(self):
+            cb =[]
+            cbv =[]
+            kLine =self.cb_kLine.isChecked()
+            cbv.append(kLine)
+            cb.append('kLine')
+
+            volume =self.cb_volume.isChecked()
+            cbv.append(volume)
+            cb.append('volume')
+
+            macd =self.cb_MACD.isChecked()
+            cbv.append(macd)
+            cb.append('MACD')
+
+            BOLL =self.cb_BOLL.isChecked()
+            cbv.append(BOLL)
+            cb.append('BOLL')
+            
+            nhd_20_31_60 =self.cb_nhd_20_31_60.isChecked()
+            cbv.append(nhd_20_31_60)
+            cb.append('Glue20-31-60')
+
+            nhd31_60_120 =self.cb_nhd31_60_120.isChecked()
+            cbv.append(nhd31_60_120)
+            cb.append('Glue31-60-120')
+
+            MA5 =self.cb_MA5.isChecked()
+            cbv.append(MA5)
+            cb.append('MA_5')
+
+            MA10 =self.cb_MA10.isChecked()
+            cbv.append(MA10)
+            cb.append('MA_10')
+
+            MA20 =self.cb_MA20.isChecked()
+            cbv.append(MA20)
+            cb.append('MA_20')
+
+            MA31 =self.cb_MA31.isChecked()
+            cbv.append(MA31)
+            cb.append('MA_31')
+
+            MA60 =self.cb_MA60.isChecked()
+            cbv.append(MA60)
+            cb.append('MA_60')
+
+            MA120 =self.cb_MA120.isChecked()
+            cbv.append(MA120)
+            cb.append('MA_120')
+
+            slopeMA5 =self.cb_slopeMA5.isChecked()
+            cbv.append(slopeMA5)
+            cb.append('Slope_M5')
+
+            slopeMA10 =self.cb_slopeMA10.isChecked()
+            cbv.append(slopeMA10)
+            cb.append('Slope_M10')
+
+            slopeMA20 =self.cb_slopeMA20.isChecked()
+            cbv.append(slopeMA20)
+            cb.append('Slope_M20')
+
+            slopeMA31 =self.cb_slopeMA31.isChecked()
+            cbv.append(slopeMA31)
+            cb.append('Slope_M31')
+
+            slopeMA60 =self.cb_slopeMA60.isChecked()
+            cbv.append(slopeMA60)
+            cb.append('Slope_M60')
+
+            slopeMA120 =self.cb_slopeMA120.isChecked()
+            cbv.append(slopeMA120)
+            cb.append('Slope_M120')
+
+            select =zip(cb,cbv)
+            return select
+            ###
     def accept(self):
         print("accept")
         self.close()
@@ -176,9 +307,9 @@ class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
 
     def processData(self):
         source =self.le_read_path.text()
-        td =TdxData() 
-        file_list = os.listdir(source)
         
+        file_list = os.listdir(source)
+        td =""
         self.processInt =0
         if(self.rb_lhb.isChecked()):
             target ="./lhb" #数据存储目录
@@ -381,7 +512,7 @@ class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
         self.progressBar.setValue(processBar)
 
 def thread_day2csv_lhb(q,td,source,fn,target,target_prefix):
-    
+    td =TdxData() 
     if(td.day2csv(source, fn, target,target_prefix)==True):
         q.put("成功读取龙虎榜上股票 %s/%s 的数据"%(source,fn))
         
@@ -389,6 +520,7 @@ def thread_day2csv_lhb(q,td,source,fn,target,target_prefix):
         
         q.put("在通达信的目录中不存在 %s/%s 的数据"%(source,fn))
 def thread_day2csv_all(q,td,source,fn,target,target_prefix):
+    td =TdxData() 
     td.day2csv(source, fn, target,target_prefix) 
     q.put("成功读取%s的数据"%fn)
 

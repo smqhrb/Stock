@@ -40,7 +40,14 @@ class MyFigure(FigureCanvas):
     #     t = np.arange(0.0, 3.0, 0.01)
     #     s = np.sin(2 * np.pi * t)
     #     self.axes.plot(t, s)
-
+    def plotcostest(self):
+        self.plotcos(self.axes0)
+    def plotcos(self,ax):
+        t = np.arange(0.0, 5.0, 0.01)
+        s = np.cos(2 * np.pi * t)
+        ax.plot(t, s)
+        self.fig.suptitle("cos")
+        # self.draw()
     def prepare_data(self,data):
         '''
         prepare data
@@ -60,7 +67,7 @@ class MyFigure(FigureCanvas):
         
         
         mpl.rcParams['axes.unicode_minus']=False
-        
+
         return data
 
     def format_date(self,x,pos=None): 
@@ -81,14 +88,20 @@ class MyFigure(FigureCanvas):
         fig.subplots_adjust(bottom=0.1)
         # tmpData =self.data
         self.date_tickers =tmpData.t.values
-        
-        mpfData=[tuple([i]+list(quote[1:])) for i,quote in enumerate(tmpData.values)] 
+        rdata=pd.DataFrame()
+        rdata['t']=tmpData['t']# t, open, high, low, close 
+        rdata['open']=tmpData['open']
+        rdata['high']=tmpData['high']
+        rdata['low']=tmpData['low']
+        rdata['close']=tmpData['close']
+   
+        mpfData=[tuple([i]+list(quote[1:])) for i,quote in enumerate(rdata.values)] 
 
         ax.xaxis.set_major_locator(ticker.MultipleLocator(self.xSplice)) 
         ax.xaxis.set_major_formatter(ticker.FuncFormatter(self.format_date)) 
 
         mpf.candlestick_ohlc(ax,mpfData,colordown='#53c156', colorup='#ff1717',width=self.barWidth,alpha=1)
-        plt.grid(True)
+        # plt.grid(True)
 
     def calcMacd(self,data,fast_period=12,slow_period=26,signal_period=9): 
         # data['close'] -- 收盘价 
@@ -159,10 +172,10 @@ class MyFigure(FigureCanvas):
 
         red_bar=colData[colData['close']>=colData['open']] #red pillar
         green_bar=colData[colData['close']<colData['open']] #green pillar
-
+        le =len(colData) -1
         # ax.bar(colData.index,colData['volume'].values,width = self.barWidth,color='g',label="2nd")  # 直方图的画法
-        ax.bar(red_bar.index,red_bar['volume'].values,width = self.barWidth,color='r',label="2nd",alpha=1.0,edgecolor='r')
-        ax.bar(green_bar.index,green_bar['volume'].values,width = self.barWidth,color='g',label="2nd")
+        ax.bar(le -red_bar.index,red_bar['volume'].values,width = self.barWidth,color='r',label="2nd",alpha=1.0,edgecolor='r')
+        ax.bar(le -green_bar.index,green_bar['volume'].values,width = self.barWidth,color='g',label="2nd")
         ax.xaxis.set_major_locator(ticker.MultipleLocator(self.xSplice)) 
         ax.xaxis.set_major_formatter(ticker.FuncFormatter(self.format_date)) 
         plt.grid(True)
@@ -194,14 +207,19 @@ class MyFigure(FigureCanvas):
     def drawBOLL(self,ax,data):
         '''
         '''
-        ax.plot(data.index,data.BOLL)
-        ax.plot(data.index,data.UB)
-        ax.plot(data.index,data.LB)
+        self.date_tickers =data.t.values
+        le =len(data) -1
+        ax.plot(le -data.index,data.BOLL.values)
+        ax.plot(le -data.index,data.UB.values)
+        ax.plot(le -data.index,data.LB.values)
         ax.xaxis.set_major_locator(ticker.MultipleLocator(self.xSplice)) 
         ax.xaxis.set_major_formatter(ticker.FuncFormatter(self.format_date)) 
 
-    def drawCurveNormal(self,ax,index,values):
-        ax.plot(index,values) 
+    def drawCurveNormal(self,ax,data,colName):
+        self.date_tickers =data.t.values
+        le =len(data) -1
+        ax.plot(le -data.index,data[colName].values) 
+        
         ax.xaxis.set_major_locator(ticker.MultipleLocator(self.xSplice)) 
         ax.xaxis.set_major_formatter(ticker.FuncFormatter(self.format_date)) 
  
@@ -210,9 +228,11 @@ class MyFigure(FigureCanvas):
         draw K-line,Volume,MACD in here
         select is dict
         '''
+        # self.plotcos(self.axes0)
         # self.axes0 = self.fig.add_subplot(211)
         # self.axes1 = self.fig.add_subplot(212,self.axes0)
         if len(data0)>0:
+            
             self.axes0.set_title(self.title,fontsize=12,color='r')
             self.drawAxis(select,self.axes0,data0)
     
@@ -222,45 +242,52 @@ class MyFigure(FigureCanvas):
 
         plt.subplots_adjust(bottom=.12, top=.95, left=.10, right=.95,
                         wspace=0.1, hspace=0.04)
-        # plt.show()
-        pass
+        
+        # # plt.show()
+        self.draw()
+        # pass
     def drawAxis(self,select,ax,data):
-        if(select['kLine']==1):
+        if(select['kLine']):
+            # self.plotcos(ax)
             self.drawKline(self.fig,ax,data)
-        if(select['volume']==1):
+        if(select['volume']):
             self.drawColume(ax,data)
         if(select['MACD']==1):
             self.drawMacd(ax,data)
         if(select['BOLL']==1):
             self.drawBOLL(ax,data)
         if(select['Glue20-31-60']==1): 
-            self.drawCurveNormal(ax,data.index,data['Glue20-31-60'])
+            self.date_tickers =data.t.values
+            self.drawCurveNormal(ax,data,'Glue20_31_60')
         if(select['Glue31-60-120']==1): 
-            self.drawCurveNormal(ax,data.index,data['Glue31-60-120'])
+            self.date_tickers =data.t.values
+            self.drawCurveNormal(ax,data,'Glue31_60_120')
         if(select['MA_5']==1): 
-            self.drawCurveNormal(ax,data.index,data['MA_5'])
+            
+            self.drawCurveNormal(ax,data,'MA_5')
         if(select['MA_10']==1): 
-            self.drawCurveNormal(ax,data.index,data['MA_10'])
+            self.date_tickers =data.t.values
+            self.drawCurveNormal(ax,data,'MA_10')
         if(select['MA_20']==1): 
-            self.drawCurveNormal(ax,data.index,data['MA_20'])
+            self.drawCurveNormal(ax,data,'MA_20')
         if(select['MA_31']==1): 
-            self.drawCurveNormal(ax,data.index,data['MA_31'])
+            self.drawCurveNormal(ax,data,'MA_31')
         if(select['MA_60']==1): 
-            self.drawCurveNormal(ax,data.index,data['MA_60'])
+            self.drawCurveNormal(ax,data,'MA_60')
         if(select['MA_120']==1): 
-            self.drawCurveNormal(ax,data.index,data['MA_120'])
+            self.drawCurveNormal(ax,data,'MA_120')
         if(select['Slope_M5']==1): 
-            self.drawCurveNormal(ax,data.index,data['Slope_M5'])
+            self.drawCurveNormal(ax,data,'Slope_M5')
         if(select['Slope_M10']==1): 
-            self.drawCurveNormal(ax,data.index,data['Slope_M10'])        
+            self.drawCurveNormal(ax,data,'Slope_M10')        
         if(select['Slope_M20']==1): 
-            self.drawCurveNormal(ax,data.index,data['Slope_M20'])
+            self.drawCurveNormal(ax,data,'Slope_M20')
         if(select['Slope_M31']==1): 
-            self.drawCurveNormal(ax,data.index,data['Slope_M31'])        
+            self.drawCurveNormal(ax,data,'Slope_M31')        
         if(select['Slope_M60']==1): 
-            self.drawCurveNormal(ax,data.index,data['Slope_M60'])
+            self.drawCurveNormal(ax,data,'Slope_M60')
         if(select['Slope_M120']==1): 
-            self.drawCurveNormal(ax,data.index,data['Slope_M120'])        
+            self.drawCurveNormal(ax,data,'Slope_M120')        
 
 
 

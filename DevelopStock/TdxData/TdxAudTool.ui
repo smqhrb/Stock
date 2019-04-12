@@ -32,7 +32,7 @@
   <widget class="QTabWidget" name="tabWidget">
    <property name="geometry">
     <rect>
-     <x>10</x>
+     <x>20</x>
      <y>10</y>
      <width>1191</width>
      <height>651</height>
@@ -377,58 +377,6 @@
       </rect>
      </property>
     </widget>
-    <widget class="QCheckBox" name="cb_MACD">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>316</y>
-       <width>44</width>
-       <height>16</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>MACD</string>
-     </property>
-    </widget>
-    <widget class="QCheckBox" name="cb_slopeMA5">
-     <property name="geometry">
-      <rect>
-       <x>80</x>
-       <y>386</y>
-       <width>71</width>
-       <height>16</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>斜率M5</string>
-     </property>
-    </widget>
-    <widget class="QCheckBox" name="cb_nhd_20_31_60">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>338</y>
-       <width>113</width>
-       <height>16</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>粘合度20_31_60</string>
-     </property>
-    </widget>
-    <widget class="QCheckBox" name="cb_MA5">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>386</y>
-       <width>53</width>
-       <height>16</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>MA5</string>
-     </property>
-    </widget>
     <widget class="QLabel" name="label_7">
      <property name="geometry">
       <rect>
@@ -481,162 +429,6 @@
       <string>股票代码(下)：</string>
      </property>
     </widget>
-    <widget class="QCheckBox" name="cb_MA10">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>403</y>
-       <width>53</width>
-       <height>16</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>MA10</string>
-     </property>
-    </widget>
-    <widget class="QCheckBox" name="cb_MA20">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>420</y>
-       <width>53</width>
-       <height>16</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>MA20</string>
-     </property>
-    </widget>
-    <widget class="QCheckBox" name="cb_MA31">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>436</y>
-       <width>53</width>
-       <height>16</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>MA31</string>
-     </property>
-    </widget>
-    <widget class="QCheckBox" name="cb_MA60">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>453</y>
-       <width>53</width>
-       <height>16</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>MA60</string>
-     </property>
-    </widget>
-    <widget class="QCheckBox" name="cb_MA120">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>470</y>
-       <width>53</width>
-       <height>16</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>MA120</string>
-     </property>
-    </widget>
-    <widget class="QCheckBox" name="cb_slopeMA10">
-     <property name="geometry">
-      <rect>
-       <x>80</x>
-       <y>403</y>
-       <width>71</width>
-       <height>16</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>斜率M10</string>
-     </property>
-    </widget>
-    <widget class="QCheckBox" name="cb_slopeMA20">
-     <property name="geometry">
-      <rect>
-       <x>80</x>
-       <y>420</y>
-       <width>71</width>
-       <height>16</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>斜率M20</string>
-     </property>
-    </widget>
-    <widget class="QCheckBox" name="cb_slopeMA31">
-     <property name="geometry">
-      <rect>
-       <x>80</x>
-       <y>436</y>
-       <width>71</width>
-       <height>16</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>斜率M31</string>
-     </property>
-    </widget>
-    <widget class="QCheckBox" name="cb_slopeMA60">
-     <property name="geometry">
-      <rect>
-       <x>80</x>
-       <y>453</y>
-       <width>71</width>
-       <height>16</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>斜率M60</string>
-     </property>
-    </widget>
-    <widget class="QCheckBox" name="cb_slopeMA120">
-     <property name="geometry">
-      <rect>
-       <x>80</x>
-       <y>470</y>
-       <width>71</width>
-       <height>16</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>斜率M120</string>
-     </property>
-    </widget>
-    <widget class="QCheckBox" name="cb_BOLL">
-     <property name="geometry">
-      <rect>
-       <x>79</x>
-       <y>316</y>
-       <width>44</width>
-       <height>16</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>BOLL</string>
-     </property>
-    </widget>
-    <widget class="QCheckBox" name="cb_nhd31_60_120">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>356</y>
-       <width>113</width>
-       <height>16</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>粘合度31_60_120</string>
-     </property>
-    </widget>
     <widget class="QComboBox" name="comboBox">
      <property name="geometry">
       <rect>
@@ -663,32 +455,6 @@
       <string>类型：</string>
      </property>
     </widget>
-    <widget class="QCheckBox" name="cb_kLine">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>296</y>
-       <width>51</width>
-       <height>16</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>日K线</string>
-     </property>
-    </widget>
-    <widget class="QCheckBox" name="cb_volume">
-     <property name="geometry">
-      <rect>
-       <x>80</x>
-       <y>296</y>
-       <width>61</width>
-       <height>16</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>交易量</string>
-     </property>
-    </widget>
     <widget class="QPushButton" name="btn_getValue">
      <property name="geometry">
       <rect>
@@ -702,6 +468,279 @@
       <string>从数据库读取数据</string>
      </property>
     </widget>
+    <widget class="QGroupBox" name="groupBox_drawPic">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>280</y>
+       <width>191</width>
+       <height>261</height>
+      </rect>
+     </property>
+     <property name="title">
+      <string>选择绘图</string>
+     </property>
+     <widget class="QPushButton" name="btn_drawPic">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>220</y>
+        <width>161</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>绘制选择的图像</string>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="cb_kLine">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>26</y>
+        <width>51</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>日K线</string>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="cb_volume">
+      <property name="geometry">
+       <rect>
+        <x>80</x>
+        <y>26</y>
+        <width>61</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>交易量</string>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="cb_nhd31_60_120">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>86</y>
+        <width>113</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>粘合度31_60_120</string>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="cb_MA10">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>133</y>
+        <width>53</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>MA10</string>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="cb_MA31">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>166</y>
+        <width>53</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>MA31</string>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="cb_MA120">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>200</y>
+        <width>53</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>MA120</string>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="cb_slopeMA20">
+      <property name="geometry">
+       <rect>
+        <x>80</x>
+        <y>150</y>
+        <width>71</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>斜率M20</string>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="cb_slopeMA60">
+      <property name="geometry">
+       <rect>
+        <x>80</x>
+        <y>183</y>
+        <width>71</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>斜率M60</string>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="cb_slopeMA5">
+      <property name="geometry">
+       <rect>
+        <x>80</x>
+        <y>116</y>
+        <width>71</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>斜率M5</string>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="cb_MA60">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>183</y>
+        <width>53</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>MA60</string>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="cb_MACD">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>46</y>
+        <width>44</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>MACD</string>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="cb_MA20">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>150</y>
+        <width>53</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>MA20</string>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="cb_BOLL">
+      <property name="geometry">
+       <rect>
+        <x>79</x>
+        <y>46</y>
+        <width>44</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>BOLL</string>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="cb_MA5">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>116</y>
+        <width>53</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>MA5</string>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="cb_slopeMA10">
+      <property name="geometry">
+       <rect>
+        <x>80</x>
+        <y>133</y>
+        <width>71</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>斜率M10</string>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="cb_slopeMA31">
+      <property name="geometry">
+       <rect>
+        <x>80</x>
+        <y>166</y>
+        <width>71</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>斜率M31</string>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="cb_slopeMA120">
+      <property name="geometry">
+       <rect>
+        <x>80</x>
+        <y>200</y>
+        <width>71</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>斜率M120</string>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="cb_nhd_20_31_60">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>68</y>
+        <width>113</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>粘合度20_31_60</string>
+      </property>
+     </widget>
+    </widget>
+    <zorder>groupBox_drawPic</zorder>
+    <zorder>groupBox_pic</zorder>
+    <zorder>dateEdit_Start</zorder>
+    <zorder>dateEdit_End</zorder>
+    <zorder>lineEdit_CodeUp</zorder>
+    <zorder>lineEdit_CodeDn</zorder>
+    <zorder>label_7</zorder>
+    <zorder>label_12</zorder>
+    <zorder>label_13</zorder>
+    <zorder>label_14</zorder>
+    <zorder>comboBox</zorder>
+    <zorder>label_15</zorder>
+    <zorder>btn_getValue</zorder>
    </widget>
   </widget>
  </widget>

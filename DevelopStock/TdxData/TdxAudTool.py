@@ -9,7 +9,8 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 import time
 import datetime
-
+import matplotlib
+matplotlib.use("Qt5Agg")  # 声明使用QT5
 from  Qt5WithMatplot import *
 from datetime import datetime, date, timedelta
 import threading
@@ -56,6 +57,7 @@ class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
         self.btn_read_stock.clicked.connect(self.on_btn_read_stock_click)
         self.btn_clearMsg.clicked.connect(self.on_btn_clearMsg_click)
         self.btn_getValue.clicked.connect(self.on_btn_getValue_click)
+        self.btn_drawPic.clicked.connect(self.on_btn_drawPic_click)
         # 
         now_time = datetime.datetime.now()#现在
         end = now_time.strftime("%Y-%m-%d")
@@ -92,19 +94,21 @@ class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
         # F1.axes1 = F1.fig.add_subplot(221)
         
         #self.F.plotsin()
-        # self.plotcos()
+        
         #第六步：在GUI的groupBox中创建一个布局，用于添加MyFigure类的实例（即图形）后其他部件。
         self.gridlayout = QGridLayout(self.groupBox_pic)  # 继承容器groupBox
         self.gridlayout.addWidget(self.Myfig,0,1)
+        # self.plotcos()
         # self.plotother()
         #####
         ##############
     
-    # def plotcos(self):
-    #     t = np.arange(0.0, 5.0, 0.01)
-    #     s = np.cos(2 * np.pi * t)
-    #     self.F.axes.plot(t, s)
-    #     self.F.fig.suptitle("cos")
+    def plotcos(self):
+        # t = np.arange(0.0, 5.0, 0.01)
+        # s = np.cos(2 * np.pi * t)
+        # self.Myfig.axes0.plot(t, s)
+        self.Myfig.fig.suptitle("cos")
+        self.Myfig.plotcostest()
     # def plotother(self):
     #     F1 = MyFigure(width=5, height=4, dpi=100)
     #     F1.fig.suptitle("Figuer_4")
@@ -136,7 +140,11 @@ class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
     def comb_selectionchange(self):
         print(self.comboBox.currentText())
 
+    def on_btn_drawPic_click(self):
+        
+        self.Myfig.drawAll(self.getSelect(),self.d0,self.d1)
     def on_btn_getValue_click(self):
+        # self.plotcos()
         startDay =self.dateEdit_Start.dateTime()
         startTime =startDay.toString('yyyy-MM-dd')
         endDay = self.dateEdit_End.dateTime()
@@ -161,9 +169,9 @@ class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
             data1 =td.mydb.read_sql_query(sql)
             data1.rename(columns={'date':'t'}, inplace = True)
         
-        d0 =self.Myfig.prepare_data(data0)
-        d1 =self.Myfig.prepare_data(data1)
-        self.Myfig.drawAll(self.getSelect(),d0,d1)
+        self.d0 =self.Myfig.prepare_data(data0)
+        self.d1 =self.Myfig.prepare_data(data1)
+        
 
     def getSelect(self):
             cb =[]
@@ -240,7 +248,7 @@ class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
             cbv.append(slopeMA120)
             cb.append('Slope_M120')
 
-            select =zip(cb,cbv)
+            select =dict(zip(cb,cbv))
             return select
             ###
     def accept(self):

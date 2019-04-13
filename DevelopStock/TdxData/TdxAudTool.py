@@ -11,6 +11,7 @@ import time
 import datetime
 import matplotlib
 matplotlib.use("Qt5Agg")  # 声明使用QT5
+from matplotlib.backends.backend_qt5 import NavigationToolbar2QT as NavigationToolbar
 from  Qt5WithMatplot import *
 from datetime import datetime, date, timedelta
 import threading
@@ -87,6 +88,7 @@ class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
         #####draw pic
                 #第五步：定义MyFigure类的一个实例
         self.Myfig = MyFigure(width=5, height=4, dpi=100)
+        self.toolbar = NavigationToolbar(self.Myfig, self)
         # self.Myfig.axesU = self.Myfig.fig.add_subplot(211)
         # self.Myfig.axesD = self.Myfig.fig.add_subplot(212)
         # F1 = MyFigure(width=5, height=4, dpi=100)
@@ -98,6 +100,9 @@ class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
         #第六步：在GUI的groupBox中创建一个布局，用于添加MyFigure类的实例（即图形）后其他部件。
         self.gridlayout = QGridLayout(self.groupBox_pic)  # 继承容器groupBox
         self.gridlayout.addWidget(self.Myfig,0,1)
+
+        self.gridlayout.addWidget(self.toolbar,1,1)
+
         # self.plotcos()
         # self.plotother()
         #####

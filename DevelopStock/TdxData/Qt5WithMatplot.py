@@ -1,6 +1,7 @@
 import matplotlib
 matplotlib.use("Qt5Agg")  # 声明使用QT5
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 import numpy as np
@@ -33,7 +34,7 @@ class MyFigure(FigureCanvas):
         self.title =""
         self.handles=[]
         self.labels=[]
-
+        
 
     #第四步：就是画图，【可以在此类中画，也可以在其它类中画】
     # def plotsin(self):
@@ -96,7 +97,7 @@ class MyFigure(FigureCanvas):
         '''
         draw K-line using mpf.candlestick_ohlc
         '''
-        fig.subplots_adjust(bottom=0.1)
+        # fig.subplots_adjust(bottom=0.1)
         # tmpData =self.data
         self.date_tickers =tmpData.t.values
         rdata=pd.DataFrame()
@@ -160,8 +161,8 @@ class MyFigure(FigureCanvas):
         ax.xaxis.set_major_locator(ticker.MultipleLocator(self.xSplice)) 
         ax.xaxis.set_major_formatter(ticker.FuncFormatter(self.format_date)) 
         #note angle
-        for tick in ax.get_xticklabels():
-            tick.set_rotation(45)
+        # for tick in ax.get_xticklabels():
+        #     tick.set_rotation(45)
 
         # ax.legend((p_dif[0],p_dea[0]),[u'DIF',u'DEA']) 
 
@@ -269,8 +270,8 @@ class MyFigure(FigureCanvas):
             self.drawAxis(select,self.axes1,data1)
         self.axes0.grid(True)
         self.axes1.grid(True)
-        plt.subplots_adjust(bottom=.12, top=.95, left=.10, right=.95,
-                        wspace=0.1, hspace=0.04)
+        self.fig.subplots_adjust(bottom=.05, top=.95, left=.05, right=.99,
+                        wspace=0.01, hspace=0.04)
 
         self.draw()
         # pass

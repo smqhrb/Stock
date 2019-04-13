@@ -161,11 +161,11 @@ class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
         if(curSel =="月"):
             tb_name='month_k'
         if(len(codeU)>0):
-            sql ="select * from %s where code ='%s' and date between '%s' and '%s'"%(tb_name,codeU,startTime,endTime)
+            sql ="select * from %s where code ='%s' and date between '%s' and '%s'  order by date asc"%(tb_name,codeU,startTime,endTime)
             data0 =td.mydb.read_sql_query(sql)
             data0.rename(columns={'date':'t'}, inplace = True)
         if(len(codeD)>0):
-            sql ="select * from %s where code ='%s' and date between '%s' and '%s'"%(tb_name,codeD,startTime,endTime)
+            sql ="select * from %s where code ='%s' and date between '%s' and '%s'  order by date asc"%(tb_name,codeD,startTime,endTime)
             data1 =td.mydb.read_sql_query(sql)
             data1.rename(columns={'date':'t'}, inplace = True)
         

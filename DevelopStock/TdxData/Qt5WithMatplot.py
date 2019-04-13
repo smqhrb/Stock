@@ -25,6 +25,8 @@ class MyFigure(FigureCanvas):
         #第三步：创建一个子图，用于绘制图形用，111表示子图编号，如matlab的subplot(1,1,1)
         self.axes0 = self.fig.add_subplot(211)
         self.axes1 = self.fig.add_subplot(212,sharex=self.axes0)
+        self.axes0.grid(True)
+        self.axes1.grid(True)
         self.barWidth =0.4#bar width
         self.title_font=FontProperties(family='YouYuan',size=18) 
         self.xSplice =50
@@ -61,7 +63,7 @@ class MyFigure(FigureCanvas):
         # 注意，data.index 必须是升序 
         # 如果由于对 date 排序后，index变成了降序
         # 要单独把index的顺序反过来 
-        data.index=data.index[::-1] 
+        # data.index=data.index[::-1] 
 
         data['t']=pd.to_datetime(data['t'], format = "%Y-%m-%d", errors = 'coerce')#将字符串日期变成datetime
         
@@ -138,6 +140,7 @@ class MyFigure(FigureCanvas):
         •canvas_w, canvas_h 为期望绘制出的图形宽度和高度，单位是像素
         •xtick_period 为生成x 方向刻度时，每间隔多少个数值，取一个值作为刻度显示出来——如果将全部日期显示出来，x方向的刻度将会是密密麻麻一片黑
         '''
+
         p_dif=ax.plot(dif.index,dif.values) 
         p_dea=ax.plot(dea.index,dea.values) 
         #draw MACD 
@@ -160,7 +163,7 @@ class MyFigure(FigureCanvas):
             ax.annotate(u"", xy = (x,y), xytext = (x,y+dist_max),
                         arrowprops = dict(facecolor = "g",ec='g', headwidth = 4,headlength = 4,width = 4,shrink =0.4))
 
-        plt.grid(True)
+        # plt.grid(True)
 
     def drawColume(self,ax,colData):
         '''
@@ -172,13 +175,14 @@ class MyFigure(FigureCanvas):
 
         red_bar=colData[colData['close']>=colData['open']] #red pillar
         green_bar=colData[colData['close']<colData['open']] #green pillar
-        le =len(colData) -1
+        
         # ax.bar(colData.index,colData['volume'].values,width = self.barWidth,color='g',label="2nd")  # 直方图的画法
-        ax.bar(le -red_bar.index,red_bar['volume'].values,width = self.barWidth,color='r',label="2nd",alpha=1.0,edgecolor='r')
-        ax.bar(le -green_bar.index,green_bar['volume'].values,width = self.barWidth,color='g',label="2nd")
+        ax.bar(red_bar.index,red_bar['volume'].values,width = self.barWidth,color='r',label="2nd",alpha=1.0,edgecolor='r')
+        ax.bar(green_bar.index,green_bar['volume'].values,width = self.barWidth,color='g',label="2nd")
         ax.xaxis.set_major_locator(ticker.MultipleLocator(self.xSplice)) 
         ax.xaxis.set_major_formatter(ticker.FuncFormatter(self.format_date)) 
-        plt.grid(True)
+        
+        # plt.grid(True)
 
     def getMacdCrossPoint(self,diff,dea):
         '''
@@ -208,18 +212,24 @@ class MyFigure(FigureCanvas):
         '''
         '''
         self.date_tickers =data.t.values
-        le =len(data) -1
-        ax.plot(le -data.index,data.BOLL.values)
-        ax.plot(le -data.index,data.UB.values)
-        ax.plot(le -data.index,data.LB.values)
+        
+        p0 =ax.plot(data.index,data.BOLL.values)
+        p1 =ax.plot(data.index,data.UB.values)
+        p2 =ax.plot(data.index,data.LB.values)
+        ax.legend((p0[0],p1[0],p2[0]),[u'BOLL',u'UB',u'LB']) 
         ax.xaxis.set_major_locator(ticker.MultipleLocator(self.xSplice)) 
         ax.xaxis.set_major_formatter(ticker.FuncFormatter(self.format_date)) 
 
     def drawCurveNormal(self,ax,data,colName):
         self.date_tickers =data.t.values
-        le =len(data) -1
-        ax.plot(le -data.index,data[colName].values) 
+        # le =len(data) -1
         
+        p1 =ax.plot(data.index,data[colName].values) 
+        handles, labels = ax.get_legend_handles_labels()
+        handles.append(p1[0])
+        labels.append(colName)
+        # ax.legend((p1[0],),[colName,])
+        ax.legend(handles,labels)
         ax.xaxis.set_major_locator(ticker.MultipleLocator(self.xSplice)) 
         ax.xaxis.set_major_formatter(ticker.FuncFormatter(self.format_date)) 
  
@@ -232,18 +242,19 @@ class MyFigure(FigureCanvas):
         # self.axes0 = self.fig.add_subplot(211)
         # self.axes1 = self.fig.add_subplot(212,self.axes0)
         if len(data0)>0:
-            
+            self.axes0.clear()
             self.axes0.set_title(self.title,fontsize=12,color='r')
             self.drawAxis(select,self.axes0,data0)
     
         if len(data1)>0:
+            self.axes1.clear()
             self.axes0.set_title(self.title,fontsize=12,color='r')
             self.drawAxis(select,self.axes1,data1)
-
+        self.axes0.grid(True)
+        self.axes1.grid(True)
         plt.subplots_adjust(bottom=.12, top=.95, left=.10, right=.95,
                         wspace=0.1, hspace=0.04)
-        
-        # # plt.show()
+
         self.draw()
         # pass
     def drawAxis(self,select,ax,data):

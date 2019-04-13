@@ -31,6 +31,9 @@ class MyFigure(FigureCanvas):
         self.title_font=FontProperties(family='YouYuan',size=18) 
         self.xSplice =50
         self.title =""
+        self.handles=[]
+        self.labels=[]
+
 
     #第四步：就是画图，【可以在此类中画，也可以在其它类中画】
     # def plotsin(self):
@@ -42,6 +45,7 @@ class MyFigure(FigureCanvas):
     #     t = np.arange(0.0, 3.0, 0.01)
     #     s = np.sin(2 * np.pi * t)
     #     self.axes.plot(t, s)
+
     def plotcostest(self):
         self.plotcos(self.axes0)
     def plotcos(self,ax):
@@ -50,6 +54,11 @@ class MyFigure(FigureCanvas):
         ax.plot(t, s)
         self.fig.suptitle("cos")
         # self.draw()
+    def setCodeY(self,codeU,codeD):
+        self.codeU =codeU
+        self.codeD =codeD
+        self.axes0.set_ylabel(codeU)
+        self.axes1.set_ylabel(codeD)
     def prepare_data(self,data):
         '''
         prepare data
@@ -130,7 +139,8 @@ class MyFigure(FigureCanvas):
         macdMax =np.array([dif.max(), dea.max(), red_bar.max(), green_bar.max()]).max()
         macdMin =np.array([dif.min(), dea.min(), red_bar.min(), green_bar.min()]).min()
         crossUp,crossDn =self.getMacdCrossPoint(dif,dea)#calc dif dea cross pt
-        self.drawMacdRaw(ax,dif,dea,red_bar,green_bar,macdMax,macdMin,crossUp,crossDn)
+        p_dif,p_dea =self.drawMacdRaw(ax,dif,dea,red_bar,green_bar,macdMax,macdMin,crossUp,crossDn)
+        return p_dif,p_dea
 
     def drawMacdRaw(self,ax, dif, dea, red_bar, green_bar, macdMax,macdMin,crossUp,crossDn,
                       canvas_w=1000, canvas_h=480, xtick_period=20): 
@@ -153,7 +163,7 @@ class MyFigure(FigureCanvas):
         for tick in ax.get_xticklabels():
             tick.set_rotation(45)
 
-        ax.legend((p_dif[0],p_dea[0]),[u'DIF',u'DEA']) 
+        # ax.legend((p_dif[0],p_dea[0]),[u'DIF',u'DEA']) 
 
         dist_max =(macdMax - macdMin)*0.05#set y axis offset
         for x,y in zip(crossUp,dif[crossUp]):#up cross flag
@@ -162,7 +172,7 @@ class MyFigure(FigureCanvas):
         for x,y in zip(crossDn,dif[crossDn]):#down cross flag
             ax.annotate(u"", xy = (x,y), xytext = (x,y+dist_max),
                         arrowprops = dict(facecolor = "g",ec='g', headwidth = 4,headlength = 4,width = 4,shrink =0.4))
-
+        return p_dif,p_dea
         # plt.grid(True)
 
     def drawColume(self,ax,colData):
@@ -216,22 +226,26 @@ class MyFigure(FigureCanvas):
         p0 =ax.plot(data.index,data.BOLL.values)
         p1 =ax.plot(data.index,data.UB.values)
         p2 =ax.plot(data.index,data.LB.values)
-        ax.legend((p0[0],p1[0],p2[0]),[u'BOLL',u'UB',u'LB']) 
+        # ax.legend((p0[0],p1[0],p2[0]),[u'BOLL',u'UB',u'LB']) 
         ax.xaxis.set_major_locator(ticker.MultipleLocator(self.xSplice)) 
         ax.xaxis.set_major_formatter(ticker.FuncFormatter(self.format_date)) 
+        return p0,p1,p2
 
     def drawCurveNormal(self,ax,data,colName):
         self.date_tickers =data.t.values
         # le =len(data) -1
         
         p1 =ax.plot(data.index,data[colName].values) 
-        handles, labels = ax.get_legend_handles_labels()
-        handles.append(p1[0])
-        labels.append(colName)
+        # handles, labels = ax.get_legend_handles_labels()
+        # print(handles)
+        # print(labels)
+        # self.handles.append(p1[0])
+        # self.labels.append(colName)
         # ax.legend((p1[0],),[colName,])
-        ax.legend(handles,labels)
+        # ax.legend(handles,labels)
         ax.xaxis.set_major_locator(ticker.MultipleLocator(self.xSplice)) 
         ax.xaxis.set_major_formatter(ticker.FuncFormatter(self.format_date)) 
+        return p1
  
     def drawAll(self,select,data0,data1):
         '''
@@ -243,11 +257,14 @@ class MyFigure(FigureCanvas):
         # self.axes1 = self.fig.add_subplot(212,self.axes0)
         if len(data0)>0:
             self.axes0.clear()
+            self.axes0.set_ylabel(self.codeU)
+        
             self.axes0.set_title(self.title,fontsize=12,color='r')
             self.drawAxis(select,self.axes0,data0)
     
         if len(data1)>0:
             self.axes1.clear()
+            self.axes1.set_ylabel(self.codeD)
             self.axes0.set_title(self.title,fontsize=12,color='r')
             self.drawAxis(select,self.axes1,data1)
         self.axes0.grid(True)
@@ -258,47 +275,80 @@ class MyFigure(FigureCanvas):
         self.draw()
         # pass
     def drawAxis(self,select,ax,data):
+        self.handles.clear()
+        self.labels.clear()
         if(select['kLine']):
             # self.plotcos(ax)
             self.drawKline(self.fig,ax,data)
         if(select['volume']):
             self.drawColume(ax,data)
         if(select['MACD']==1):
-            self.drawMacd(ax,data)
+            p_dif,p_dea =self.drawMacd(ax,data)
+            self.handles.append(p_dif[0])
+            self.labels.append('DIF')
+            self.handles.append(p_dea[0])
+            self.labels.append('DEA')
+
         if(select['BOLL']==1):
-            self.drawBOLL(ax,data)
-        if(select['Glue20-31-60']==1): 
-            self.date_tickers =data.t.values
-            self.drawCurveNormal(ax,data,'Glue20_31_60')
-        if(select['Glue31-60-120']==1): 
-            self.date_tickers =data.t.values
-            self.drawCurveNormal(ax,data,'Glue31_60_120')
-        if(select['MA_5']==1): 
-            
-            self.drawCurveNormal(ax,data,'MA_5')
-        if(select['MA_10']==1): 
-            self.date_tickers =data.t.values
-            self.drawCurveNormal(ax,data,'MA_10')
-        if(select['MA_20']==1): 
-            self.drawCurveNormal(ax,data,'MA_20')
-        if(select['MA_31']==1): 
-            self.drawCurveNormal(ax,data,'MA_31')
-        if(select['MA_60']==1): 
-            self.drawCurveNormal(ax,data,'MA_60')
-        if(select['MA_120']==1): 
-            self.drawCurveNormal(ax,data,'MA_120')
-        if(select['Slope_M5']==1): 
-            self.drawCurveNormal(ax,data,'Slope_M5')
-        if(select['Slope_M10']==1): 
-            self.drawCurveNormal(ax,data,'Slope_M10')        
-        if(select['Slope_M20']==1): 
-            self.drawCurveNormal(ax,data,'Slope_M20')
-        if(select['Slope_M31']==1): 
-            self.drawCurveNormal(ax,data,'Slope_M31')        
-        if(select['Slope_M60']==1): 
-            self.drawCurveNormal(ax,data,'Slope_M60')
-        if(select['Slope_M120']==1): 
-            self.drawCurveNormal(ax,data,'Slope_M120')        
+            p0,p1,p2 =self.drawBOLL(ax,data)
+            self.handles.append(p0[0])
+            self.labels.append('BOLL')      
+            self.handles.append(p1[0])
+            self.labels.append('UL')    
+            self.handles.append(p2[0])
+            self.labels.append('BL') 
+        curveList =['Glue20_31_60','Glue31_60_120','MA_5','MA_10','MA_20','MA_31','MA_60','MA_120','Slope_M5','Slope_M10','Slope_M20','Slope_M31','Slope_M60','Slope_M120'] 
+        curveLen =len(curveList)
+        for  i in range(curveLen):
+            if(select[curveList[i]]==True):
+                self.date_tickers =data.t.values
+                p1 =self.drawCurveNormal(ax,data,curveList[i])
+                self.handles.append(p1[0])
+                self.labels.append(curveList[i])  
+        ax.legend(self.handles,self.labels)
+        #     
+        # if(select['Glue20-31-60']==1): 
+        #     self.date_tickers =data.t.values
+        #     p1 =self.drawCurveNormal(ax,data,'Glue20_31_60')
+        #     self.handles.append(p1[0])
+        #     self.labels.append('Glue20-31-60')                  
+        # if(select['Glue31-60-120']==1): 
+        #     self.date_tickers =data.t.values
+        #     p1 =self.drawCurveNormal(ax,data,'Glue31_60_120')
+        #     self.handles.append(p1[0])
+        #     self.labels.append('Glue31_60_120')  
+        # if(select['MA_5']==1): 
+        #     p1 =self.drawCurveNormal(ax,data,'MA_5')
+        #     self.handles.append(p1[0])
+        #     self.labels.append('MA_5')  
+        # if(select['MA_10']==1): 
+        #     self.date_tickers =data.t.values
+        #     p1 =self.drawCurveNormal(ax,data,'MA_10')
+        #     self.handles.append(p1[0])
+        #     self.labels.append('MA_10')  
+        # if(select['MA_20']==1): 
+        #     self.date_tickers =data.t.values
+        #     p1 =self.drawCurveNormal(ax,data,'MA_20')
+        #     self.handles.append(p1[0])
+        #     self.labels.append('MA_20')  
+        # if(select['MA_31']==1): 
+        #     self.drawCurveNormal(ax,data,'MA_31')
+        # if(select['MA_60']==1): 
+        #     self.drawCurveNormal(ax,data,'MA_60')
+        # if(select['MA_120']==1): 
+        #     self.drawCurveNormal(ax,data,'MA_120')
+        # if(select['Slope_M5']==1): 
+        #     self.drawCurveNormal(ax,data,'Slope_M5')
+        # if(select['Slope_M10']==1): 
+        #     self.drawCurveNormal(ax,data,'Slope_M10')        
+        # if(select['Slope_M20']==1): 
+        #     self.drawCurveNormal(ax,data,'Slope_M20')
+        # if(select['Slope_M31']==1): 
+        #     self.drawCurveNormal(ax,data,'Slope_M31')        
+        # if(select['Slope_M60']==1): 
+        #     self.drawCurveNormal(ax,data,'Slope_M60')
+        # if(select['Slope_M120']==1): 
+        #     self.drawCurveNormal(ax,data,'Slope_M120')        
 
 
 

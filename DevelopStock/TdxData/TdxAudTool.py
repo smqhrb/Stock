@@ -141,7 +141,9 @@ class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
         print(self.comboBox.currentText())
 
     def on_btn_drawPic_click(self):
-        
+        codeU =self.lineEdit_CodeUp.text()
+        codeD =self.lineEdit_CodeDn.text()
+        self.Myfig.setCodeY(codeU,codeD)
         self.Myfig.drawAll(self.getSelect(),self.d0,self.d1)
     def on_btn_getValue_click(self):
         # self.plotcos()
@@ -194,11 +196,11 @@ class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
             
             nhd_20_31_60 =self.cb_nhd_20_31_60.isChecked()
             cbv.append(nhd_20_31_60)
-            cb.append('Glue20-31-60')
+            cb.append('Glue20_31_60')
 
             nhd31_60_120 =self.cb_nhd31_60_120.isChecked()
             cbv.append(nhd31_60_120)
-            cb.append('Glue31-60-120')
+            cb.append('Glue31_60_120')
 
             MA5 =self.cb_MA5.isChecked()
             cbv.append(MA5)

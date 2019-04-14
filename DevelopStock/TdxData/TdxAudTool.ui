@@ -39,7 +39,7 @@
     </rect>
    </property>
    <property name="currentIndex">
-    <number>2</number>
+    <number>0</number>
    </property>
    <widget class="QWidget" name="tab_data">
     <attribute name="title">
@@ -50,7 +50,7 @@
       <rect>
        <x>0</x>
        <y>10</y>
-       <width>831</width>
+       <width>981</width>
        <height>291</height>
       </rect>
      </property>
@@ -62,7 +62,7 @@
        <rect>
         <x>10</x>
         <y>51</y>
-        <width>811</width>
+        <width>961</width>
         <height>231</height>
        </rect>
       </property>
@@ -138,7 +138,7 @@
       <rect>
        <x>0</x>
        <y>310</y>
-       <width>831</width>
+       <width>981</width>
        <height>281</height>
       </rect>
      </property>
@@ -174,14 +174,14 @@
      <widget class="QPushButton" name="btn_read_stock">
       <property name="geometry">
        <rect>
-        <x>380</x>
+        <x>260</x>
         <y>50</y>
-        <width>251</width>
+        <width>101</width>
         <height>23</height>
        </rect>
       </property>
       <property name="text">
-       <string>从通达信读取股票数据</string>
+       <string>读取通达信股票</string>
       </property>
      </widget>
      <widget class="QListView" name="lv_msg">
@@ -189,7 +189,7 @@
        <rect>
         <x>10</x>
         <y>80</y>
-        <width>811</width>
+        <width>961</width>
         <height>192</height>
        </rect>
       </property>
@@ -222,7 +222,7 @@
        <rect>
         <x>260</x>
         <y>20</y>
-        <width>75</width>
+        <width>101</width>
         <height>23</height>
        </rect>
       </property>
@@ -256,7 +256,7 @@
      <widget class="QPushButton" name="btn_clearMsg">
       <property name="geometry">
        <rect>
-        <x>730</x>
+        <x>640</x>
         <y>50</y>
         <width>75</width>
         <height>23</height>
@@ -266,17 +266,30 @@
        <string>清除信息</string>
       </property>
      </widget>
-     <widget class="QRadioButton" name="rb_set_stock">
+     <widget class="QLabel" name="label_4">
       <property name="geometry">
        <rect>
-        <x>240</x>
-        <y>50</y>
-        <width>111</width>
+        <x>640</x>
+        <y>20</y>
+        <width>451</width>
         <height>16</height>
        </rect>
       </property>
       <property name="text">
-       <string>路径下指定股票</string>
+       <string>深证:/vipdoc/sz/lday 上证：/vipdoc/sh/lday</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="btn_stop_readTdx">
+      <property name="geometry">
+       <rect>
+        <x>380</x>
+        <y>50</y>
+        <width>101</width>
+        <height>23</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>停止读取</string>
       </property>
      </widget>
     </widget>
@@ -459,20 +472,20 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>132</y>
+       <y>130</y>
        <width>191</width>
        <height>31</height>
       </rect>
      </property>
      <property name="text">
-      <string>从数据库读取数据</string>
+      <string>读取数据库数据</string>
      </property>
     </widget>
     <widget class="QGroupBox" name="groupBox_drawPic">
      <property name="geometry">
       <rect>
-       <x>10</x>
-       <y>280</y>
+       <x>0</x>
+       <y>210</y>
        <width>191</width>
        <height>281</height>
       </rect>
@@ -748,7 +761,7 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>160</y>
+       <y>170</y>
        <width>191</width>
        <height>20</height>
       </rect>

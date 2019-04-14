@@ -23,46 +23,29 @@ class MyFigure(FigureCanvas):
         self.fig = Figure(figsize=(width, height), dpi=dpi)
         #第二步：在父类中激活Figure窗口
         super(MyFigure,self).__init__(self.fig) #此句必不可少，否则不能显示图形
-        #第三步：创建一个子图，用于绘制图形用，111表示子图编号，如matlab的subplot(1,1,1)
-        self.axes0 = self.fig.add_subplot(211)
-        self.axes1 = self.fig.add_subplot(212,sharex=self.axes0)
-        self.axes0.grid(True)
-        self.axes1.grid(True)
+        #第三步：创建一个子图，用于绘制图形用，211表示子图编号
+        self.axes0 = self.fig.add_subplot(211)#上图的
+        self.axes1 = self.fig.add_subplot(212,sharex=self.axes0)#下图的
+        self.axes0.grid(True)#设置网格显示
+        self.axes1.grid(True)#设置网格显示
         self.barWidth =0.4#bar width
         self.title_font=FontProperties(family='YouYuan',size=18) 
         self.xSplice =50
         self.title =""
-        self.handles=[]
-        self.labels=[]
-        
+        self.handles=[]#legend显示
+        self.labels=[]#legend显示
 
-    #第四步：就是画图，【可以在此类中画，也可以在其它类中画】
-    # def plotsin(self):
-    #     self.axes0 = self.fig.add_subplot(111)
-    #     t = np.arange(0.0, 3.0, 0.01)
-    #     s = np.sin(2 * np.pi * t)
-    #     self.axes0.plot(t, s)
-    # def plotcos(self):
-    #     t = np.arange(0.0, 3.0, 0.01)
-    #     s = np.sin(2 * np.pi * t)
-    #     self.axes.plot(t, s)
-
-    def plotcostest(self):
-        self.plotcos(self.axes0)
-    def plotcos(self,ax):
-        t = np.arange(0.0, 5.0, 0.01)
-        s = np.cos(2 * np.pi * t)
-        ax.plot(t, s)
-        self.fig.suptitle("cos")
-        # self.draw()
     def setCodeY(self,codeU,codeD):
+        '''
+        设置股票代码在图像上
+        '''
         self.codeU =codeU
         self.codeD =codeD
         self.axes0.set_ylabel(codeU)
         self.axes1.set_ylabel(codeD)
     def prepare_data(self,data):
         '''
-        prepare data
+        为图形显示准备数据
         '''
         tmpT =data.t.values#交易日期
         data[data['volume']==0]=np.nan #将0 值清除
@@ -74,12 +57,8 @@ class MyFigure(FigureCanvas):
         # 如果由于对 date 排序后，index变成了降序
         # 要单独把index的顺序反过来 
         # data.index=data.index[::-1] 
-
         data['t']=pd.to_datetime(data['t'], format = "%Y-%m-%d", errors = 'coerce')#将字符串日期变成datetime
-        
-        
         mpl.rcParams['axes.unicode_minus']=False
-
         return data
 
     def format_date(self,x,pos=None): 
@@ -97,8 +76,6 @@ class MyFigure(FigureCanvas):
         '''
         draw K-line using mpf.candlestick_ohlc
         '''
-        # fig.subplots_adjust(bottom=0.1)
-        # tmpData =self.data
         self.date_tickers =tmpData.t.values
         rdata=pd.DataFrame()
         rdata['t']=tmpData['t']# t, open, high, low, close 
@@ -106,14 +83,12 @@ class MyFigure(FigureCanvas):
         rdata['high']=tmpData['high']
         rdata['low']=tmpData['low']
         rdata['close']=tmpData['close']
-   
-        mpfData=[tuple([i]+list(quote[1:])) for i,quote in enumerate(rdata.values)] 
+        mpfData=[tuple([i]+list(quote[1:])) for i,quote in enumerate(rdata.values)] #将数据转换为list
 
         ax.xaxis.set_major_locator(ticker.MultipleLocator(self.xSplice)) 
         ax.xaxis.set_major_formatter(ticker.FuncFormatter(self.format_date)) 
-
+        #绘制k线图
         mpf.candlestick_ohlc(ax,mpfData,colordown='#53c156', colorup='#ff1717',width=self.barWidth,alpha=1)
-        # plt.grid(True)
 
     def calcMacd(self,data,fast_period=12,slow_period=26,signal_period=9): 
         # data['close'] -- 收盘价 
@@ -151,7 +126,6 @@ class MyFigure(FigureCanvas):
         •canvas_w, canvas_h 为期望绘制出的图形宽度和高度，单位是像素
         •xtick_period 为生成x 方向刻度时，每间隔多少个数值，取一个值作为刻度显示出来——如果将全部日期显示出来，x方向的刻度将会是密密麻麻一片黑
         '''
-
         p_dif=ax.plot(dif.index,dif.values) 
         p_dea=ax.plot(dea.index,dea.values) 
         #draw MACD 
@@ -160,11 +134,6 @@ class MyFigure(FigureCanvas):
 
         ax.xaxis.set_major_locator(ticker.MultipleLocator(self.xSplice)) 
         ax.xaxis.set_major_formatter(ticker.FuncFormatter(self.format_date)) 
-        #note angle
-        # for tick in ax.get_xticklabels():
-        #     tick.set_rotation(45)
-
-        # ax.legend((p_dif[0],p_dea[0]),[u'DIF',u'DEA']) 
 
         dist_max =(macdMax - macdMin)*0.05#set y axis offset
         for x,y in zip(crossUp,dif[crossUp]):#up cross flag
@@ -174,27 +143,20 @@ class MyFigure(FigureCanvas):
             ax.annotate(u"", xy = (x,y), xytext = (x,y+dist_max),
                         arrowprops = dict(facecolor = "g",ec='g', headwidth = 4,headlength = 4,width = 4,shrink =0.4))
         return p_dif,p_dea
-        # plt.grid(True)
 
     def drawColume(self,ax,colData):
         '''
         draw volume 
         '''
-        # ax.xaxis.set_major_formatter(mdate.DateFormatter('%Y%m%d'))
-        # colData =self.data
         self.date_tickers =colData.t.values
 
         red_bar=colData[colData['close']>=colData['open']] #red pillar
         green_bar=colData[colData['close']<colData['open']] #green pillar
-        
-        # ax.bar(colData.index,colData['volume'].values,width = self.barWidth,color='g',label="2nd")  # 直方图的画法
         ax.bar(red_bar.index,red_bar['volume'].values,width = self.barWidth,color='r',label="2nd",alpha=1.0,edgecolor='r')
         ax.bar(green_bar.index,green_bar['volume'].values,width = self.barWidth,color='g',label="2nd")
         ax.xaxis.set_major_locator(ticker.MultipleLocator(self.xSplice)) 
         ax.xaxis.set_major_formatter(ticker.FuncFormatter(self.format_date)) 
         
-        # plt.grid(True)
-
     def getMacdCrossPoint(self,diff,dea):
         '''
         get the cross point,
@@ -227,23 +189,16 @@ class MyFigure(FigureCanvas):
         p0 =ax.plot(data.index,data.BOLL.values)
         p1 =ax.plot(data.index,data.UB.values)
         p2 =ax.plot(data.index,data.LB.values)
-        # ax.legend((p0[0],p1[0],p2[0]),[u'BOLL',u'UB',u'LB']) 
         ax.xaxis.set_major_locator(ticker.MultipleLocator(self.xSplice)) 
         ax.xaxis.set_major_formatter(ticker.FuncFormatter(self.format_date)) 
         return p0,p1,p2
 
     def drawCurveNormal(self,ax,data,colName):
+        '''
+        绘制曲线图
+        '''
         self.date_tickers =data.t.values
-        # le =len(data) -1
-        
         p1 =ax.plot(data.index,data[colName].values) 
-        # handles, labels = ax.get_legend_handles_labels()
-        # print(handles)
-        # print(labels)
-        # self.handles.append(p1[0])
-        # self.labels.append(colName)
-        # ax.legend((p1[0],),[colName,])
-        # ax.legend(handles,labels)
         ax.xaxis.set_major_locator(ticker.MultipleLocator(self.xSplice)) 
         ax.xaxis.set_major_formatter(ticker.FuncFormatter(self.format_date)) 
         return p1
@@ -253,17 +208,13 @@ class MyFigure(FigureCanvas):
         draw K-line,Volume,MACD in here
         select is dict
         '''
-        # self.plotcos(self.axes0)
-        # self.axes0 = self.fig.add_subplot(211)
-        # self.axes1 = self.fig.add_subplot(212,self.axes0)
-        if len(data0)>0:
+        if len(data0)>0:#绘制上图
             self.axes0.clear()
             self.axes0.set_ylabel(self.codeU)
-        
             self.axes0.set_title(self.title,fontsize=12,color='r')
             self.drawAxis(select,self.axes0,data0)
     
-        if len(data1)>0:
+        if len(data1)>0:#绘制下图
             self.axes1.clear()
             self.axes1.set_ylabel(self.codeD)
             self.axes0.set_title(self.title,fontsize=12,color='r')
@@ -271,15 +222,17 @@ class MyFigure(FigureCanvas):
         self.axes0.grid(True)
         self.axes1.grid(True)
         self.fig.subplots_adjust(bottom=.05, top=.95, left=.05, right=.99,
-                        wspace=0.01, hspace=0.04)
-
+                        wspace=0.01, hspace=0.04)#设置图像边界
         self.draw()
         # pass
     def drawAxis(self,select,ax,data):
+        '''
+        根据选择的不同，进行绘制
+        '''
         self.handles.clear()
         self.labels.clear()
         if(select['kLine']):
-            # self.plotcos(ax)
+
             self.drawKline(self.fig,ax,data)
         if(select['volume']):
             self.drawColume(ax,data)
@@ -307,49 +260,7 @@ class MyFigure(FigureCanvas):
                 self.handles.append(p1[0])
                 self.labels.append(curveList[i])  
         ax.legend(self.handles,self.labels)
-        #     
-        # if(select['Glue20-31-60']==1): 
-        #     self.date_tickers =data.t.values
-        #     p1 =self.drawCurveNormal(ax,data,'Glue20_31_60')
-        #     self.handles.append(p1[0])
-        #     self.labels.append('Glue20-31-60')                  
-        # if(select['Glue31-60-120']==1): 
-        #     self.date_tickers =data.t.values
-        #     p1 =self.drawCurveNormal(ax,data,'Glue31_60_120')
-        #     self.handles.append(p1[0])
-        #     self.labels.append('Glue31_60_120')  
-        # if(select['MA_5']==1): 
-        #     p1 =self.drawCurveNormal(ax,data,'MA_5')
-        #     self.handles.append(p1[0])
-        #     self.labels.append('MA_5')  
-        # if(select['MA_10']==1): 
-        #     self.date_tickers =data.t.values
-        #     p1 =self.drawCurveNormal(ax,data,'MA_10')
-        #     self.handles.append(p1[0])
-        #     self.labels.append('MA_10')  
-        # if(select['MA_20']==1): 
-        #     self.date_tickers =data.t.values
-        #     p1 =self.drawCurveNormal(ax,data,'MA_20')
-        #     self.handles.append(p1[0])
-        #     self.labels.append('MA_20')  
-        # if(select['MA_31']==1): 
-        #     self.drawCurveNormal(ax,data,'MA_31')
-        # if(select['MA_60']==1): 
-        #     self.drawCurveNormal(ax,data,'MA_60')
-        # if(select['MA_120']==1): 
-        #     self.drawCurveNormal(ax,data,'MA_120')
-        # if(select['Slope_M5']==1): 
-        #     self.drawCurveNormal(ax,data,'Slope_M5')
-        # if(select['Slope_M10']==1): 
-        #     self.drawCurveNormal(ax,data,'Slope_M10')        
-        # if(select['Slope_M20']==1): 
-        #     self.drawCurveNormal(ax,data,'Slope_M20')
-        # if(select['Slope_M31']==1): 
-        #     self.drawCurveNormal(ax,data,'Slope_M31')        
-        # if(select['Slope_M60']==1): 
-        #     self.drawCurveNormal(ax,data,'Slope_M60')
-        # if(select['Slope_M120']==1): 
-        #     self.drawCurveNormal(ax,data,'Slope_M120')        
+     
 
 
 

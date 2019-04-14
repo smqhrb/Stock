@@ -32,14 +32,14 @@
   <widget class="QTabWidget" name="tabWidget">
    <property name="geometry">
     <rect>
-     <x>20</x>
+     <x>10</x>
      <y>10</y>
      <width>1191</width>
      <height>651</height>
     </rect>
    </property>
    <property name="currentIndex">
-    <number>1</number>
+    <number>2</number>
    </property>
    <widget class="QWidget" name="tab_data">
     <attribute name="title">
@@ -474,7 +474,7 @@
        <x>10</x>
        <y>280</y>
        <width>191</width>
-       <height>261</height>
+       <height>281</height>
       </rect>
      </property>
      <property name="title">
@@ -727,6 +727,32 @@
        <string>粘合度20_31_60</string>
       </property>
      </widget>
+     <widget class="QLineEdit" name="le_drawPic">
+      <property name="enabled">
+       <bool>false</bool>
+      </property>
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>250</y>
+        <width>161</width>
+        <height>20</height>
+       </rect>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QLineEdit" name="le_dbStatus">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>160</y>
+       <width>191</width>
+       <height>20</height>
+      </rect>
+     </property>
     </widget>
     <zorder>groupBox_drawPic</zorder>
     <zorder>groupBox_pic</zorder>
@@ -741,6 +767,71 @@
     <zorder>comboBox</zorder>
     <zorder>label_15</zorder>
     <zorder>btn_getValue</zorder>
+    <zorder>le_dbStatus</zorder>
+   </widget>
+   <widget class="QWidget" name="tab_hyfx">
+    <attribute name="title">
+     <string>查看行业排名</string>
+    </attribute>
+    <widget class="QLineEdit" name="le_hyfxCode">
+     <property name="geometry">
+      <rect>
+       <x>80</x>
+       <y>10</y>
+       <width>113</width>
+       <height>20</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QLabel" name="lb_hycode">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>10</y>
+       <width>54</width>
+       <height>12</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>股票代码：</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="btn_tqHyfx">
+     <property name="geometry">
+      <rect>
+       <x>210</x>
+       <y>10</y>
+       <width>75</width>
+       <height>23</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>提取数据</string>
+     </property>
+    </widget>
+    <widget class="QTableView" name="tbl_hyfx">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>40</y>
+       <width>981</width>
+       <height>451</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="le_hyfxStatus">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>300</x>
+       <y>10</y>
+       <width>113</width>
+       <height>20</height>
+      </rect>
+     </property>
+    </widget>
    </widget>
   </widget>
  </widget>

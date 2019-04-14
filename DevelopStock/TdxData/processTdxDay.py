@@ -28,17 +28,27 @@ class TdxData:
     读取通达信的日线数据
     '''
     def __init__(self):
-        self.mydb =mysqlDB()
+        '''
+        初始化 并且连接数据库
+        '''
+        self.mydb =mysqlDB()#连接数据库
         pass
-    def __getstate__(self):
-        """ This is called before pickling. """
-        state = self.__dict__.copy()
-        # del state['mydb']
-        return state
+    # def __getstate__(self):
+    #     """ This is called before pickling. """
+    #     state = self.__dict__.copy()
+    #     # del state['mydb']
+    #     return state
 
-    def __setstate__(self, state):
-        """ This is called while unpickling. """
-        self.__dict__.update(state)
+    # def __setstate__(self, state):
+    #     """ This is called while unpickling. """
+    #     self.__dict__.update(state)
+
+    def getDbStatus(self):
+        '''
+        返回数据库状态
+        '''
+        return self.mydb.getDbStatus()
+        # pass
 
     def ifFileExist(self,fn):
         '''
@@ -60,7 +70,7 @@ class TdxData:
         if(self.ifFileExist(srFn) ==False):
             return False
 
-        source_file = open(srFn, 'rb')
+        source_file = open(srFn, 'rb')#读取日线数据
         buf = source_file.read()
         source_file.close()
     
@@ -92,6 +102,7 @@ class TdxData:
             begin += 32
             end += 32
         dayTdx =pd.DataFrame(dayTrade)
+        #指定列名
         dayTdx.rename(columns={0:'code',1:'date',2:'open',3:'high',4:'low',5:'close',6:'amount',7:'volume'},inplace=True)#
         
         dayTdx.set_index(pd.DatetimeIndex(pd.to_datetime(dayTdx.t)), inplace=True)
@@ -106,18 +117,16 @@ class TdxData:
        
         # ========== 将算好的数据输出到xls文件 - 注意：这里请填写输出文件在您电脑中的路径
         dayTdx =self.indicatorCalc(dayTdx)
-        
-
         weekTdx =self.indicatorCalc(weekTdx)
         monthTdx =self.indicatorCalc(monthTdx)
         
-        self.mydb.to_sql(dayTdx,'day_k')
-        dayTdx.to_excel(write,sheet_name=file_name)
-        self.mydb.to_sql(weekTdx,'week_k')
-        weekTdx.to_excel(write,sheet_name='周')
-        self.mydb.to_sql(monthTdx,'month_k')
-        monthTdx.to_excel(write,sheet_name='月')
-        write.save()
+        self.mydb.to_sql(dayTdx,'day_k')#写入数据库
+        dayTdx.to_excel(write,sheet_name=file_name)#写入文件
+        self.mydb.to_sql(weekTdx,'week_k')#写入数据库
+        weekTdx.to_excel(write,sheet_name='周')#写入文件
+        self.mydb.to_sql(monthTdx,'month_k')#写入数据库
+        monthTdx.to_excel(write,sheet_name='月')#写入文件
+        write.save()#存盘
         return True
 
     def fz2csv(self,source_dir, file_name, target_dir):
@@ -161,10 +170,6 @@ class TdxData:
         for ma in ma_list:
             stock_data['MA_' + str(ma)] = stock_data['close'].rolling(ma).mean()
 
-        # 计算指数平滑移动平均线EMA
-        # for ma in ma_list:
-        #     stock_data['EMA_' + str(ma)] = stock_data['close'].ewm(span=ma).mean() 
-        
         #(ma20, ma31, ma60)(ma31,ma60,ma120) 三线粘合值
         # M5:=MA(C,5);
         # M10:=MA(C,10);
@@ -244,6 +249,9 @@ class TdxData:
 # 布林指标
    # @jit
     def bollinger(self,df,n):
+        '''
+        计算布林指标
+        '''
         for i in range(len(df)):
             if i < n-1:
                 continue
@@ -275,7 +283,84 @@ class LHB_LT:
         '''
         df =ts.cap_tops(days)#5
         return df
+import urllib.request as urllib2
+import xlwt
+from bs4 import BeautifulSoup 
+# from html.parser import HTMLParser  
+# from urllib import request
+# from urllib import parse
+# from urllib.request import urlopen
+class hybg:
+    def __init__(self):
+        self.basePath ='./hyfx'
+        self.pathExist(self.basePath)
+    
+    def getHydbFrom163(self,code):
+        '''
+        from 163 get  行业对比
+        '''
 
+        url_hydb_base ='http://quotes.money.163.com/f10/hydb_%s.html#01g02'
+        url_hydb =url_hydb_base%(code)
+        headers = {"User-Agent":"Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6"}
+        req = urllib2.Request(url_hydb, headers = headers)
+        try:
+            content = urllib2.urlopen(req).read()
+        except:
+            return
+        soup = BeautifulSoup(content,features="lxml")
+
+        #获取行业比对 标题
+        itemAll = soup.findAll("h2",{"class":"title_01"})
+        i =0
+        retItem =[]
+        while i < len(itemAll):
+            retItem.append(itemAll[i].text)
+            i =i+1
+        ##获取行业比对 的所有表格
+        tableAll = soup.findAll("table",{"class":"table_bg001 border_box table_sortable"})
+        # print(len(tableAll))
+        i =0
+        retDf =[]
+        while i < len(tableAll):
+            table0 =tableAll[i]
+            oneDf =pd.DataFrame()
+            colName =[]
+            dataContent =[]
+            for row in table0.findAll("tr"):
+                cells = row.findAll("th") #获取表格标题
+                if(len(cells)>0):
+                    j=0
+                    while j <len(cells):
+                        colName.append(cells[j].text)
+                        j =j+1
+                    # print(colName)
+                else:
+                    cells = row.findAll("td") #获取表格内容
+                    j=0
+                    dfContent =[]
+                    while j <len(cells):
+                        # print(cells[j].text)
+                        dfContent.append(cells[j].text)
+                        j =j+1
+
+                    dataContent.append(dfContent)
+                   
+            oneDf =pd.DataFrame(dataContent,columns=colName)
+            
+           
+            retDf.append(oneDf)
+            i= i+1
+        return retItem,retDf #返回表格类别名称 和数据
+    def pathExist(self,dirPath):
+        '''
+        检测路径是否存在 如果存在跳过，如果不存在生成
+        '''
+        if(os.path.exists(dirPath)==False):
+            os.mkdir(dirPath)
+            return True
+        else:
+            return True  
 if __name__ == '__main__':
     source = 'D:\\new_tdx\\vipdoc\\sz\\lday'
     target = 'E:\\Project\\Stock\\testTdx'

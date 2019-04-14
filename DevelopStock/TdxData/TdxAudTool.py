@@ -2,8 +2,6 @@
 import os
 from PyQt5 import QtCore, QtGui, QtWidgets
 from TdxAudToolBase import Ui_Dialog
-#from PyQt5.QtCore import QStringListModel
-#from PyQt5.QtCore import QDate
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
@@ -41,6 +39,8 @@ class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
         self.processInt =0
         self.setProcessBarPos(0)
         self.MAX_THREAD_NUM =5#最多并发数
+        self.d0 =None
+        self.d1 =None
         #设置模型列表视图，加载数据列表
 
         self.qsL.setStringList(self.Test)
@@ -52,13 +52,18 @@ class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
         self.threadList =[]
         #设置数据层次结构，4行4列
         self.model=QStandardItemModel()
+        self.hy_model=QStandardItemModel()
 
-        self.btn_lhb.clicked.connect(self.on_btn_lhb_click)
-        self.btn_tdx_path.clicked.connect(self.on_btn_tdx_path_click)
+        self.btn_lhb.clicked.connect(self.on_btn_lhb_click)#获取龙虎榜
+        self.btn_tdx_path.clicked.connect(self.on_btn_tdx_path_click)#
         self.btn_read_stock.clicked.connect(self.on_btn_read_stock_click)
         self.btn_clearMsg.clicked.connect(self.on_btn_clearMsg_click)
         self.btn_getValue.clicked.connect(self.on_btn_getValue_click)
         self.btn_drawPic.clicked.connect(self.on_btn_drawPic_click)
+        self.btn_tqHyfx.clicked.connect(self.on_btn_tqHyfx_click)
+        self.tbl_hyfx.setSortingEnabled(True)
+        self.tv_lhb.setSortingEnabled(True)
+
         # 
         now_time = datetime.datetime.now()#现在
         end = now_time.strftime("%Y-%m-%d")
@@ -142,14 +147,71 @@ class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
     #     F1.axes4.set_title("sincos")
     #     self.gridlayout.addWidget(F1, 0, 2)
     #     ##############
+    def on_btn_tqHyfx_click(self):
+        self.le_hyfxStatus.setText('正在读取')
+        hyfx_code =self.le_hyfxCode.text()
+
+        if(len(hyfx_code)==6):
+            
+            hyfx =hybg()
+            item,list_hyfx =hyfx.getHydbFrom163(hyfx_code)
+            write = pd.ExcelWriter(hyfx.basePath+'/'+hyfx_code+'_hyfx.xls')
+            df_hyfx =""
+            i=0
+            while i<len(list_hyfx):
+                (list_hyfx[i]).to_excel(write,sheet_name=item[i],index=True)
+                i =i+1
+            df_hyfx =list_hyfx[2]
+            write.save() 
+        else:
+            self.le_hyfxStatus.setText('股票代码必须6位')
+            return
+       # 排名	名称	每股收益	销售净利率%	净资产收益率%	资产负债率%	流动比率%
+        if (df_hyfx is None):
+            self.le_hyfxStatus.setText('数据不存在')
+            return 
+        if(len(df_hyfx)<=0):
+            self.le_hyfxStatus.setText('数据不存在')
+            return
+        self.hy_model.setHorizontalHeaderLabels(['排名','名称','每股收益','销售净利率%','净资产收益率%','资产负债率%','流动比率%'])
+       
+
+        row =0
+        for i in range(0, len(df_hyfx)):
+            # print df.iloc[i]['c1'], df.iloc[i]['c2']
+            rowContent =df_hyfx.iloc[i]
+            item=QStandardItem(rowContent['排名'])
+            self.hy_model.setItem(row,0,item)
+            item=QStandardItem(rowContent['名称'])
+            self.hy_model.setItem(row,1,item)
+            item=QStandardItem(str(rowContent['每股收益']))
+            self.hy_model.setItem(row,2,item)
+            item=QStandardItem(str(rowContent['销售净利率%']))
+            self.hy_model.setItem(row,3,item)
+            item=QStandardItem(str(rowContent['净资产收益率%']))
+            self.hy_model.setItem(row,4,item)
+            item=QStandardItem(str(rowContent['资产负债率%']))
+            self.hy_model.setItem(row,5,item)
+            item=QStandardItem(str(rowContent['流动比率%']))
+            self.hy_model.setItem(row,6,item)
+
+            row =row +1
+        self.tbl_hyfx.setModel(self.hy_model) 
+        self.le_hyfxStatus.setText('')
+
     def comb_selectionchange(self):
         print(self.comboBox.currentText())
 
     def on_btn_drawPic_click(self):
+        self.le_drawPic.setText("正在绘图")
         codeU =self.lineEdit_CodeUp.text()
         codeD =self.lineEdit_CodeDn.text()
         self.Myfig.setCodeY(codeU,codeD)
+        if(self.d0 is None or self.d1 is None):
+            self.le_drawPic.setText("数据不存在")
+            return
         self.Myfig.drawAll(self.getSelect(),self.d0,self.d1)
+        self.le_drawPic.setText("")
     def on_btn_getValue_click(self):
         # self.plotcos()
         startDay =self.dateEdit_Start.dateTime()
@@ -160,7 +222,10 @@ class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
         codeU =self.lineEdit_CodeUp.text()
         codeD =self.lineEdit_CodeDn.text()
         td =TdxData()
-
+        self.le_dbStatus.setText("")
+        if(td.getDbStatus()==False):
+            self.le_dbStatus.setText("数据库连接失败")
+            return 
         if(curSel =="日"):
             tb_name='day_k'
         if(curSel =="周"):
@@ -528,16 +593,22 @@ class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
 
 def thread_day2csv_lhb(q,td,source,fn,target,target_prefix):
     td =TdxData() 
-    if(td.day2csv(source, fn, target,target_prefix)==True):
-        q.put("成功读取龙虎榜上股票 %s/%s 的数据"%(source,fn))
-        
+    if(td.getDbStatus()):
+        if(td.day2csv(source, fn, target,target_prefix)==True):
+            q.put("成功读取龙虎榜上股票 %s/%s 的数据"%(source,fn))
+            
+        else:
+            
+            q.put("在通达信的目录中不存在 %s/%s 的数据"%(source,fn))
     else:
-        
-        q.put("在通达信的目录中不存在 %s/%s 的数据"%(source,fn))
+        q.put("数据库连接失败")
 def thread_day2csv_all(q,td,source,fn,target,target_prefix):
     td =TdxData() 
-    td.day2csv(source, fn, target,target_prefix) 
-    q.put("成功读取%s的数据"%fn)
+    if(td.getDbStatus()):
+        td.day2csv(source, fn, target,target_prefix) 
+        q.put("成功读取%s的数据"%fn)
+    else:
+        q.put("数据库连接失败")
 
 if __name__ == "__main__":
     import sys

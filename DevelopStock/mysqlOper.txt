@@ -1,4 +1,5 @@
-﻿https://blog.csdn.net/chenchunlin526/article/details/51207537
+﻿http://zhuaniugu.com/12  
+https://blog.csdn.net/chenchunlin526/article/details/51207537
 mysqld -install
 https://www.cnblogs.com/fanbi/p/6432838.html
 sc delete mysql #delete mysql service

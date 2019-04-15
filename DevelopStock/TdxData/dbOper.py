@@ -15,7 +15,7 @@ class mysqlDB:
             self.con = self.engine.connect()
         except Exception as e:#连接异常
             self.status ="unconnect"
-            print(str(e))
+            # print(str(e))
     def read_sql_query(self,sql):
         '''
         读取数据库

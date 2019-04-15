@@ -57,7 +57,6 @@ class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
         # self.btn_stop_readTdx.hide()
         self.tbl_hyfx.setSortingEnabled(True)#设置table排序
         self.tv_lhb.setSortingEnabled(True)#设置table排序
-
         # 
         now_time = datetime.datetime.now()#现在
         end = now_time.strftime("%Y-%m-%d")
@@ -95,14 +94,10 @@ class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
         else:
             if(self.th2.is_alive()==False):
                 self.th2.terminal()
-                self.addListViewMessage("线程停止运行")  
+                self.addListViewMessage("线程停止运行,退出程序终止后台还有进程运行")  
             else:
-                self.addListViewMessage("线程停止运行")
-            reply =QMessageBox.question(self,"提示","退出程序终止后台还有进程运行，你确认退出么？",QMessageBox.Yes|QMessageBox.No,QMessageBox.No)
-            if reply==QMessageBox.Yes:
-                Dialog.accept()
-            else:
-                Dialog.ignore()        
+                self.addListViewMessage("线程停止运行,退出程序终止后台还有进程运行")
+
                       
     def on_btn_tqHyfx_click(self):
         '''
@@ -205,13 +200,15 @@ class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
             sql ="select * from %s where code ='%s' and date between '%s' and '%s'  order by date asc"%(tb_name,codeU,startTime,endTime)
             data0 =td.mydb.read_sql_query(sql)
             data0.rename(columns={'date':'t'}, inplace = True)
+            self.d0 =self.Myfig.prepare_data(data0)#对原始数据整理
         if(len(codeD)>0):
             sql ="select * from %s where code ='%s' and date between '%s' and '%s'  order by date asc"%(tb_name,codeD,startTime,endTime)
             data1 =td.mydb.read_sql_query(sql)
             data1.rename(columns={'date':'t'}, inplace = True)
-        #对原始数据整理
-        self.d0 =self.Myfig.prepare_data(data0)
-        self.d1 =self.Myfig.prepare_data(data1)
+            self.d1 =self.Myfig.prepare_data(data1)#对原始数据整理
+        
+        
+        
         
 
     def getSelect(self):
@@ -441,13 +438,13 @@ class TdxAudTool_Dialog(Ui_Dialog):#QtWidgets.QWidget
             #根据股票的类型选择不同路径
             if(code >='600000'):
                 tdxCode ="sh%s.day"%code
-                source = source +'/vipdoc/sh/lday'
+                sourceD = source +'/vipdoc/sh/lday'
             else:
                 tdxCode ="sz%s.day"%code
-                source = source +'/vipdoc/sz/lday'
+                sourceD = source +'/vipdoc/sz/lday'
             tfName =target + os.sep + target_prefix +tdxCode + '.xls'
             if(self.ifFileExist(tfName)==False):
-                th =Process(target=thread_day2csv_lhb, args=(str_msgQ,td,source,tdxCode,target,target_prefix))
+                th =Process(target=thread_day2csv_lhb, args=(str_msgQ,td,sourceD,tdxCode,target,target_prefix))
                 self.threadList.append(th)
                 if((total -i)>=self.MAX_THREAD_NUM):
                     if(len(self.threadList)>=self.MAX_THREAD_NUM):

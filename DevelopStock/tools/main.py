@@ -1,6 +1,7 @@
 import xlwt
 import sys
 import os
+import time
 import pandas as pd
 import tushare as ts
 import datetime
@@ -96,8 +97,18 @@ def MainOpt():
         print("...without stock code ,program end....")
         exit()
 def getStockDataInDifferentFile(stockCodeList,start,end):
+    path ="./%sTo%s"%(start,end)
+    if(os.path.exists(path)==False): #判断目标是否存在 
+        os.mkdir(path) #创建目录
     pro = ts.pro_api()
+    i=0
     for code in stockCodeList:
+        savefileName =path+'/'+code+'('+start+'To'+end+').xls'
+        i =i+1
+        if(os.path.exists(savefileName)):
+            print("...[%d]%s exist"%(i,savefileName))
+            continue
+        time.sleep(0.3)
         print("...reading Stock ="+code+" from "+ start +" to "+end+" ...")
         # df =ts.get_hist_data(code,start=start,end=end)
         # df.rename(columns={'date':'日期', 'open':'开盘价','high':'最高价','close':'收盘价','low':'最低价','volume':'成交量','price_change':'价格变动','p_change':'涨跌幅','ma5':'5日均价','ma10':'10日均价','ma20':'20日均价','v_ma5':'5日均量','v_ma10':'10日均量','v_ma20':'20日均量','turnover':'换手率'},inplace = True)
@@ -106,12 +117,12 @@ def getStockDataInDifferentFile(stockCodeList,start,end):
         df=df1.sort_values(by=['trade_date'])
         # df.drop(['index'],axis=1,inplace=True)
         df.rename(columns={'ts_code':'股票代码','trade_date':'交易日期','open':'开盘价','high':'最高价','low':'最低价','close':'收盘价','pre_close':'昨收价','change':'涨跌额','pct_chg':'涨跌幅(未复权)','vol':'成交量 （手）','amount':'成交额(千元)'}, inplace = True)
-        savefileName =code+'.xls'
+
         writer = pd.ExcelWriter(savefileName)
         df.to_excel(writer,sheet_name=code)
 
         writer.save()
-        print("...finish writing Stock ="+code+" data to "+savefileName)
+        print("...[%d]finish writing Stock =%s data to %s"%(i,code,savefileName))
 
 
 def getStockDataInOneFile(stockCodeList,fname,start,end):

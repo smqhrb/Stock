@@ -105,7 +105,7 @@ class TdxData:
         #指定列名
         dayTdx.rename(columns={0:'code',1:'date',2:'open',3:'high',4:'low',5:'close',6:'amount',7:'volume'},inplace=True)#
         
-        dayTdx.set_index(pd.DatetimeIndex(pd.to_datetime(dayTdx.t)), inplace=True)
+        dayTdx.set_index(pd.DatetimeIndex(pd.to_datetime(dayTdx.date)), inplace=True)
         # # 周数据
         weekTdx =self.periodChange(dayTdx,'W')
         # 月数据dayTdx.sort_values('date', ascending=False, inplace=True)

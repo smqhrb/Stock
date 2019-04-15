@@ -61,9 +61,9 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>51</y>
+        <y>43</y>
         <width>961</width>
-        <height>231</height>
+        <height>241</height>
        </rect>
       </property>
      </widget>
@@ -122,8 +122,8 @@
      <widget class="QPushButton" name="btn_lhb">
       <property name="geometry">
        <rect>
-        <x>220</x>
-        <y>20</y>
+        <x>214</x>
+        <y>17</y>
         <width>75</width>
         <height>23</height>
        </rect>
@@ -269,9 +269,9 @@
      <widget class="QLabel" name="label_4">
       <property name="geometry">
        <rect>
-        <x>640</x>
-        <y>20</y>
-        <width>451</width>
+        <x>380</x>
+        <y>50</y>
+        <width>261</width>
         <height>16</height>
        </rect>
       </property>
@@ -282,7 +282,7 @@
      <widget class="QPushButton" name="btn_stop_readTdx">
       <property name="geometry">
        <rect>
-        <x>380</x>
+        <x>730</x>
         <y>50</y>
         <width>101</width>
         <height>23</height>
@@ -446,7 +446,7 @@
      <property name="geometry">
       <rect>
        <x>80</x>
-       <y>100</y>
+       <y>94</y>
        <width>121</width>
        <height>22</height>
       </rect>
@@ -459,7 +459,7 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>100</y>
+       <y>95</y>
        <width>51</width>
        <height>16</height>
       </rect>
@@ -472,7 +472,7 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>130</y>
+       <y>116</y>
        <width>191</width>
        <height>31</height>
       </rect>
@@ -747,7 +747,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>250</y>
+        <y>251</y>
         <width>161</width>
         <height>20</height>
        </rect>
@@ -761,7 +761,7 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>170</y>
+       <y>148</y>
        <width>191</width>
        <height>20</height>
       </rect>
@@ -789,7 +789,7 @@
     <widget class="QLineEdit" name="le_hyfxCode">
      <property name="geometry">
       <rect>
-       <x>80</x>
+       <x>75</x>
        <y>10</y>
        <width>113</width>
        <height>20</height>
@@ -799,8 +799,8 @@
     <widget class="QLabel" name="lb_hycode">
      <property name="geometry">
       <rect>
-       <x>20</x>
-       <y>10</y>
+       <x>11</x>
+       <y>14</y>
        <width>54</width>
        <height>12</height>
       </rect>
@@ -812,8 +812,8 @@
     <widget class="QPushButton" name="btn_tqHyfx">
      <property name="geometry">
       <rect>
-       <x>210</x>
-       <y>10</y>
+       <x>191</x>
+       <y>8</y>
        <width>75</width>
        <height>23</height>
       </rect>
@@ -826,7 +826,7 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>40</y>
+       <y>33</y>
        <width>981</width>
        <height>451</height>
       </rect>
@@ -838,9 +838,9 @@
      </property>
      <property name="geometry">
       <rect>
-       <x>300</x>
-       <y>10</y>
-       <width>113</width>
+       <x>268</x>
+       <y>9</y>
+       <width>301</width>
        <height>20</height>
       </rect>
      </property>

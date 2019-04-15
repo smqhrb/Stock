@@ -1,0 +1,1 @@
+pyuic5 TdxAudTool.ui -o TdxAudToolBase.py

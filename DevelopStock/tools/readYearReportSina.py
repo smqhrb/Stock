@@ -188,6 +188,6 @@ def get_stock(stock_code):
 
 if __name__ == '__main__':
 
-    stocks = get_stock("002122")
+    stocks = get_stock("002024")
     for stock in stocks:
         print (stock)

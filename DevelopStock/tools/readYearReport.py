@@ -186,7 +186,8 @@ if __name__ == '__main__':
     aa =ReportDownSina(rlist)
     # rlist =aa.readStockListFromXls('hs300.xls','code','0')
     rlist =aa.readStockListFromTxt('stock_num.txt')
-    aa.reportDown()
+    aa.reportDown(type='q1')
+    aa.reportDown(type='q3')
 # ###################
 # from threading import Thread
 # from Queue import Queue

@@ -1,62 +1,65 @@
 # https://www.jb51.net/article/121076.htm
 import time
 import itchat
-import pandas as pd
-from sqlalchemy import create_engine
-class mysqlDB:
+import pymysql
+import random
+#DBIP ="localhost"
+#DBUSER ="root"
+#DBPASS ="smq1234"
+#DBNAME ="stockdb"
+class dbOperate:
+    '''
+    configure DBIP,DBUser,DBPass,DBName
+    '''
+#    gDbIP ="localhost"
+#    gDbUser ="root"
+#    gDbPass ="smq1234"
+#    gDbName ="stockdb"
     def __init__(self):
-        self.userName ='root'#数据库用户名
-        self.passWord ='1234'#数据库密码
-        self.IP ='127.0.0.1'#数据库IP
-        self.Port ='3306'#数据库端口
-        self.dbName ='zj'#数据库内库名
-        self.status ="connected"#连接状态
+        self.gDbIP ="localhost"
+        self.gDbUser ="root"
+        self.gDbPass ="1234"
+        self.gDbName ="zj"
+    
+    def setDbConInfo(self,dbIP,dbUser,dbPass,dbName):#set db connect information
+        self.gDbIP =dbIP
+        self.gDbUser =dbUser
+        self.gDbPass =dbPass
+        self.gDbName =dbName
+
+    def connectDb(self):
+        self.db =pymysql.connect(self.gDbIP,self.gDbUser,self.gDbPass,self.gDbName )
+
+    def select(self,sel):
         try:
-            #连接数据库
-            self.engine = create_engine('mysql+pymysql://%s:%s@%s:%s/%s'%(self.userName,self.passWord,self.IP,self.Port,self.dbName))
-            self.con = self.engine.connect()
-        except Exception as e:#连接异常
-            self.status ="unconnect"
-            # print(str(e))
-    def read_sql_query(self,sql):
-        '''
-        读取数据库
-        sql ：查询sql
-        '''
-        if(self.status =="connected"):#检测数据库的连接状态
-            df = pd.read_sql_query(sql, self.engine)#读取数据返回 DataFrame
-            return df
-        else:
-            return pd.DataFrame()
-        
+            cursor = self.db.cursor()
+            cursor.execute(sel)
+            #data =cursor.fetchone()
+            data =cursor.fetchall()
+            cursor.close()
+        except:
+            print("except "+sel)
+            data =""
+        return data
+
     def updateInsertDelete(self,updateSentence):
         try:
-            cursor = self.engine.execute(updateSentence)
-            
+            cursor = self.db.cursor()
+            row =cursor.execute(updateSentence)
+            self.db.commit()
+            cursor.close()
             
         except:
             
             print("except "+updateSentence)
-    def getDbStatus(self):
-        '''
-        返回数据库状态
-        '''
-        return  (self.status =="connected" )     
+            self.db.rollback()
 
-    def to_sql(self,dataf,tbl):
-        '''
-        dataf:存入数据的DataFrame
-        tbl：数据库表名
-        '''
-        rowCnt =len(dataf)
-        for i in range(rowCnt):
-            try: 
-                dataf.iloc[i:i+1].to_sql(name =tbl,  con=self.con, if_exists='append',index= False)
-                # dataf.to_sql(name =tbl,  con=self.con, if_exists='append',index= False)#name='rumousdata', con=con, if_exists='append', index=False
-            except Exception as e:
-                pass#
-                # print('Error is ' + str(e))
-                #self.con.rollback()
+    def commit(self):
+        self.db.commit()    
+
+    def closeDb(self):
+        self.db.close()
+
 class WxSms:
     def login(self):
         pass
@@ -76,7 +79,7 @@ class WxSms:
 
 
         nikeNameList =['安士霞']
-        userNameList =[]
+        userNameList =['']
         # userNameList.append(userName)
 
         lenList =len(nikeNameList)
@@ -88,21 +91,31 @@ class WxSms:
                     userNameList.append(userName)
                     break
 
-
+        userNameList.clear()
+        userNameList.append('filehelper')
             # users = itchat.search_friends(name=nikeNameList[i])
             # userNameList.append(users[0]['UserName'])
 
         #发送信息 每隔两秒发一个
-        dbOper = mysqlDB()
+        # dbOper = mysqlDB()
+        dbOper =dbOperate()
+        dbOper.connectDb()
+
         while(1):
             #从短信表中读取记录
-            df =dbOper.read_sql_query("select smsSubject,smsContent,smsType from spcard.sms_send where smsState = 0")
-            lenDf =len(df)
+            # df =dbOper.read_sql_query("select smsSubject,smsContent,smsType from spcard.sms_send where smsState = 0")
+            res =dbOper.select("select smsSubject,smsContent,smsType from spcard.sms_send where smsState = 0")
+            lenDf =len(res)
+            smsTypeCol=2
+            smsContentCol=1
+            smsSubjectCol =0
             for j in range(lenDf):
                 #判断是否是彩信
-                smsType =df.iloc[[j]].smsType[0]
-                smsContent =df.iloc[[j]].smsContent[0]
-                smsSubject =df.iloc[[j]].smsSubject[0]
+
+                smsType =res[j][smsTypeCol]
+                smsContent =res[j][smsContentCol]
+                smsContentConv =pymysql.escape_string(smsContent)
+                smsSubject =res[j][smsSubjectCol]
                 lenList =len(userNameList)
                 for i in range(lenList):
                     if(smsType ==1):
@@ -115,19 +128,22 @@ class WxSms:
                         userName =userNameList[i]
                         
                         subContent ="subject:"+smsSubject+":"+smsContent[0:index]
-                        flag =itchat.send(subContent, toUserName=userName)
-                        flag =itchat.send_image(imageName, toUserName=userName)
+                        # flag =itchat.send(subContent, toUserName=userName)
+                        # flag =itchat.send_image(imageName, toUserName=userName)
+
                     else:
                         #不是短信
-                        smsSubject =df.iloc[[j]].smsSubject[0]
+                        
                         subContent ="subject:"+smsSubject+":"+smsContent
-                        flag =itchat.send(subContent, toUserName=userName)
+                        # flag =itchat.send(subContent, toUserName=userName)
                 #更新数据表的发送标志
-                if(flag['BaseResponse']['Ret']==0):
-                    dbOper.read_sql_query("update spcard.sms_send set smsState =2 where smsContent='%s' and smsType=%s and smsSubject ='%s'"%(smsContent,smsType,smsSubject))
-                time.sleep(2)
-                break
-            break
+                # if(flag['BaseResponse']['Ret']==0):
+                #     dbOper.updateInsertDelete("update spcard.sms_send set smsState =2 where smsContent='%s' and smsType=%s and smsSubject ='%s'"%(smsContentConv,smsType,smsSubject))
+                delaySecond =random.randint(3, 6)
+                print(delaySecond)
+                time.sleep(delaySecond)
+                
+            
 
 if __name__ == '__main__':
     test =WxSms()

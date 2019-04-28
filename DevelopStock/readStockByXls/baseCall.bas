@@ -135,14 +135,18 @@ Sub addHistDataToForm(code)
 'ColumnHeaders.Add , , "第" & i & "列", .Width / 8, lvwColumnCenter '从第2, lvwColumnCenter
    
    HistDataView.ListViewHist.ListItems.Clear
-HistDataView.ListViewHist.ColumnHeaders.Add , , "日期", 120, lvwColumnLeft
-HistDataView.ListViewHist.ColumnHeaders.Add , , "最低价", 80, lvwColumnRight
-HistDataView.ListViewHist.ColumnHeaders.Add , , "最高价", 80, lvwColumnRight
-HistDataView.ListViewHist.ColumnHeaders.Add , , "极值", 80, lvwColumnRight
-HistDataView.ListViewHist.ColumnHeaders.Add , , "最高价比较", 80, lvwColumnRight
-HistDataView.ListViewHist.ColumnHeaders.Add , , "最低价比较", 80, lvwColumnRight
-HistDataView.ListViewHist.ColumnHeaders.Add , , "差距", 80, lvwColumnRight
-'HistDataView.ListViewHist.ColumnHeaders.Add , , "差距", 80
+HistDataView.ListViewHist.ColumnHeaders.Add , , "日期", 50, lvwColumnLeft
+HistDataView.ListViewHist.ColumnHeaders.Add , , "最低价", 50, lvwColumnRight
+HistDataView.ListViewHist.ColumnHeaders.Add , , "最高价", 50, lvwColumnRight
+HistDataView.ListViewHist.ColumnHeaders.Add , , "极限", 60, lvwColumnRight
+HistDataView.ListViewHist.ColumnHeaders.Add , , "最高比", 60, lvwColumnRight
+HistDataView.ListViewHist.ColumnHeaders.Add , , "高涨", 60, lvwColumnRight
+HistDataView.ListViewHist.ColumnHeaders.Add , , "最低比", 60, lvwColumnRight
+HistDataView.ListViewHist.ColumnHeaders.Add , , "低涨", 60, lvwColumnRight
+
+HistDataView.ListViewHist.ColumnHeaders.Add , , "收限", 60, lvwColumnRight
+HistDataView.ListViewHist.ColumnHeaders.Add , , "振幅", 60, lvwColumnRight
+'HistDataView.ListViewHist.ColumnHeaders.Add , , "差距", 60
 HistDataView.ListViewHist.View = lvwReport
 HistDataView.ListViewHist.FullRowSelect = True
 HistDataView.ListViewHist.Gridlines = True
@@ -156,19 +160,24 @@ HistDataView.ListViewHist.Gridlines = True
                 priceMin = .Cells(i, 3) '最低价
                 priceMinLast = .Cells(i + 1, 3) '最低价
                 priceCloseLost = .Cells(i + 1, 4) '
+                priceClose = .Cells(i, 4) '
                 itm.Text = .Cells(i, 1) '日期
                 'itm.SubItems(1) = .Cells(i, 2) '收盘价
                 'format$("10.23","0.00%") '返回值 1023.00%
-                itm.SubItems(1) = Format$(priceMin, "0.00")
-                itm.SubItems(2) = Format$(priceMax, "0.00")
 '                itm.SubItems(3) = Application.Round(100 * (priceMax - priceMinLast) / priceMinLast, 2) '极值
 '                itm.SubItems(4) = Application.Round(100 * (priceMax - priceMaxLast) / priceMaxLast, 2) '最高价比较
 '                itm.SubItems(5) = Application.Round(100 * (priceMin - priceMinLast) / priceMinLast, 2) '最低价比较
 '                itm.SubItems(6) = Application.Round(100 * (priceMin - priceCloseLost) / priceCloseLost, 2) '差距
-                itm.SubItems(3) = Format$((priceMax - priceMinLast) / priceMinLast, "0.0%") '极值
-                itm.SubItems(4) = Format$((priceMax - priceMaxLast) / priceMaxLast, "0.0%") '最高价比较
-                itm.SubItems(5) = Format$((priceMin - priceMinLast) / priceMinLast, "0.0%") '最低价比较
-                itm.SubItems(6) = Format$((priceMin - priceCloseLost) / priceCloseLost, "0.0%") '差距
+
+                itm.SubItems(1) = Format$(priceMin, "0.00")
+                itm.SubItems(2) = Format$(priceMax, "0.00")
+                itm.SubItems(3) = Format$((priceMax - priceMinLast) / priceMinLast, "0.0%") '极限
+                itm.SubItems(4) = Format$((priceMax - priceMaxLast) / priceMaxLast, "0.0%") '最高比
+                itm.SubItems(5) = Format$((priceMax - priceCloseLost) / priceCloseLost, "0.0%") '高涨
+                itm.SubItems(6) = Format$((priceMin - priceMinLast) / priceMinLast, "0.0%") '最低比
+                itm.SubItems(7) = Format$((priceMin - priceCloseLost) / priceCloseLost, "0.0%") '低涨
+                itm.SubItems(8) = Format$((priceClose - priceMinLast) / priceMinLast, "0.0%") '收限
+                itm.SubItems(9) = Format$((priceMax - priceMin) / priceCloseLost, "0.0%") '振幅
             End If
         Next i
     End With
@@ -249,9 +258,9 @@ Public Function FillOneRow(url As String, r As Integer, code As String) As Integ
            Sheet1.Cells(r, 6).Value = jj(0) '均价
            'sp(5) 开盘
            If (sp(4) > 0) Then
-            Sheet1.Cells(r, 7).Value = Format$(100 * (sp(33) - sp(4)) / sp(4), "0.0") '最高%
-            Sheet1.Cells(r, 8).Value = Format$(100 * (sp(34) - sp(4)) / sp(4), "0.0") '最低%
-            Sheet1.Cells(r, 11).Value = Format$(100 * (sp(5) - sp(4)) / sp(4), "0.0") '开盘%
+            Sheet1.Cells(r, 7).Value = Format$((sp(33) - sp(4)) / sp(4), "0.0%") '最高%
+            Sheet1.Cells(r, 8).Value = Format$((sp(34) - sp(4)) / sp(4), "0.0%") '最低%
+            Sheet1.Cells(r, 11).Value = Format$((sp(5) - sp(4)) / sp(4), "0.0%") '开盘%
            End If
            Sheet1.Cells(r, 9).Value = sp(32) '涨幅%
            Sheet1.Cells(r, 10).Value = sp(43) '振幅%
@@ -269,20 +278,21 @@ Public Function FillOneRow(url As String, r As Integer, code As String) As Integ
             price_zg = sX.Cells(1 + 1, 2)
             price_sp = sX.Cells(1 + 1, 4)
            If price3 > 0 Then
-                Sheet1.Cells(r, 16).Value = Format$(100 * (sp(3) - price3) / price3, "0.00") '3日涨幅
+                Sheet1.Cells(r, 16).Value = Format$((sp(3) - price3) / price3, "0.00%") '3日涨幅
            End If
            If price20 > 0 Then
-                Sheet1.Cells(r, 17).Value = Format$(100 * (sp(3) - price20) / price20, "0.00") '20日涨幅
+                Sheet1.Cells(r, 17).Value = Format$((sp(3) - price20) / price20, "0.00%")  '20日涨幅
            End If
            If price_zd > 0 Then
-                Sheet1.Cells(r, 18).Value = Format$((sp(33) - price_zd) / price_zd, "0.0%") '极值
-                Sheet1.Cells(r, 20).Value = Format$((sp(34) - price_zd) / price_zd, "0.0%") '最低价比较
+                Sheet1.Cells(r, 18).Value = Format$((sp(33) - price_zd) / price_zd, "0.0%") '极限
+                Sheet1.Cells(r, 20).Value = Format$((sp(34) - price_zd) / price_zd, "0.0%") '最低比
            End If
            If price_zg > 0 Then
-                Sheet1.Cells(r, 19).Value = Format$((sp(33) - price_zg) / price_zg, "0.0%") '最高价比较
+                Sheet1.Cells(r, 19).Value = Format$((sp(33) - price_zg) / price_zg, "0.0%") '最高比
            End If
             If price_sp > 0 Then
-                Sheet1.Cells(r, 21).Value = Format$((sp(34) - price_sp) / price_sp, "0.0%") '差距
+                Sheet1.Cells(r, 21).Value = Format$((sp(3) - price_zd) / price_zd, "0.0%") '收限
+           
            End If
            ''''
            Dim zhangDie As Double

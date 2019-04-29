@@ -128,17 +128,16 @@ class WxSms:
                         userName =userNameList[i]
                         
                         subContent ="subject:"+smsSubject+":"+smsContent[0:index]
-                        # flag =itchat.send(subContent, toUserName=userName)
-                        # flag =itchat.send_image(imageName, toUserName=userName)
+                        flag =itchat.send(subContent, toUserName=userName)
+                        flag =itchat.send_image(imageName, toUserName=userName)
 
                     else:
                         #不是短信
-                        
                         subContent ="subject:"+smsSubject+":"+smsContent
-                        # flag =itchat.send(subContent, toUserName=userName)
+                        flag =itchat.send(subContent, toUserName=userName)
                 #更新数据表的发送标志
-                # if(flag['BaseResponse']['Ret']==0):
-                #     dbOper.updateInsertDelete("update spcard.sms_send set smsState =2 where smsContent='%s' and smsType=%s and smsSubject ='%s'"%(smsContentConv,smsType,smsSubject))
+                if(flag['BaseResponse']['Ret']==0):
+                    dbOper.updateInsertDelete("update spcard.sms_send set smsState =2 where smsContent='%s' and smsType=%s and smsSubject ='%s'"%(smsContentConv,smsType,smsSubject))
                 delaySecond =random.randint(3, 6)
                 print(delaySecond)
                 time.sleep(delaySecond)

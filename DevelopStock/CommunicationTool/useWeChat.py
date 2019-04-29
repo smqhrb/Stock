@@ -2,11 +2,10 @@
 import time
 import itchat
 import pymysql
+import os
 import random
-#DBIP ="localhost"
-#DBUSER ="root"
-#DBPASS ="smq1234"
-#DBNAME ="stockdb"
+import pandas as pd
+
 class dbOperate:
     '''
     configure DBIP,DBUser,DBPass,DBName
@@ -16,10 +15,10 @@ class dbOperate:
 #    gDbPass ="smq1234"
 #    gDbName ="stockdb"
     def __init__(self):
-        self.gDbIP ="localhost"
-        self.gDbUser ="root"
-        self.gDbPass ="1234"
-        self.gDbName ="zj"
+        self.gDbIP ="localhost"#数据库的IP
+        self.gDbUser ="root"#数据库连接用户名
+        self.gDbPass ="1234"#数据库连接密码
+        self.gDbName ="zj"#数据库的库名称
     
     def setDbConInfo(self,dbIP,dbUser,dbPass,dbName):#set db connect information
         self.gDbIP =dbIP
@@ -65,36 +64,44 @@ class WxSms:
         pass
 
     def sendLoop(self):
+        '''
+        给自己发只能用'fileHelper'-文件传输助手
+        '''
         itchat.auto_login(hotReload=True)
-        # #想给谁发信息，先查找到这个朋友
-        # users = itchat.search_friends(name=u'安士霞')
-        # #找到UserName
-        # userName = users[0]['UserName']
-        # #然后给他发消息
-        # flag =itchat.send('hello',toUserName = userName)
-        # print(flag)
+        userNameList =[]
+        
+        if(os.path.exists("WeList.xls")):
+            # WeList.xls exsit
+            # read WeList.xls
+            df =pd.read_excel("WeList.xls")
+        else:
+             # not exist
+            df =pd.DataFrame(['fileHelper'],columns=['NickName'])
+            df.to_excel('WeList.xls')
 
-        #从文件或数据库读取发送人员昵称列表
-        friends = itchat.get_friends(update=True)[0:]
-
-
-        nikeNameList =['安士霞']
-        userNameList =['']
-        # userNameList.append(userName)
-
+        nikeNameList =df['NickName'].tolist()    
+        
+       
         lenList =len(nikeNameList)
+        # friends = itchat.get_friends(update=True)[0:]
         for i in range(lenList):
-            for friend in friends[1:]:
-                nickName = friend['NickName']
-                if(nickName == nikeNameList[i]):
-                    userName =friend['UserName']
-                    userNameList.append(userName)
-                    break
-
-        userNameList.clear()
-        userNameList.append('filehelper')
-            # users = itchat.search_friends(name=nikeNameList[i])
-            # userNameList.append(users[0]['UserName'])
+            # for friend in friends[1:]:
+            #     nickName = friend['NickName']
+            #     if(nickName == nikeNameList[i]):
+            #         userName =friend['UserName']
+            #         userNameList.append(userName)
+            #         break
+            if(nikeNameList[i]=='fileHelper'):
+                userNameList.append('fileHelper')
+            else:
+                users = itchat.search_friends(name=nikeNameList[i])
+                if(len(users)>0):
+                    userNameList.append(users[0]['UserName'])
+                else:
+                    print("接收对象(微信 %s)没有对应的UserName")
+        if(len(userNameList)<=0):
+            print("接收对象(微信 昵称)不存在")
+            return
 
         #发送信息 每隔两秒发一个
         # dbOper = mysqlDB()
@@ -103,8 +110,7 @@ class WxSms:
 
         while(1):
             #从短信表中读取记录
-            # df =dbOper.read_sql_query("select smsSubject,smsContent,smsType from spcard.sms_send where smsState = 0")
-            res =dbOper.select("select smsSubject,smsContent,smsType from spcard.sms_send where smsState = 0")
+             res =dbOper.select("select smsSubject,smsContent,smsType from spcard.sms_send where smsState = 0")
             lenDf =len(res)
             smsTypeCol=2
             smsContentCol=1
@@ -120,13 +126,10 @@ class WxSms:
                 for i in range(lenList):
                     if(smsType ==1):
                         #是彩信
-                        
                         index =smsContent.find('####',0,len(smsContent))
-                        imageName =smsContent[index+4:]
-                        print(imageName)
-                        #imageName ='./hello.png'
+                        imageName =smsContent[index+4:]#图片文件路径名
                         userName =userNameList[i]
-                        
+                        #
                         subContent ="subject:"+smsSubject+":"+smsContent[0:index]
                         flag =itchat.send(subContent, toUserName=userName)
                         flag =itchat.send_image(imageName, toUserName=userName)
@@ -138,33 +141,13 @@ class WxSms:
                 #更新数据表的发送标志
                 if(flag['BaseResponse']['Ret']==0):
                     dbOper.updateInsertDelete("update spcard.sms_send set smsState =2 where smsContent='%s' and smsType=%s and smsSubject ='%s'"%(smsContentConv,smsType,smsSubject))
-                delaySecond =random.randint(3, 6)
+                delaySecond =random.randint(3, 6)#3~6秒之间随机延时
                 print(delaySecond)
                 time.sleep(delaySecond)
-                
-            
 
 if __name__ == '__main__':
-    test =WxSms()
-    test.login()
-    test.sendLoop()
-    # hotReload(热加载),短时间内不需要再次扫码登陆
-    # itchat.auto_login(hotReload=True)
-    
-    # # 获取微信好友的信息,返回的是json格式的信息
-    # friends = itchat.get_friends(update=True)[0:]
-    # for i in friends[0:]:
-    #     sex = i['NickName']
-    #     if(sex == '安士霞'):
-    #         userName = i['UserName']
-    #         break
-
-    # # itchat.send('Hello, 文件助手', toUserName='filehelper')#send_image
-    # # itchat.send_image('./hello.png', toUserName='filehelper')
-    # flag =itchat.send('Hello, 文件助手', toUserName=userName)#send_image success
-    # print(flag)
-    # itchat.send_image('./hello.png', toUserName=userName)
-    # print(flag)
-    # 连接mysql数据库
+    mainProc =WxSms()
+    mainProc.login()
+    mainProc.sendLoop()
 
  

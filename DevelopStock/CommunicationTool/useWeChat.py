@@ -65,18 +65,18 @@ class WxSms:
 
     def sendLoop(self):
         '''
-        给自己发只能用'fileHelper'-文件传输助手
+        给自己发只能用'filehelper'-文件传输助手
         '''
         itchat.auto_login(hotReload=True)
         userNameList =[]
-        
+        msgToSelf ="filehelper"# 发送给自己
         if(os.path.exists("WeList.xls")):
             # WeList.xls exsit
             # read WeList.xls
             df =pd.read_excel("WeList.xls")
         else:
              # not exist
-            df =pd.DataFrame(['fileHelper'],columns=['NickName'])
+            df =pd.DataFrame([msgToSelf],columns=['NickName'])
             df.to_excel('WeList.xls')
 
         nikeNameList =df['NickName'].tolist()    
@@ -91,8 +91,8 @@ class WxSms:
             #         userName =friend['UserName']
             #         userNameList.append(userName)
             #         break
-            if(nikeNameList[i]=='fileHelper'):
-                userNameList.append('fileHelper')
+            if(nikeNameList[i]==msgToSelf):
+                userNameList.append(msgToSelf)
             else:
                 users = itchat.search_friends(name=nikeNameList[i])
                 if(len(users)>0):
@@ -107,7 +107,7 @@ class WxSms:
         # dbOper = mysqlDB()
         dbOper =dbOperate()
         dbOper.connectDb()
-
+        print("程序正在运行,退出 Ctrl+C")
         while(1):
             #从短信表中读取记录
             res =dbOper.select("select smsSubject,smsContent,smsType from spcard.sms_send where smsState = 0")
@@ -119,6 +119,7 @@ class WxSms:
                 #判断是否是彩信
 
                 smsType =res[j][smsTypeCol]
+                
                 smsContent =res[j][smsContentCol]
                 smsContentConv =pymysql.escape_string(smsContent)
                 smsSubject =res[j][smsSubjectCol]
@@ -136,13 +137,15 @@ class WxSms:
 
                     else:
                         #不是短信
+                        userName =userNameList[i]
                         subContent ="subject:"+smsSubject+":"+smsContent
                         flag =itchat.send(subContent, toUserName=userName)
+                    delayMs =random.random()#0~1秒之间随机延时
+                    time.sleep(delayMs)
                 #更新数据表的发送标志
                 if(flag['BaseResponse']['Ret']==0):
                     dbOper.updateInsertDelete("update spcard.sms_send set smsState =2 where smsContent='%s' and smsType=%s and smsSubject ='%s'"%(smsContentConv,smsType,smsSubject))
                 delaySecond =random.randint(3, 6)#3~6秒之间随机延时
-                print(delaySecond)
                 time.sleep(delaySecond)
 
 if __name__ == '__main__':

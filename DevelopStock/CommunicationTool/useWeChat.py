@@ -110,7 +110,7 @@ class WxSms:
 
         while(1):
             #从短信表中读取记录
-             res =dbOper.select("select smsSubject,smsContent,smsType from spcard.sms_send where smsState = 0")
+            res =dbOper.select("select smsSubject,smsContent,smsType from spcard.sms_send where smsState = 0")
             lenDf =len(res)
             smsTypeCol=2
             smsContentCol=1

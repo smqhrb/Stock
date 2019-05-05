@@ -48,11 +48,11 @@ def exactStock(fileName, code):
         e=e+32
         
     return items
-write = pd.ExcelWriter("LC(000001).xls")
-dl =exactStock('sz000001.day',"000001")
-df = pd.DataFrame(dl,['code','date','open','high','low','close','ratio','amount','volume'])#ratio涨跌幅,amount总额,volume(万手)
-df.to_excel(write,sheet_name='000001',index=True)
-write.save()
+# write = pd.ExcelWriter("LC(000001).xls")
+# dl =exactStock('sz000001.day',"000001")
+# df = pd.DataFrame(dl,['code','date','open','high','low','close','ratio','amount','volume'])#ratio涨跌幅,amount总额,volume(万手)
+# df.to_excel(write,sheet_name='000001',index=True)
+# write.save()
 # exactStock('E:\\new_tdx\\vipdoc\\sh\\lday\\sh000001.day',"000001")
 '''
 通达信5分钟线*.lc5文件和*.lc1文件
@@ -72,7 +72,7 @@ write.save()
     28 ~ 31 字节：（保留）
 '''
 
-ofile=open('sz000001.lc1','rb')
+ofile=open('sh000001.lc5','rb')
 buf=ofile.read()
 ofile.close()
  
@@ -81,9 +81,12 @@ no=num/32
 b=0
 e=32
 dl = []
-for i in range(no):
+for i in range(int(no)):
    a=unpack('hhfffffii',buf[b:e])
-   dl.append([str(int(a[0]/2048)+2004)+'-'+str(int(a[0]%2048/100)).zfill(2)+'-'+str(a[0]%20480).zfill(2),str(int(a[1]/60)).zfill(2)+':'+str(a[1]%60).zfill(2)+':00',a[2],a[3],a[4],a[5],a[6],a[7]])
+   dl.append([str(int(a[0]/2048)+2004)+'-'+str(int(a[0]%2048/100)).zfill(2)+'-'+str((a[0]%2048)%100).zfill(2),str(int(a[1]/60)).zfill(2)+':'+str(a[1]%60).zfill(2)+':00',a[2],a[3],a[4],a[5],a[6],a[7]])
    b=b+32
    e=e+32
+write = pd.ExcelWriter("LC5(000001).xls")
 df = pd.DataFrame(dl, columns=['date','time','open','high','low','close','amount','volume'])
+df.to_excel(write,sheet_name='000001',index=True)
+write.save()

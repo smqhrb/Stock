@@ -103,7 +103,8 @@ class MinDataUi_Dialog(Ui_dialog):#QtWidgets.QWidget
         else:
             if(self.th2.is_alive()==False):
                 self.Main.setPara('',startTime,endTime,typeL,self.savePath,"stockList.txt")
-                self.th2 = threading.Thread(target=self.Main.getDataWithTimeSpan, args=(startTime,endTime), name='funciton')
+                self.th2 = threading.Thread(target=self.Main.getDataWithTimeSpan, args=(
+                    startTime, endTime), name='funciton')
                 self.th2.start()
 
     def callbacklog(self, msg,processInt,processHb):

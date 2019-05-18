@@ -130,6 +130,61 @@ def getStockDataInDifferentFile(stockCodeList,start,end):
         writer.save()
         print("...[%d]finish writing Stock =%s data to %s"%(i,code,savefileName))
 
+def getStockDataInDifferentFileUser(stockCodeList,start,end):
+    path ="./%sTo%s"%(start,end)
+    if(os.path.exists(path)==False): #判断目标是否存在 
+        os.mkdir(path) #创建目录
+    pro = ts.pro_api()
+    i=0
+    for code in stockCodeList:
+        savefileName =path+'/'+code+'('+start+'To'+end+').xlsx'
+        i =i+1
+        if(os.path.exists(savefileName)):
+            print("...[%d]%s exist"%(i,savefileName))
+            print("...reading fileName =%s"%savefileName)
+            df1 = pd.read_excel(savefileName)
+            df1.rename(columns={'股票代码':'ts_code','交易日期':'trade_date','开盘价':'open','最高价':'high','最低价':'low','收盘价':'close','昨收价':'pre_close','涨跌额':'change','涨跌幅(未复权)':'pct_chg','成交量 （手）':'vol','成交额(千元)':'amount'}, inplace = True)
+            # df=df1.sort_values(by=['trade_date'])
+            df =df1
+        else:
+            time.sleep(0.3)
+            print("...reading Stock ="+code+" from "+ start +" to "+end+" ...")
+            # df =ts.get_hist_data(code,start=start,end=end)
+            # df.rename(columns={'date':'日期', 'open':'开盘价','high':'最高价','close':'收盘价','low':'最低价','volume':'成交量','price_change':'价格变动','p_change':'涨跌幅','ma5':'5日均价','ma10':'10日均价','ma20':'20日均价','v_ma5':'5日均量','v_ma10':'10日均量','v_ma20':'20日均量','turnover':'换手率'},inplace = True)
+
+            df1 = pro.daily(ts_code=code, start_date=start, end_date=end)
+            df=df1.sort_values(by=['trade_date'])
+            df=df.reset_index()
+            df.drop(['index'],axis=1,inplace=True)
+        ####
+        #比如002321这份数据 第71行（2018年6月1日）
+        # 最高价等于昨收价的1.1倍（四舍五入）
+        # 并且6月1日的最高价未高于其前5个交易的最高价（即前5个交易日有价格高于6月1日的最高价即可）  
+        # 数据符合条件 然后在该行后标记个1，在其后面一行（72行）标记为2   
+        # 做标记的目的是方便筛选
+        
+
+        df_temp =df[round(df['high']/df['pre_close'],2)==1.1]
+        df['flag']=''
+        for j in range(len(df_temp)):
+            ind =df_temp.index[j]
+            if(ind>5):
+                value =df.iloc[ind]['high']
+                if((df.iloc[ind-1]['high']>=value) or (df.iloc[ind-2]['high']>=value) or (df.iloc[ind-3]['high']>=value) or (df.iloc[ind-4]['high']>=value)  or (df.iloc[ind-5]['high']>=value)):
+                    df.loc[ind,'flag'] =1
+                    df.loc[ind+1,'flag']=2        
+        ####
+        df['最高涨幅'] =df['high']/df['pre_close'] -1
+        df['最低涨幅'] =df['low']/df['pre_close'] -1
+        df['收盘涨幅'] =df['close']/df['pre_close'] -1
+        df.rename(columns={'ts_code':'股票代码','trade_date':'交易日期','open':'开盘价','high':'最高价','low':'最低价','close':'收盘价','pre_close':'昨收价','change':'涨跌额','pct_chg':'涨跌幅(未复权)','vol':'成交量 （手）','amount':'成交额(千元)'}, inplace = True)
+        order =['股票代码','交易日期','开盘价','最高价','最高涨幅','最低价','最低涨幅','收盘价','收盘涨幅','昨收价','涨跌额','涨跌幅(未复权)','成交量 （手）','成交额(千元)','flag']
+        dfR =df[order]
+        writer = pd.ExcelWriter(savefileName)
+        dfR.to_excel(writer,sheet_name=code)
+
+        writer.save()
+        print("...[%d]finish writing Stock =%s data to %s"%(i,code,savefileName))
 
 def getStockDataInOneFile(stockCodeList,fname,start,end):
     writer = pd.ExcelWriter(fname)

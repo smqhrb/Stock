@@ -122,6 +122,7 @@ class tradeData:
             url = "http://quotes.money.163.com/trade/lsjysj_zhishu_%s.html?year=%s&season=%s"%(indexCode,year,season)
         df0 =self.getDataPart(indexCode,year,season,url)
         return df0
+
     def getDataPart(self,indexCode,year,season,url):
         '''
         '''
@@ -165,4 +166,4 @@ class tradeData:
 
 if __name__ == '__main__':
     test =tradeData()
-    test.getDataDayUse("testin.xls","000651","2018-03-01","2019-04-28",'0')
+    test.getDataDayUse("AAAA.xls","000651","2018-03-01","2019-04-28",'1')

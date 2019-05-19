@@ -1,5 +1,3 @@
-from openpyxl import load_workbook
-import openpyxl
 import tushare as ts
 import numpy as np
 import pandas as pd
@@ -12,7 +10,6 @@ from html.parser import HTMLParser
 from urllib import request
 from urllib import parse
 from urllib.request import urlopen 
-import xlwt
 import sys
 import os
 import time

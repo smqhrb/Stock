@@ -23,7 +23,13 @@ from datetime import timedelta
 import getopt
 import numpy as np
 import random
-# stock_CodeUrl = 'http://quote.eastmoney.com/stocklist.html'
+
+'''
+SELECT  is 'self', download data use 'getDataDayUse'
+SELECT  is 'tushare' ,download data use 'df1 = pro.daily'
+'''
+SELECT ="self"#"tushare"
+###
 print("Script name：",sys.argv[0])
 print("")
 len1 =len(sys.argv)
@@ -89,7 +95,11 @@ def MainOpt():
         print("End time   ="+end)
         stockCodeList =readStockList(files)
         print("...start to read data...")
-        ts.set_token('582c8c9ab1bd9e3e14d5d60527d63affb8c310fba3fb9f5d7853bf9c')
+        '''
+        请上网注册 https://tushare.pro/
+        替换 token
+        '''
+        ts.set_token('582c8c9ab1bd9e3e14d5d60527d63affb8c310fba3fb9f5d7853bf9c')#替换成自己
 
         getStockDataInDifferentFile(stockCodeList,start,end)
         print("...end.................")
@@ -98,24 +108,6 @@ def MainOpt():
         exit()
 
 
-#获取股票代码列表
-def urlTolist(url):
-    allCodeList = []
-    html = urllib2.urlopen(url).read()
-    html = html.decode('utf-8')
-    print(html)
-    # html = str(urlopen(url).read().decode('gb2312'))
-    # s = r'<li><a target="_blank" href="http://quote.eastmoney.com/\S\S(.*?).html">'
-    # s = r'<td class=" listview-col-Code"><a href="/sz300256.html">'
-    s = r'<td class=" listview-col-Code"><a href="/(.*).html">'
-    # <td class=" listview-col-Code"><a href="/sz300256.html">300256</a></td>
-    pat = re.compile(s)
-    code = pat.findall(html)
-    for item in code:
-        if item[0]=='6' or item[0]=='3' or item[0]=='0':
-            allCodeList.append(item)
-    return allCodeList
-
 def readStockList(fname):
     contents =[]
     f = open(fname)
@@ -123,21 +115,20 @@ def readStockList(fname):
     for code in lines:
         k =code.strip()
         if(k=='all'):
-            pro = ts.pro_api()
-            data = pro.query('stock_basic', exchange='', list_status='L', fields='ts_code,symbol,name,area,industry,list_date')
-            contents =data['ts_code'].tolist()
+            if(SELECT=='tushare'):
+                pro = ts.pro_api()
+                data = pro.query('stock_basic', exchange='', list_status='L', fields='ts_code,symbol,name,area,industry,list_date')
+                contents =data['ts_code'].tolist()
+            else:
+                df=pd.read_csv('stockList.csv',header=None,encoding = "gbk")
+                contents =df[0].tolist()
             
-            # df=pd.read_csv('stockList.csv',header=None,encoding = "gbk")
-            # print(df[0])
-            # df[0] =df[0].astype(int)
-            # contents =df[0].tolist()
-            # # contents =urlTolist(stock_CodeUrl)
-            # for i in range(len(contents)):
-            #     contents[i] ="%06d"%contents[i]
-            #     if(contents[i]>'600000'):
-            #         contents[i]=contents[i]+'.SH'
-            #     else:
-            #         contents[i]=contents[i]+'.SZ'
+            for i in range(len(contents)):
+                contents[i] ="%06d"%contents[i]
+                if(contents[i]>'600000'):
+                    contents[i]=contents[i]+'.SH'
+                else:
+                    contents[i]=contents[i]+'.SZ'
             break
         else:
             
@@ -211,20 +202,22 @@ def getStockDataInDifferentFile(stockCodeList,start,end):
         if(os.path.exists(savefileName)):
             print("...[%d]%s exist"%(i,savefileName))
             continue 
-        delayt =2*random.random()+1
-        time.sleep(delayt)
-        print("...reading Stock ="+code+" from "+ start +" to "+end+" ...")
-        # df =ts.get_hist_data(code,start=start,end=end)
-        # df.rename(columns={'date':'日期', 'open':'开盘价','high':'最高价','close':'收盘价','low':'最低价','volume':'成交量','price_change':'价格变动','p_change':'涨跌幅','ma5':'5日均价','ma10':'10日均价','ma20':'20日均价','v_ma5':'5日均量','v_ma10':'10日均量','v_ma20':'20日均量','turnover':'换手率'},inplace = True)
 
-        # df1 = pro.daily(ts_code=code, start_date=start, end_date=end)
-   
-        # df=df1.sort_values(by=['trade_date'])
-        startDate =datetime.datetime.strptime(start, "%Y%m%d")
-        strStart =startDate.strftime("%Y-%m-%d")
-        endDate = datetime.datetime.strptime(end, "%Y%m%d")
-        strEnd =endDate.strftime("%Y-%m-%d")
-        df =test.getDataDayUse("AAAA.xls",code[:-3],strStart,strEnd,'1')
+        print("...reading Stock ="+code+" from "+ start +" to "+end+" ...")
+
+        # df.rename(columns={'date':'日期', 'open':'开盘价','high':'最高价','close':'收盘价','low':'最低价','volume':'成交量','price_change':'价格变动','p_change':'涨跌幅','ma5':'5日均价','ma10':'10日均价','ma20':'20日均价','v_ma5':'5日均量','v_ma10':'10日均量','v_ma20':'20日均量','turnover':'换手率'},inplace = True)
+        if(SELECT=='tushare'):
+            time.sleep(0.3)
+            df1 = pro.daily(ts_code=code, start_date=start, end_date=end)
+            df=df1.sort_values(by=['trade_date'])
+        else:
+            delayt =2*random.random()+1
+            time.sleep(delayt)
+            startDate =datetime.datetime.strptime(start, "%Y%m%d")
+            strStart =startDate.strftime("%Y-%m-%d")
+            endDate = datetime.datetime.strptime(end, "%Y%m%d")
+            strEnd =endDate.strftime("%Y-%m-%d")
+            df =test.getDataDayUse("AAAA.xls",code[:-3],strStart,strEnd,'1')
  
         writer = pd.ExcelWriter(savefileName)
         df.to_excel(writer,sheet_name="交易价格")

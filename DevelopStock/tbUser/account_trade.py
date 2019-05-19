@@ -25,7 +25,7 @@ import random
 SELECT  is 'self', download data use 'getDataDayUse'
 SELECT  is 'tushare' ,download data use 'df1 = pro.daily'
 '''
-SELECT ="self"#"tushare"
+SELECT ="tushare"#"self"#"tushare"
 ###
 print("Script name：",sys.argv[0])
 print("")
@@ -90,13 +90,14 @@ def MainOpt():
 
         print("Start time ="+start)
         print("End time   ="+end)
-        stockCodeList =readStockList(files)
-        print("...start to read data...")
         '''
         请上网注册 https://tushare.pro/
         替换 token
         '''
         ts.set_token('582c8c9ab1bd9e3e14d5d60527d63affb8c310fba3fb9f5d7853bf9c')#替换成自己
+
+        stockCodeList =readStockList(files)
+        print("...start to read data...")
 
         getStockDataInDifferentFile(stockCodeList,start,end)
         print("...end.................")
@@ -120,12 +121,12 @@ def readStockList(fname):
                 df=pd.read_csv('stockList.csv',header=None,encoding = "gbk")
                 contents =df[0].tolist()
             
-            for i in range(len(contents)):
-                contents[i] ="%06d"%contents[i]
-                if(contents[i]>'600000'):
-                    contents[i]=contents[i]+'.SH'
-                else:
-                    contents[i]=contents[i]+'.SZ'
+                for i in range(len(contents)):
+                    contents[i] ="%06d"%contents[i]
+                    if(contents[i]>'600000'):
+                        contents[i]=contents[i]+'.SH'
+                    else:
+                        contents[i]=contents[i]+'.SZ'
             break
         else:
             
@@ -188,8 +189,11 @@ def getStockDataInDifferentFile(stockCodeList,start,end):
     path ="./%sTo%s"%(start,end)
     if(os.path.exists(path)==False): #判断目标是否存在 
         os.mkdir(path) #创建目录
-    # pro = ts.pro_api()
-    test =tradeData()
+    if(SELECT=='tushare'):
+        
+        pro = ts.pro_api()
+    else:
+        test =tradeData()
     i=0
     for code in stockCodeList:
         time_start=time.time()

@@ -23,7 +23,7 @@ from datetime import timedelta
 import getopt
 import numpy as np
 import random
-stock_CodeUrl = 'http://quote.eastmoney.com/stocklist.html'
+# stock_CodeUrl = 'http://quote.eastmoney.com/stocklist.html'
 print("Script name：",sys.argv[0])
 print("")
 len1 =len(sys.argv)
@@ -48,9 +48,9 @@ def MainOpt():
             
             print("|   for example:")
             print("|      example 2: all stock data write in different files")
-            print("|           python main.py -f stockList.txt -s 20170111 -e 20180111")
+            print("|           python account_trade.py -f stockList.txt -s 20170111 -e 20180111")
             print("|      example 3: default time is now to now -365day")
-            print("|           python main.py -f stockList.txt")
+            print("|           python account_trade.py -f stockList.txt")
             print("|                                           ")
             print("|   stock code is 601800.SH or 300298.SZ or 000882.SZ")
             print("---------------------------------------------------------------------------------")
@@ -123,21 +123,21 @@ def readStockList(fname):
     for code in lines:
         k =code.strip()
         if(k=='all'):
-            # pro = ts.pro_api()
-            # data = pro.query('stock_basic', exchange='', list_status='L', fields='ts_code,symbol,name,area,industry,list_date')
-            # contents =data['ts_code'].tolist()
+            pro = ts.pro_api()
+            data = pro.query('stock_basic', exchange='', list_status='L', fields='ts_code,symbol,name,area,industry,list_date')
+            contents =data['ts_code'].tolist()
             
-            df=pd.read_csv('stockList.csv',header=None,encoding = "gbk")
-            print(df[0])
-            df[0] =df[0].astype(int)
-            contents =df[0].tolist()
-            # contents =urlTolist(stock_CodeUrl)
-            for i in range(len(contents)):
-                contents[i] ="%06d"%contents[i]
-                if(contents[i]>'600000'):
-                    contents[i]=contents[i]+'.SH'
-                else:
-                    contents[i]=contents[i]+'.SZ'
+            # df=pd.read_csv('stockList.csv',header=None,encoding = "gbk")
+            # print(df[0])
+            # df[0] =df[0].astype(int)
+            # contents =df[0].tolist()
+            # # contents =urlTolist(stock_CodeUrl)
+            # for i in range(len(contents)):
+            #     contents[i] ="%06d"%contents[i]
+            #     if(contents[i]>'600000'):
+            #         contents[i]=contents[i]+'.SH'
+            #     else:
+            #         contents[i]=contents[i]+'.SZ'
             break
         else:
             

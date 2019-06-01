@@ -179,55 +179,7 @@ def main():
         name =sys.argv[3]
         xlsTest.GetFullAcount(code,name,typeQ='year')
         xlsTest.GetFullAcount(code,name,typeQ='quarter')
-    
-def MainOpt():
-    try:
-        opts, args = getopt.getopt(sys.argv[1:],'a:h',['all=','help'])
-    except getopt.GetoptError: 
-        print(getopt.GetoptError)
-        sys.exit()
-    all =""
-    for o, a in opts:
-        if o in ("-h", "--help"):
-            print("")
-            print("-----命令格式，参照例子:-----------------------------------------------")
-            print("|         获取股票列表:")
-            print("|                 python downAcountData.py stock")
-            print("|         获取所有股票的财务数据:")
-            print("|                 python downAcountData.py -a a")
-            print("|         获取指定股票的财务数据:")
-            print("|                 python downAcountData.py 000625 格力电器")
-            print("---------------------------------------------------------------------")
-            sys.exit()
-        elif o in ("-a", "--all"): #所有股票读取
-            all = a
-    print("kk%s"%all)
-    if(all =='a'):
-        xlsTest =AccountPd()
-        retDf =pd.read_csv("%s\StockClass.csv"%xlsTest.destPath)
-        for k in range(len(retDf)):
-            code =retDf.loc[k,'code']
-            name =retDf.loc[k,'name']
-            code ='%06d'%code
-            print("[%d]开始读取 %s(%s)"%(k,code,name))
-            xlsTest.GetFullAcount(code,name,typeQ='year')
-            xlsTest.GetFullAcount(code,name,typeQ='quarter')
-            print("[%d]结束读取 %s(%s)"%(k,code,name))
-    else:
-        code =sys.argv[1]
-        xlsTest =AccountPd()
-        if(code=='stock'):
-            xlsTest.GetCodeList()
-        else:
-            name =sys.argv[2]
-            print("----开始读取 %s(%s)"%(code,name))
-            xlsTest.GetFullAcount(code,name,typeQ='year')
-            xlsTest.GetFullAcount(code,name,typeQ='quarter') 
-            print("----结束读取 %s(%s)"%(code,name))  
-
 if __name__ == '__main__':
-    # work with AcountWork.xlsm -main()
     main()
-    # only for python command - MainOpt()
-    # MainOpt()
+
 

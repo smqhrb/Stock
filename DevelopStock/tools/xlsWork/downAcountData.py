@@ -1,18 +1,19 @@
 #coding=utf-8
+import getopt
 import tushare as ts
 import numpy as np
 import pandas as pd
 import os,time,sys,re,datetime
-import csv
-import scipy
-import re
+# import csv
+# import scipy
+# import re
 import urllib.request as urllib2
-import xlwt
+# import xlwt
 from bs4 import BeautifulSoup 
-from html.parser import HTMLParser  
-from urllib import request
-from urllib import parse
-from urllib.request import urlopen
+# from html.parser import HTMLParser  
+# from urllib import request
+# from urllib import parse
+# from urllib.request import urlopen
 
 class AccountPd:
     '''
@@ -152,26 +153,81 @@ class AccountPd:
 
     def GetCodeList(self):
         try:
-            print("------开始读取行业%s"%(classify))
-            ddf =ts.get_industry_classified()
-            ddf.to_csv('StockClass.csv')
+            print("------开始读取股票基本信息.....")
+            ddf =ts.get_stock_basics()
+            ddf =ddf.sort_index()
+
+            ddf.to_csv('%s\StockClass.csv'%(self.destPath),encoding='utf_8_sig')
+            print("------结束读取股票基本信息.....")
         except Exception as ex:
+            print("------读取股票失败.....")
             pass
 
 def main():
     print(sys.argv[0])
     print(sys.argv[1])
     print(sys.argv[2]) 
-    print(sys.argv[3]) 
-    destPath ="%s\\Account"%(sys.argv[1])   
+
+    destPath ="%s\\Account"%(sys.argv[1]) 
     xlsTest =AccountPd(destPath=destPath)
     code =sys.argv[2]
-    name =sys.argv[3]
+
     if(code=='stock'):
         xlsTest.GetCodeList()
     else:
+        print(sys.argv[3]) 
+        name =sys.argv[3]
         xlsTest.GetFullAcount(code,name,typeQ='year')
         xlsTest.GetFullAcount(code,name,typeQ='quarter')
+    
+def MainOpt():
+    try:
+        opts, args = getopt.getopt(sys.argv[1:],'a:h',['all=','help'])
+    except getopt.GetoptError: 
+        print(getopt.GetoptError)
+        sys.exit()
+    all =""
+    for o, a in opts:
+        if o in ("-h", "--help"):
+            print("")
+            print("-----命令格式，参照例子:-----------------------------------------------")
+            print("|         获取股票列表:")
+            print("|                 python downAcountData.py stock")
+            print("|         获取所有股票的财务数据:")
+            print("|                 python downAcountData.py -a a")
+            print("|         获取指定股票的财务数据:")
+            print("|                 python downAcountData.py 000625 格力电器")
+            print("---------------------------------------------------------------------")
+            sys.exit()
+        elif o in ("-a", "--all"): #所有股票读取
+            all = a
+    print("kk%s"%all)
+    if(all =='a'):
+        xlsTest =AccountPd()
+        retDf =pd.read_csv("%s\StockClass.csv"%xlsTest.destPath)
+        for k in range(len(retDf)):
+            code =retDf.loc[k,'code']
+            name =retDf.loc[k,'name']
+            code ='%06d'%code
+            print("[%d]开始读取 %s(%s)"%(k,code,name))
+            xlsTest.GetFullAcount(code,name,typeQ='year')
+            xlsTest.GetFullAcount(code,name,typeQ='quarter')
+            print("[%d]结束读取 %s(%s)"%(k,code,name))
+    else:
+        code =sys.argv[1]
+        xlsTest =AccountPd()
+        if(code=='stock'):
+            xlsTest.GetCodeList()
+        else:
+            name =sys.argv[2]
+            print("----开始读取 %s(%s)"%(code,name))
+            xlsTest.GetFullAcount(code,name,typeQ='year')
+            xlsTest.GetFullAcount(code,name,typeQ='quarter') 
+            print("----结束读取 %s(%s)"%(code,name))  
 
 if __name__ == '__main__':
+    # work with AcountWork.xlsm -main()
     main()
+    # only for python command - MainOpt()
+    # MainOpt()
+

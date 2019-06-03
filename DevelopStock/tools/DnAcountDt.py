@@ -242,6 +242,137 @@ class AccountPd:
                 arr = []
         return stocks
 
+    def GetFhpg(self,Code,Name):
+        '''
+        '''
+        Url1 = 'http://quotes.money.163.com/f10/fhpg_%s.html'%Code
+        fhpg =self.GetFhpgBase(Url1,Code)
+        columns =['公告日期','分红年度','送股','转增','派息','股权登记日','除权除息日','红股上市日']
+        fhpg.to_csv("%s\%s(%s_fhpg).csv"%(self.destPath,Code,Name),index_label=u'序号',columns =columns,encoding='utf_8_sig')
+
+    def GetFhpgBase(self,url,code):
+        '''
+        get FHPG 分红配股
+        '''
+        getH =RandomHeader()
+        headers =getH.GetHeader()
+        req = urllib2.Request(url, headers = headers)
+        try:
+            content = urllib2.urlopen(req).read()
+        except:
+            return
+        soup = BeautifulSoup(content,features="lxml")
+        #获取财务报表的表头
+        table0 = soup.find("table",{"class":"table_bg001 border_box limit_sale"})
+        dbrow =table0.findAll("tr")
+       
+        df1 = pd.DataFrame()
+       
+        dbrow_cnt =len(dbrow)
+        col_row =[]
+        for k in range(dbrow_cnt):
+            if(k<2):
+                cells =dbrow[k].findAll("th")
+                for cells_col in range(len(cells)):
+                    col_name = cells[cells_col].text
+                    if(col_name =="分红方案（每10股）"):
+                        col_row.append("")
+                        col_row.append("")
+                        col_row.append("")
+                        pass
+                    else:
+                        if(k==1):
+                           col_row[cells_col+2] = col_name
+                        else:
+                            col_row.append(col_name)
+            else:
+                cells =dbrow[k].findAll("td")
+                data_row =[]
+                if len(cells) > 0:#
+                    i = 0
+                    lencell = len(cells)#统计财务报表的年数            
+                    while i < lencell:
+
+                        data_row.append(cells[i].text)                                        
+                        i=i+1
+                    if(len(data_row)>1):    
+                        data1=dict(zip(col_row,data_row))
+                        row_name ='%d'%(k-2)
+                        pds =pd.Series(data1,name =row_name)
+                        df1 =df1.append(pds)                   
+        data_fh = df1
+
+        # data_fh=data_fh.sort_index()
+        # cols =data_fh.columns.values.tolist()
+        # for col in cols:
+        #     data_fh[col] = data_fh[col].str.replace(',','')
+        #     data_fh[col] = data_fh[col].str.replace('--','0')
+        # data_fh =data_fh.apply(lambda col:pd.to_numeric(col, errors='coerce'))
+        # data_fh.fillna(0,inplace=True)
+        return data_fh
+    def GetDbfx(self,Code,Name):
+        '''
+        get 杜邦分析
+        CSV 
+        '''
+        dbfx =self.getDbfxFrom163(Code)
+        dbfx.to_csv("%s\%s(%s_dbfx).csv"%(self.destPath,Code,Name),index_label=u'报告日期',encoding='utf_8_sig')
+
+    def urlOpenContent(self,urlBase,urlfix):
+        '''
+        parameter:
+            url is made by urlBase urlfix
+        return content
+        '''
+        url =urlBase%(urlfix)
+        getH =RandomHeader()
+        headers =getH.GetHeader()
+        # headers = {"User-Agent":"Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6"}
+        req = urllib2.Request(url, headers = headers)
+        try:
+            content = urllib2.urlopen(req).read()
+        except:
+            return 
+        return content
+
+    def getDbfxFrom163(self,code):
+        '''
+        杜邦分析
+        parameter 
+            code like '000651'
+        return DataFrame
+        '''
+        url_dbfx_base ='http://quotes.money.163.com/f10/dbfx_%s.html#01c08'
+        # url_dbfx =url_dbfx_base%('000651')
+        content =self.urlOpenContent(url_dbfx_base,code)
+        soup = BeautifulSoup(content,features="lxml")
+        optionAll = soup.findAll("select",{"class":"select01"})  #获取所有日期
+        tableAllItem = soup.findAll("td",{"class":"dbbg01"}) #获取所有的项目名称
+        i=0
+        item =[]
+        while i<len(tableAllItem):
+            item.append(tableAllItem[i].text)
+            i = i+1
+        dfRet =pd.DataFrame(columns=item) #根据项目名称生成列名字
+        urlOptionBase ="http://quotes.money.163.com/f10/dbfx_"+code+".html?date=%s#01c08"
+        k =0
+        while k <len(optionAll[0].contents):
+            
+            if optionAll[0].contents[k].name=='option':
+                optionValue =optionAll[0].contents[k]['value']
+                # urlOption =urlOptionBase%optionValue
+                content =self.urlOpenContent(urlOptionBase,optionValue)
+                soup = BeautifulSoup(content,features="lxml")
+                tableAllValue = soup.findAll("td",{"class":"dbbg02"})#读取每年度的数据
+                dataRow =[]
+                indexJ =0
+                while indexJ < len(tableAllValue):
+                    dataRow.append(tableAllValue[indexJ].text) 
+                    indexJ =indexJ+1
+                dfRet.loc[optionValue]=dataRow
+            k = k+1
+        return dfRet
+
 class StockAccountBaseInfo:
     '''
     构建股票财务基本信息字符串
@@ -316,7 +447,7 @@ def MainOpt():
             print("|         获取所有股票的财务数据:")
             print("|                 python DnAcountDt.py -a a")
             print("|         获取指定股票的财务数据:")
-            print("|                 python DnAcountDt.py 000625 格力电器")
+            print("|                 python DnAcountDt.py 000651 格力电器")
             print("---------------------------------------------------------------------")
             sys.exit()
         elif o in ("-a", "--all"): #所有股票读取
@@ -336,13 +467,14 @@ def MainOpt():
             
             print("[%s]开始读取 %s(%s)"%(index_k,code,name))
             time_start=time.time()
-            xlsTest.GetFullAcount(code,name,typeQ='year')
-            xlsTest.GetFullAcount(code,name,typeQ='quarter')
-            xlsTest.getBaseAccountToCSV(code,name)
+            xlsTest.GetFullAcount(code,name,typeQ='year')       #年报
+            xlsTest.GetFullAcount(code,name,typeQ='quarter')    #季报
+            xlsTest.getBaseAccountToCSV(code,name)              #基本信息
+            xlsTest.GetFhpg(code,name)                          #分红
             time_end=time.time()
             time_escape =time_end -time_start
             print("[%s,耗时%s(s)]结束读取 %s(%s)"%(index_k,time_escape,code,name))
-            break
+            
         time_end_total=time.time()  
         time_escape_total = time_end_total - time_start_total
         print("共计 耗时%s(s)"%(time_escape_total))  
@@ -359,11 +491,16 @@ def MainOpt():
             xlsTest.GetFullAcount(code,name,typeQ='year')
             xlsTest.GetFullAcount(code,name,typeQ='quarter') 
             xlsTest.getBaseAccountToCSV(code,name)
+            xlsTest.GetFhpg(code,name)                          #分红
             print("----结束读取 %s(%s)"%(code,name))  
 
 if __name__ == '__main__':
     # only for python command - MainOpt()
     MainOpt()
+    # xlsTest =AccountPd()
+    # # xlsTest.GetFhpg('000651','格力电器')
+    # xlsTest.GetDbfx('000001','平安银行')
+    # xlsTest.GetDbfx('000651','格力电器')
 
     
 

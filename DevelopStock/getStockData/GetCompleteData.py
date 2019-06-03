@@ -328,9 +328,9 @@ class CollectFrom163:
         self.GetZcfzb(Url1,Code)
         Name =Name.replace('*', '')
         if len(self.filename)<=0:
-            self.wb.save(self.destPath+Name+'('+Code+').xls')
+            self.wb.save(self.destPath+Code+'('+Name+').xls')
         else:
-            self.wb.save(self.destPath+self.filename+'_'+Name+'('+Code+').xls')
+            self.wb.save(self.destPath+self.filename+'_'+Code+'('+Name+').xls')
         
 
     def GetData(self,df_Code,count):
@@ -725,7 +725,7 @@ class CollectFrom163:
         '''
         url_dbfx_base ='http://quotes.money.163.com/f10/dbfx_%s.html#01c08'
         # url_dbfx =url_dbfx_base%('000651')
-        content =self.urlOpenContent(url_dbfx_base,'000651')
+        content =self.urlOpenContent(url_dbfx_base,code)
         soup = BeautifulSoup(content,features="lxml")
         optionAll = soup.findAll("select",{"class":"select01"})  #获取所有日期
         tableAllItem = soup.findAll("td",{"class":"dbbg01"}) #获取所有的项目名称
@@ -735,7 +735,7 @@ class CollectFrom163:
             item.append(tableAllItem[i].text)
             i = i+1
         dfRet =pd.DataFrame(columns=item) #根据项目名称生成列名字
-        urlOptionBase ="http://quotes.money.163.com/f10/dbfx_000651.html?date=%s#01c08"
+        urlOptionBase ="http://quotes.money.163.com/f10/dbfx_"+code+".html?date=%s#01c08"
         k =0
         while k <len(optionAll[0].contents):
             
@@ -752,7 +752,6 @@ class CollectFrom163:
                     indexJ =indexJ+1
                 dfRet.loc[optionValue]=dataRow
             k = k+1
-        
         return dfRet
 
     def CaculateAssest(self,filePath=None):

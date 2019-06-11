@@ -62,7 +62,15 @@ class dbOperate:
 class WxSms:
     def login(self):
         pass
-
+    def __init__(self):
+        '''
+        runCntl: 1 -run,0 -stop
+        '''
+        self.runCntl =1
+    def run(self):
+        self.runCntl =1
+    def stop(self):
+        self.runCntl =0
     def sendLoop(self):
         '''
         给自己发只能用'filehelper'-文件传输助手
@@ -110,6 +118,8 @@ class WxSms:
         print("程序正在运行,退出 Ctrl+C")
         while(1):
             #从短信表中读取记录
+            if (self.runCntl ==0):
+                break
             res =dbOper.select("select smsSubject,smsContent,smsType from spcard.sms_send where smsState = 0")
             lenDf =len(res)
             smsTypeCol=2

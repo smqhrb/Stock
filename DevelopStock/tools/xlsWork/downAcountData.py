@@ -14,7 +14,38 @@ from bs4 import BeautifulSoup
 # from urllib import request
 # from urllib import parse
 # from urllib.request import urlopen
-
+import json
+import random
+class RandomHeader:
+    def __init__(self):
+        self.user_agent_list = [
+            "Mozilla/5.0(Macintosh;IntelMacOSX10.6;rv:2.0.1)Gecko/20100101Firefox/4.0.1",
+            "Mozilla/4.0(compatible;MSIE6.0;WindowsNT5.1)",
+            "Opera/9.80(WindowsNT6.1;U;en)Presto/2.8.131Version/11.11",
+            "Mozilla/5.0(Macintosh;IntelMacOSX10_7_0)AppleWebKit/535.11(KHTML,likeGecko)Chrome/17.0.963.56Safari/535.11",
+            "Mozilla/4.0(compatible;MSIE7.0;WindowsNT5.1)",
+            "Mozilla/4.0(compatible;MSIE7.0;WindowsNT5.1;Trident/4.0;SE2.XMetaSr1.0;SE2.XMetaSr1.0;.NETCLR2.0.50727;SE2.XMetaSr1.0)"
+            "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.1 (KHTML, like Gecko) Chrome/22.0.1207.1 Safari/537.1",
+            "Mozilla/5.0 (X11; CrOS i686 2268.111.0) AppleWebKit/536.11 (KHTML, like Gecko) Chrome/20.0.1132.57 Safari/536.11",
+            "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/536.6 (KHTML, like Gecko) Chrome/20.0.1092.0 Safari/536.6",
+            "Mozilla/5.0 (Windows NT 6.2) AppleWebKit/536.6 (KHTML, like Gecko) Chrome/20.0.1090.0 Safari/536.6",
+            "Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.1 (KHTML, like Gecko) Chrome/19.77.34.5 Safari/537.1",
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/536.5 (KHTML, like Gecko) Chrome/19.0.1084.9 Safari/536.5",
+            "Mozilla/5.0 (Windows NT 6.0) AppleWebKit/536.5 (KHTML, like Gecko) Chrome/19.0.1084.36 Safari/536.5",
+            "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/536.3 (KHTML, like Gecko) Chrome/19.0.1063.0 Safari/536.3",
+            "Mozilla/5.0 (Windows NT 5.1) AppleWebKit/536.3 (KHTML, like Gecko) Chrome/19.0.1063.0 Safari/536.3",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_0) AppleWebKit/536.3 (KHTML, like Gecko) Chrome/19.0.1063.0 Safari/536.3",
+            "Mozilla/5.0 (Windows NT 6.2) AppleWebKit/536.3 (KHTML, like Gecko) Chrome/19.0.1062.0 Safari/536.3",
+            "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/536.3 (KHTML, like Gecko) Chrome/19.0.1062.0 Safari/536.3",
+            "Mozilla/5.0 (Windows NT 6.2) AppleWebKit/536.3 (KHTML, like Gecko) Chrome/19.0.1061.1 Safari/536.3",
+            "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/536.3 (KHTML, like Gecko) Chrome/19.0.1061.1 Safari/536.3",
+            "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/536.3 (KHTML, like Gecko) Chrome/19.0.1061.1 Safari/536.3",
+            "Mozilla/5.0 (Windows NT 6.2) AppleWebKit/536.3 (KHTML, like Gecko) Chrome/19.0.1061.0 Safari/536.3",
+            "Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/535.24 (KHTML, like Gecko) Chrome/19.0.1055.1 Safari/535.24"
+        ]
+    def GetHeader(self):
+        headers={"User-Agent":random.choice(self.user_agent_list)}
+        return headers
 class AccountPd:
     '''
     获取财务数据 to csv
@@ -151,6 +182,68 @@ class AccountPd:
         zcfzb.fillna(0,inplace=True)
         return zcfzb
 
+    def Get10jqkaAccount(self,Code,Name,typeQ ='year'):
+        '''
+        同花顺获取数据
+        http://basic.10jqka.com.cn/api/stock/finance/' + $("#stockCode").val() + '_' + reportType + '.json',
+        '''
+        url_10jqka_base ="http://basic.10jqka.com.cn/api/stock/finance/"
+        df_all =pd.DataFrame()
+        #资产负债表
+        url_zcfzb =url_10jqka_base+"%s_debt.json"%Code
+        zcfzb =self.Get10jqkaAccountBase(url_zcfzb,typeQ)
+        df_all =df_all.append(zcfzb)
+        #利润表
+        url_lrb =url_10jqka_base+"%s_benefit.json"%Code
+        lrb =self.Get10jqkaAccountBase(url_lrb,typeQ)
+        df_all =df_all.append(lrb)
+        #现金流量表
+        url_llb =url_10jqka_base+"%s_cash.json"%Code
+        llb =self.Get10jqkaAccountBase(url_llb,typeQ)
+        df_all =df_all.append(llb)
+        # 
+        # zcfzb.to_csv("%s\%s(%s_%s_zcfzb).csv"%(self.destPath,Code,Name,typeQ),index_label=u'报告日期',encoding='utf_8_sig')
+        # lrb.to_csv("%s\%s(%s_%s_lrb).csv"%(self.destPath,Code,Name,typeQ),index_label=u'报告日期',encoding='utf_8_sig')
+        # llb.to_csv("%s\%s(%s_%s_llb).csv"%(self.destPath,Code,Name,typeQ),index_label=u'报告日期',encoding='utf_8_sig')
+        df_all.to_csv("%s\%s(%s_%s_all).csv"%(self.destPath,Code,Name,typeQ),index_label=u'报告日期',encoding='utf_8_sig')
+    def Get10jqkaAccountBase(self,url,type='year'):
+        '''
+        同花顺获取数据
+        http://basic.10jqka.com.cn/api/stock/finance/000002_debt.json #资产负债表
+        http://basic.10jqka.com.cn/api/stock/finance/000002_benefit.json #利润表
+        http://basic.10jqka.com.cn/api/stock/finance/000002_cash.json #现金流量表
+        http://basic.10jqka.com.cn/api/stock/finance/000002_each.json # 主要指标 每股能力
+        http://basic.10jqka.com.cn/api/stock/finance/000002_grow.json # 主要指标 成长能力
+        http://basic.10jqka.com.cn/api/stock/finance/000002_pay.json  # 主要指标 偿债能力
+        http://basic.10jqka.com.cn/api/stock/finance/000002_operate.json # 主要指标 运营能力
+
+        '''
+        # headers={
+        # # 'Referer': 'http://basic.10jqka.com.cn/000002/finance.html',
+        # 'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36'        
+        # }
+        getH =RandomHeader()
+        headers =getH.GetHeader()
+        # print(headers)
+        req = urllib2.Request(url, headers = headers)
+        content = urllib2.urlopen(req).read()
+        text =content.decode('utf8')
+        jsonobj = json.loads(text)
+        data =jsonobj['flashData']
+        dataList =json.loads(data)
+        title =dataList['title']
+        for k in range(1,len(title),1):
+            title[k]="%s(%s)"%(title[k][0] ,title[k][1])
+        resultData =[]
+        if(type=='year'):
+            year  =dataList['year']#年报
+            resultData =year
+        else:
+            report =dataList['report']#季报
+            resultData =report
+        df =pd.DataFrame(data=resultData,index=title)
+        # print(df.T)
+        return df
     def GetCodeList(self):
         try:
             print("------开始读取股票基本信息.....")
@@ -177,9 +270,13 @@ def main():
     else:
         print(sys.argv[3]) 
         name =sys.argv[3]
-        xlsTest.GetFullAcount(code,name,typeQ='year')
-        xlsTest.GetFullAcount(code,name,typeQ='quarter')
+        # xlsTest.GetFullAcount(code,name,typeQ='year')
+        # xlsTest.GetFullAcount(code,name,typeQ='quarter')
+        xlsTest.Get10jqkaAccount(code,name,typeQ='year')
+        xlsTest.Get10jqkaAccount(code,name,typeQ='quarter')
 if __name__ == '__main__':
     main()
-
+    # xlsTest =AccountPd()
+    # xlsTest.Get10jqkaAccount('000651','test',typeQ='year')
+    # xlsTest.Get10jqkaAccount('000651','test',typeQ='quarter')
 

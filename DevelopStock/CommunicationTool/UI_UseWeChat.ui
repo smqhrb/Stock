@@ -23,7 +23,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>PushButton</string>
+    <string>开始发送</string>
    </property>
   </widget>
   <widget class="QPushButton" name="pBtn_Stop">
@@ -36,7 +36,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>PushButton</string>
+    <string>停止发送</string>
    </property>
   </widget>
   <widget class="QListView" name="listView">

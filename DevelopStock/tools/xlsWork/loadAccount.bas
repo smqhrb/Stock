@@ -1,8 +1,10 @@
 Attribute VB_Name = "loadAccount"
+
 Public Sub click_get_stockbase()
+'获取股票代码
 Dim args As String
-Dim pathBase As String: pathBase = Workbooks("AcountWork.xlsm").Path & "\Account\"
-Dim workPath As String: workPath = Workbooks("AcountWork.xlsm").Path
+Dim pathBase As String: pathBase = Workbooks("AcountWorkThx.xlsm").Path & "\Account\"
+Dim workPath As String: workPath = Workbooks("AcountWorkThx.xlsm").Path
 
 Dim pythonPath As String: pythonPath = """" & workPath & "\downAcountData.py"""
 
@@ -26,10 +28,9 @@ Dim stock_list As String: stock_list = "StockClass"
 
 Call WriteSheetXlsx(args, csvFileName, stock_list, "$A$1")
 'get maximum row in the sheet(args)
-max_row = Worksheets(args).Cells(Rows.Count, "A").End(xlUp).row
-'If (Worksheets("OperUI").CheckBoxes.Count <= 1) Then
-'
-    'Worksheets("OperUI").CheckBoxes.Delete
+max_row = Worksheets(args).Cells(Rows.count, "A").End(xlUp).row
+'max_row = 3 'test
+
     For i = 2 To max_row
         code = Worksheets(args).Cells(i, "A")
         If (code = "") Then
@@ -37,74 +38,87 @@ max_row = Worksheets(args).Cells(Rows.Count, "A").End(xlUp).row
             
         End If
         code = Format$(code, "000000")
-        Worksheets("OperUI").Cells(i, "C") = code
-        Worksheets("OperUI").Cells(i, "D") = Worksheets(args).Cells(i, "B")
-        Worksheets("OperUI").Cells(i, "E") = Worksheets(args).Cells(i, "C")
+        Worksheets("OperUI").Cells(i + 1, "C") = code
+        Worksheets("OperUI").Cells(i + 1, "D") = Worksheets(args).Cells(i, "B")
+        Worksheets("OperUI").Cells(i + 1, "E") = Worksheets(args).Cells(i, "C")
 '
-'        ret = Worksheets("OperUI").CheckBoxes.Add(Cells(i, "B").Left, Cells(i, "B").Top, 24, 16.5).Select
-'
-'        With Selection
-'         .Value = xlOn
-'         .LinkedCell = "$B" & i
-'         .Display3DShading = True
-'
-'         .name = "CheckBox" & i
-'         .Caption = "CheckBox" & i
-'         .Text = ""
-'        End With
-
-    
+   
     Next
-'End If
+
 End Sub
+Public Function WalkFolder(str As String) As String
+    Dim MyFile As String
+    Dim s As String
+    Dim count As Integer
+    Dim pathBase As String: pathBase = Workbooks("AcountWorkThx.xlsm").Path & "\Account\"
+    MyFile = Dir(pathBase & "*.csv")
+    WalkFolder = ""
 
-
-
-'Public Sub SelectAllCheckBox()
-'RowCount = Worksheets("OperUI").CheckBoxes.Count
-'If True = Worksheets("OperUI").CheckBoxes(i).Value Then
-'For i = 2 To RowCount
-'   Worksheets("OperUI").CheckBoxes(i).Value = True
-'Next
-'Else
-'    For i = 2 To RowCount
-'       Worksheets("OperUI").CheckBoxes(i).Value = False
-'    Next
-'End If
-
-
-'End Sub
-
-
+    Do While MyFile <> ""
+        MyFile = Dir
+        If MyFile = "" Then
+            Exit Do
+        End If
+        If (str = Mid(MyFile, 1, 6)) Then
+            pos = InStr(MyFile, "_")
+            WalkFolder = Mid(MyFile, 8, pos - 8)
+            Exit Do
+        End If
+    Loop
+    
+End Function
 Public Sub click_get_data()
+'get data from www
 Dim code As String
 Dim name As String
 Dim i As Integer
-  lastRow = Worksheets("OperUI").Cells(Rows.Count, "C").End(xlUp).row
-  For i = 2 To lastRow
+  lastRow = Worksheets("OperUI").Cells(Rows.count, "C").End(xlUp).row
+  'lastRow = 4 'test
+  For i = 3 To lastRow
     code = Worksheets("OperUI").Cells(i, "C").Value
     
     name = Worksheets("OperUI").Cells(i, "D").Value
     
     Dim tm
     tm = Now()
-    Call importAcount(code, name, i, 1)
+    Call importAcount(code, name, i, 1, 1)
     Worksheets("operui").Cells(i, "B") = Format$(Now() - tm, "hh:mm:ss")
-    Application.DisplayAlerts = False
-    Worksheets(code).Delete
-    Application.DisplayAlerts = True
+'    Application.DisplayAlerts = False
+'    Worksheets(code).Delete
+'    Application.DisplayAlerts = True
   Next
 End Sub
-Public Sub importAcount(code As String, name As String, row As Integer, isLoad As Integer)
+Public Sub click_get_local_data()
+'load data from path '/Account'
+Dim code As String
+Dim name As String
+Dim i As Integer
+  lastRow = Worksheets("OperUI").Cells(Rows.count, "C").End(xlUp).row
+  'lastRow = 11 'test
+  For i = 3 To lastRow
+    code = Worksheets("OperUI").Cells(i, "C").Value
+    
+    name = Worksheets("OperUI").Cells(i, "D").Value
+    
+    Dim tm
+    tm = Now()
+    Call importAcount(code, name, i, 0, 1)
+    Worksheets("operui").Cells(i, "B") = Format$(Now() - tm, "hh:mm:ss")
+'    Application.DisplayAlerts = False
+'    Worksheets(code).Delete
+'    Application.DisplayAlerts = True
+  Next
+End Sub
+Public Sub importAcount(code As String, name As String, row As Integer, isLoad As Integer, isDeleteSheet As Integer)
 Dim args As String
-Dim pathBase As String: pathBase = Workbooks("AcountWork.xlsm").Path & "\Account\"
-Dim workPath As String: workPath = Workbooks("AcountWork.xlsm").Path
+Dim pathBase As String: pathBase = Workbooks("AcountWorkThx.xlsm").Path & "\Account\"
+Dim workPath As String: workPath = Workbooks("AcountWorkThx.xlsm").Path
 
 Dim pythonPath As String: pythonPath = """" & workPath & "\downAcountData.py"""
 
 Dim csvFileName As String
 'sheet code is exist,no create new
-IsExit (code)
+'IsExit (code)
 name = RemoveSpaceInStr(name)
 args = code & " " & name
 If (isLoad = 1) Then
@@ -117,178 +131,288 @@ If (isLoad = 1) Then
 End If
 
 'clear sheet code contents
-Worksheets(code).UsedRange.ClearContents
+'Worksheets(code).UsedRange.ClearContents
+maxcoulmn = Worksheets("OperUI").Cells(2, Columns.count).End(xlToLeft).Column
+'load quarter report at first
 
-Dim zcfzb_columns As Integer
 
-zcfzb_columns = 120
-Dim lrb_columns As Integer
-lrb_columns = 50
-Dim llb_columns As Integer
-llb_columns = 104
-
-typeQ = "year"
-Dim year_zcfzb As String
-year_zcfzb = code & "(" & name & "_" & typeQ & "_zcfzb)"
-'year_zcfzb = code & "(" & name & "_" & typeQ & "_zcfzb).xlsx"
-Dim year_lrb As String
-year_lrb = code & "(" & name & "_" & typeQ & "_lrb)"
-Dim year_llb As String
-year_llb = code & "(" & name & "_" & typeQ & "_llb)"
-
-csvFileName = pathBase & year_zcfzb & ".csv" '000651(格力电器_year_zcfzb).csv
-'Call WriteSheet(code, csvFileName, 0, 0)
-Call WriteSheetXlsx(code, csvFileName, year_zcfzb, "$A$1")
-
-csvFileName = pathBase & year_lrb & ".csv"
-Call WriteSheetXlsx(code, csvFileName, year_lrb, "$DG$1")
-'Call WriteSheet(code, csvFileName, 0, zcfzb_columns)
-
-csvFileName = pathBase & year_llb & ".csv"
-Call WriteSheetXlsx(code, csvFileName, year_llb, "$FB$1")
-'Call WriteSheet(code, csvFileName, 0, zcfzb_columns + lrb_columns)
-
-Dim offLine As Integer
-
-offLine = zcfzb_columns + lrb_columns + llb_columns
 typeQ = "quarter"
-Dim quarter_zcfzb As String
-quarter_zcfzb = code & "(" & name & "_" & typeQ & "_zcfzb)"
-Dim quarter_lrb As String
-quarter_lrb = code & "(" & name & "_" & typeQ & "_lrb)"
-Dim quarter_llb As String
-quarter_llb = code & "(" & name & "_" & typeQ & "_llb)"
+'color set
+color_0 = RGB(230, 184, 183)
+color_1 = RGB(216, 228, 188)
+color_use = color_0
+Dim quarter_all As String
+quarter_all = code & "(" & name & "_" & typeQ & "_all)"
+csvFileName = pathBase & quarter_all & ".csv"
+Dim code_sheet_name As String
+code_sheet_name = quarter_all
+IsExit (code_sheet_name)
+Worksheets(code_sheet_name).UsedRange.ClearContents
+Call WriteSheetXlsx(code_sheet_name, csvFileName, quarter_all, "$A$1")
+'get column's name until split
+startCol = 6 'first col of quarter data
+startYCol = 17 'first col of year data
+'code sheet maximum row
+lastRow = Worksheets(code_sheet_name).Cells(Rows.count, 1).End(xlUp).row
 
-csvFileName = pathBase & quarter_zcfzb & ".csv"
-Call WriteSheetXlsx(code, csvFileName, quarter_zcfzb, "$IO$1")
-
-'Call WriteSheet(code, csvFileName, 0, offLine)
-
-csvFileName = pathBase & quarter_lrb & ".csv"
-Call WriteSheetXlsx(code, csvFileName, quarter_lrb, "$MU$1")
-
-'Call WriteSheet(code, csvFileName, 0, offLine + zcfzb_columns)
-
-csvFileName = pathBase & quarter_llb & ".csv"
-Call WriteSheetXlsx(code, csvFileName, quarter_llb, "$OP$1")
-'Call WriteSheet(code, csvFileName, 0, offLine + zcfzb_columns + lrb_columns)
 '
-'
-For i = 6 To 180
-    Worksheets("operui").Cells(row, i) = ""
+lastRowCol = ""
+colIndex = 2
+color_switch = 0
+cell_update = 0 '
+For colIterQ = startCol To maxcoulmn
+    operui_colName = Worksheets("operui").Cells(2, colIterQ)
+    'Worksheets("operui").Cells(row, colIterQ) = ""
+    If operui_colName = "split" Then
+        startYCol = colIterQ + 1
+        Exit For
+    End If
+    cell_update = 0
+    If operui_colName <> "" Then
+        
+        If lastRowCol <> operui_colName Then
+            lastRowCol = operui_colName
+            colIndex = 2
+            
+            If color_switch = 0 Then
+              color_use = color_0
+              color_switch = color_switch + 1
+            Else
+                color_switch = 0
+                color_use = color_1
+            End If
+                
+            
+            
+        Else
+            
+        End If
+        If (Worksheets("operui").Cells(row, colIterQ).Interior.Color <> color_use) Then
+            Worksheets("operui").Cells(row, colIterQ).Interior.Color = color_use
+        End If
+        If (Worksheets("operui").Cells(2, colIterQ).Interior.Color <> color_use) Then
+            Worksheets("operui").Cells(2, colIterQ).Interior.Color = color_use
+        End If
+        If Worksheets("operui").Cells(1, colIterQ).Interior.Color <> color_use Then
+            Worksheets("operui").Cells(1, colIterQ).Interior.Color = color_use
+        End If
+
+        For codeRowIter = 1 To lastRow
+            code_colName = Worksheets(code_sheet_name).Cells(codeRowIter, 1)
+
+            If (InStr(operui_colName, code_colName)) Then
+                Worksheets("operui").Cells(row, colIterQ) = Worksheets(code_sheet_name).Cells(codeRowIter, colIndex)
+                cell_update = 1
+                If Worksheets("operui").Cells(1, colIterQ) = "" Then
+                    Worksheets("operui").Cells(1, colIterQ) = Worksheets(code_sheet_name).Cells(2, colIndex)
+
+                End If
+                colIndex = colIndex + 1
+                Exit For
+            End If
+            
+        Next
+        If (cell_update = 0) Then
+            Worksheets("operui").Cells(row, colIterQ) = ""
+        End If
+
+        
+    Else
+        If lastRowCol <> "" Then
+            '
+            If (Worksheets("operui").Cells(row, colIterQ).Interior.Color <> color_use) Then
+                Worksheets("operui").Cells(row, colIterQ).Interior.Color = color_use
+            End If
+            If (Worksheets("operui").Cells(2, colIterQ).Interior.Color <> color_use) Then
+                Worksheets("operui").Cells(2, colIterQ).Interior.Color = color_use
+            End If
+            If Worksheets("operui").Cells(1, colIterQ).Interior.Color <> color_use Then
+                Worksheets("operui").Cells(1, colIterQ).Interior.Color = color_use
+            End If
+            
+            For codeRowIter = 1 To lastRow
+                code_colName = Worksheets(code_sheet_name).Cells(codeRowIter, 1)
+                If (InStr(lastRowCol, code_colName)) Then
+                    Worksheets("operui").Cells(row, colIterQ) = Worksheets(code_sheet_name).Cells(codeRowIter, colIndex)
+                    cell_update = 1
+
+                    If Worksheets("operui").Cells(1, colIterQ) = "" Then
+                        Worksheets("operui").Cells(1, colIterQ) = Worksheets(code_sheet_name).Cells(2, colIndex)
+                    End If
+                    colIndex = colIndex + 1
+         
+                    Exit For
+                End If
+                
+            Next
+            If (cell_update = 0) Then
+                Worksheets("operui").Cells(row, colIterQ) = ""
+            End If
+            
+        End If
+        
+    End If
 Next
+'
 
-''3月母公司股东权益   3月少数股东权益 3月应收账款 3月其他应收账款 3月存货 3月可供出售金融资产 3月长期股权投资 3月固定资产 3月商誉 3月无性资产 3月短期借款 3月长期借款 3月应付债券 净资产收益率    销售毛利率  存货的减少  经营性应收项目的减少    经营性应收项目的增加    流动资产/流动负债   折旧与摊销
-'zcfzb_mgsgdqy_col = 106 'DB 3月母公司股东权益
-zcfzb_mgsgdqy_col = "MP"
-lastRow = Worksheets(code).Cells(Rows.Count, zcfzb_mgsgdqy_col).End(xlUp).row
-Worksheets("operui").Cells(row, "F") = Worksheets(code).Cells(lastRow, zcfzb_mgsgdqy_col).Value
-'zcfzb_ssguqy_col = zcfzb_mgsgdqy_col + 1 'DC 3月少数股东权益
-Dim zcfzb_ssguqy_col As String: zcfzb_ssguqy_col = "MQ"
-Call SetCellValuesLastRow(code, zcfzb_ssguqy_col, row, "G")
-
-'zcfzb_yszk = 8 ' H 3月应收账款
-Dim zcfzb_yszk_col As String: zcfzb_yszk_col = "IV"
-Call SetCellValuesLastRow(code, zcfzb_yszk_col, row, "H")
-
-'zcfzb_qtyszk = 14 'O 3月其他应收账款
-
-Dim zcfzb_qtyszk_col As String: zcfzb_qtyszk_col = "JC"
-Call SetCellValuesLastRow(code, zcfzb_qtyszk_col, row, "I")
-'zcfzb_ch = 21 'U 3月存货
-Dim zcfzb_ch_col As String: zcfzb_ch_col = "JI"
-Call SetCellValuesLastRow(code, zcfzb_ch_col, row, "J")
-'zcfzb_kgcsjrzc = 28 'AB 3月可供出售金融资产
-Dim zcfzb_kgcsjrzc_col As String: zcfzb_kgcsjrzc_col = "JP"
-Call SetCellValuesLastRow(code, zcfzb_kgcsjrzc_col, row, "K")
-'zcfzb_cqgqtz = zcfzb_kgcsjrzc + 3 'AE 3月长期股权投资
-Dim zcfzb_cqgqtz_col As String: zcfzb_cqgqtz_col = "JS"
-Call SetCellValuesLastRow(code, zcfzb_cqgqtz_col, row, "L")
-'zcfzb_gdzc = 38 'AL 3月固定资产
-Dim zcfzb_gdzc_col As String: zcfzb_gdzc_col = "JZ"
-Call SetCellValuesLastRow(code, zcfzb_gdzc_col, row, "M")
-'zcfzb_sy = "AU" '3月商誉
-Dim zcfzb_sy_col As String: zcfzb_sy_col = "AU"
-Call SetCellValuesLastRow(code, zcfzb_sy_col, row, "N")
-'zcfzb_wxzc = "AS" '3月无形资产
-Dim zcfzb_wxzc_col As String: zcfzb_wxzc_col = "KG"
-Call SetCellValuesLastRow(code, zcfzb_wxzc_col, row, "O")
-'zcfzb_dqjk = "BB" '3月短期借款
-Dim zcfzb_dqjk_col As String: zcfzb_dqjk_col = "KP"
-Call SetCellValuesLastRow(code, zcfzb_dqjk_col, row, "P")
-'zcfzb_cqjk = "CH" '3月长期借款
-Dim zcfzb_cqjk_col As String: zcfzb_cqjk_col = "LV"
-Call SetCellValuesLastRow(code, zcfzb_cqjk_col, row, "Q")
-'zcfzb_yfzq = "CI" '3月应付债券
-Dim zcfzb_yfzq_col As String: zcfzb_yfzq_col = "LW"
-Call SetCellValuesLastRow(code, zcfzb_yfzq_col, row, "R")
-'2018-1990
-
-
-lastRow = Worksheets(code).Cells(Rows.Count, "EU").End(xlUp).row
-minRow = 2
-If (lastRow - minRow > 29) Then
-    minRow = minRow + (lastRow - minRow - 29)
+'For colIter = startCol To maxcoulmn
+'    Worksheets("operui").Cells(row, colIter) = ""
+'    operui_colName = Worksheets("operui").Cells(2, colIter)
+'    If operui_colName = "split" Then
+'        startYCol = colIter + 1
+'        Exit For
+'    Else
+'
+'        For codeRowIter = 1 To lastRow
+'            code_colName = Worksheets(code_sheet_name).Cells(codeRowIter, 1)
+'            If (InStr(operui_colName, code_colName)) Then
+'                Worksheets("operui").Cells(row, colIter) = Worksheets(code_sheet_name).Cells(codeRowIter, 2)
+'                If Worksheets("operui").Cells(1, colIter) = "" Then
+'                    Worksheets("operui").Cells(1, colIter) = Worksheets(code_sheet_name).Cells(2, 2)
+'                End If
+'                Exit For
+'            End If
+'
+'        Next
+'    End If
+'Next
+If isDeleteSheet = 1 Then
+    Application.DisplayAlerts = False
+    Worksheets(code_sheet_name).Delete
+    Application.DisplayAlerts = True
 End If
-For i = lastRow To minRow Step -1
-    'lrb_jzcsyl = lrb_jlr / zcfzb_syzqy '净资产收益率
-    lrb_jlr = Worksheets(code).Cells(i, "EU").Value
-    zcfzb_syzqy = Worksheets(code).Cells(i, "DD").Value
-    If (zcfzb_syzqy > 0) Then
-        'U 21
-        cellpos = Replace("U" & Str(row), " ", "")
-        Set Rng = Worksheets("operui").Range(cellpos)
-        'Worksheets("operui").Cells(row, 21 + i - 2) = lrb_jlr / zcfzb_syzqy
-        Rng.Cells(1, lastRow - i + 1) = lrb_jlr / zcfzb_syzqy
+
+'year report
+'color set
+color_0 = RGB(163, 223, 192)
+color_1 = RGB(163, 160, 224)
+color_use = color_0
+typeQ = "year"
+Dim year_all As String
+year_all = code & "(" & name & "_" & typeQ & "_all)"
+csvFileName = pathBase & year_all & ".csv"
+'Call WriteSheet(code, csvFileName, 0, 0)
+code_sheet_name = year_all
+IsExit (code_sheet_name)
+Worksheets(code_sheet_name).UsedRange.ClearContents
+Call WriteSheetXlsx(code_sheet_name, csvFileName, year_all, "$A$1")
+'get column's name until split
+startCol = 6 'first col of quarter
+lastRow = Worksheets(code_sheet_name).Cells(Rows.count, 1).End(xlUp).row
+lastRowCol = ""
+colIndex = 2
+color_switch = 0
+cell_update = 0 '
+For colIter = startYCol To maxcoulmn
+    operui_colName = Worksheets("operui").Cells(2, colIter)
+    'Worksheets("operui").Cells(row, colIter) = ""
+    cell_update = 0
+    If operui_colName <> "" Then
+        
+        If lastRowCol <> operui_colName Then
+            lastRowCol = operui_colName
+            colIndex = 2
+            
+            If color_switch = 0 Then
+              color_use = color_0
+              color_switch = color_switch + 1
+            Else
+                color_switch = 0
+                color_use = color_1
+            End If
+                
+            
+            
+        Else
+            
+        End If
+        If (Worksheets("operui").Cells(row, colIter).Interior.Color <> color_use) Then
+            Worksheets("operui").Cells(row, colIter).Interior.Color = color_use
+        End If
+        If (Worksheets("operui").Cells(2, colIter).Interior.Color <> color_use) Then
+            Worksheets("operui").Cells(2, colIter).Interior.Color = color_use
+        End If
+        If Worksheets("operui").Cells(1, colIter).Interior.Color <> color_use Then
+            Worksheets("operui").Cells(1, colIter).Interior.Color = color_use
+        End If
+
+        For codeRowIter = 1 To lastRow
+            code_colName = Worksheets(code_sheet_name).Cells(codeRowIter, 1)
+
+            If (InStr(operui_colName, code_colName)) Then
+                Worksheets("operui").Cells(row, colIter) = Worksheets(code_sheet_name).Cells(codeRowIter, colIndex)
+                cell_update = 1
+'                Worksheets("operui").Cells(row, colIter).Interior.Color = color_use
+'                Worksheets("operui").Cells(2, colIter).Interior.Color = color_use
+                If Worksheets("operui").Cells(1, colIter) = "" Then
+                    Worksheets("operui").Cells(1, colIter) = Worksheets(code_sheet_name).Cells(2, colIndex)
+'                    Worksheets("operui").Cells(1, colIter).Interior.Color = color_use
+                End If
+                colIndex = colIndex + 1
+                Exit For
+            End If
+            
+        Next
+        If (cell_update = 0) Then
+            Worksheets("operui").Cells(row, colIter) = ""
+        End If
+
+        
+    Else
+        If lastRowCol <> "" Then
+            '
+            If (Worksheets("operui").Cells(row, colIter).Interior.Color <> color_use) Then
+                Worksheets("operui").Cells(row, colIter).Interior.Color = color_use
+            End If
+            If (Worksheets("operui").Cells(2, colIter).Interior.Color <> color_use) Then
+                Worksheets("operui").Cells(2, colIter).Interior.Color = color_use
+            End If
+            If Worksheets("operui").Cells(1, colIter).Interior.Color <> color_use Then
+                Worksheets("operui").Cells(1, colIter).Interior.Color = color_use
+            End If
+            
+            For codeRowIter = 1 To lastRow
+                code_colName = Worksheets(code_sheet_name).Cells(codeRowIter, 1)
+'                Worksheets("operui").Cells(row, colIter).Interior.Color = color_use
+'                Worksheets("operui").Cells(2, colIter).Interior.Color = color_use
+'                Worksheets("operui").Cells(1, colIter).Interior.Color = color_use
+                If (InStr(lastRowCol, code_colName)) Then
+                    Worksheets("operui").Cells(row, colIter) = Worksheets(code_sheet_name).Cells(codeRowIter, colIndex)
+                    cell_update = 1
+'                    Worksheets("operui").Cells(row, colIter).Interior.Color = color_use
+'                    Worksheets("operui").Cells(2, colIter).Interior.Color = color_use
+                    If Worksheets("operui").Cells(1, colIter) = "" Then
+                        Worksheets("operui").Cells(1, colIter) = Worksheets(code_sheet_name).Cells(2, colIndex)
+'                        Worksheets("operui").Cells(1, colIter).Interior.Color = color_use
+                    End If
+                    colIndex = colIndex + 1
+         
+                    Exit For
+                End If
+                
+            Next
+            If (cell_update = 0) Then
+                Worksheets("operui").Cells(row, colIter) = ""
+            End If
+            
+        End If
+        
     End If
-    '销售毛利率 =(营业收入 -营业成本)/营业收入
-    lrb_yysr = Worksheets(code).Cells(i, "DI").Value
-    lrb_yycb = Worksheets(code).Cells(i, "DP").Value
-    If (lrb_yycb > 0) Then
-        cellpos = Replace("AX" & Str(row), " ", "")
-        Set Rng = Worksheets("operui").Range(cellpos)
-        Rng.Cells(1, lastRow - i + 1) = (lrb_yysr - lrb_yycb) / lrb_yycb
-    End If
-    '存货的减少
-    xjllb_chjx = Worksheets(code).Cells(i, "HY").Value
-    cellpos = Replace("CA" & Str(row), " ", "")
-    Set Rng = Worksheets("operui").Range(cellpos)
-    Rng.Cells(1, lastRow - i + 1) = xjllb_chjx
-    '经营性应收项目的减少
-    xjllb_jyxysxmjs = Worksheets(code).Cells(i, "HZ").Value
-    cellpos = Replace("DD" & Str(row), " ", "")
-    Set Rng = Worksheets("operui").Range(cellpos)
-    Rng.Cells(1, lastRow - i + 1) = xjllb_jyxysxmjs
-    '经营性应收项目的增加
-    xjllb_jyxysxmzj = Worksheets(code).Cells(i, "IA").Value
-    cellpos = Replace("EG" & Str(row), " ", "")
-    Set Rng = Worksheets("operui").Range(cellpos)
-    Rng.Cells(1, lastRow - i + 1) = xjllb_jyxysxmzj
-    '流动资产/流动负债
-    zcfzb_ldzc = Worksheets(code).Cells(i, "Z").Value
-    zcfzb_ldfz = Worksheets(code).Cells(i, "CG").Value
-    If (zcfzb_ldfz <> 0) Then
-        cellpos = Replace("FJ" & Str(row), " ", "")
-        Set Rng = Worksheets("operui").Range(cellpos)
-        Rng.Cells(1, lastRow - i + 1) = zcfzb_ldzc / zcfzb_ldfz
-    End If
-    '折旧与摊销 没有
+    
 Next
-''销售毛利率 =营业收入 -营业成本/营业收入
+If isDeleteSheet = 1 Then
+    Application.DisplayAlerts = False
+    Worksheets(code_sheet_name).Delete
+    Application.DisplayAlerts = True
+End If
 
-'xjllb_chjs = "BX" '存货的减少
-'xjllb_jyxysxmjs = "BY" ' 经营性应收项目的减少
-'xjllb_jyxysxmzj = "BZ" '经营性应收项目的增加
-''流动资产/流动负债
-''折旧与摊销 没有
 '
-
-
+'Next
 
 End Sub
 Public Function SetCellValuesLastRow(srcSheetName As String, col As String, destinRow As Integer, destinCol As String)
 'col = "MP"
-lastRow = Worksheets(srcSheetName).Cells(Rows.Count, col).End(xlUp).row
+lastRow = Worksheets(srcSheetName).Cells(Rows.count, col).End(xlUp).row
 Worksheets("operui").Cells(destinRow, destinCol) = Worksheets(srcSheetName).Cells(lastRow, col).Value
 End Function
 Public Function WriteSheet(sheetName As String, csvFilePos As String, startRow As Integer, startCol As Integer)
@@ -383,7 +507,7 @@ Dim sX As Worksheet
 
        
     Else
-        Sheets.Add after:=Sheets(Sheets.Count) '添加sheet
+        Sheets.Add after:=Sheets(Sheets.count) '添加sheet
         ActiveSheet.name = code
         Set sX = ActiveSheet
         Worksheets("OperUI").Activate '#
@@ -391,6 +515,34 @@ Dim sX As Worksheet
     Set d = Nothing
  
 End Sub
+Public Function GetIndustryInSheet(code) As String
+'判断code的sheet是否存在
+stock_sheet_name = "stock"
+Dim d, sh As Worksheet, s$
+Dim sX As Worksheet
+    industry = ""
+    Set d = CreateObject("Scripting.Dictionary")
+    For Each sh In Worksheets
+       d(sh.name) = ""
+    Next
+   If d.exists(stock_sheet_name) Then
+        lastRow = Worksheets(stock_sheet_name).Cells(Rows.count, 1).End(xlUp).row
+        For RowIndex = 2 To lastRow
+            curCode = Worksheets(stock_sheet_name).Cells(RowIndex, 1)
+            curCode = Format$(curCode, "000000")
+            If code = curCode Then
+               industry = Worksheets(stock_sheet_name).Cells(RowIndex, 3)
+               Exit For
+               
+            End If
+        Next
+       
+    Else
+
+    End If
+    Set d = Nothing
+    GetIndustryInSheet = industry
+End Function
 Private Function RemoveSpaceInStr(paraString As String)
 Dim a As String, b As String
 a = paraString

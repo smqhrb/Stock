@@ -205,7 +205,8 @@ class AccountPd:
         # zcfzb.to_csv("%s\%s(%s_%s_zcfzb).csv"%(self.destPath,Code,Name,typeQ),index_label=u'报告日期',encoding='utf_8_sig')
         # lrb.to_csv("%s\%s(%s_%s_lrb).csv"%(self.destPath,Code,Name,typeQ),index_label=u'报告日期',encoding='utf_8_sig')
         # llb.to_csv("%s\%s(%s_%s_llb).csv"%(self.destPath,Code,Name,typeQ),index_label=u'报告日期',encoding='utf_8_sig')
-        df_all.to_csv("%s\%s(%s_%s_all).csv"%(self.destPath,Code,Name,typeQ),index_label=u'报告日期',encoding='utf_8_sig')
+        # df_all.to_csv("%s\%s(%s_%s_all).csv"%(self.destPath,Code,Name,typeQ),index_label=u'报告日期',encoding='utf_8_sig')
+        df_all.to_csv("%s\%s(%s_all).csv"%(self.destPath,Code,typeQ),index_label=u'报告日期',encoding='utf_8_sig')
     def Get10jqkaAccountBase(self,url,type='year'):
         '''
         同花顺获取数据
@@ -241,9 +242,36 @@ class AccountPd:
         else:
             report =dataList['report']#季报
             resultData =report
+        # for k in range(len(resultData)):
+        #     for j in range(len(resultData[k])):
+        #         ret_str =str(resultData[k][j])
+        #         if(ret_str.find('亿')>=0):
+        #             continue
+        #         else:
+        #             pos =ret_str.find('万')
+        #             if(pos>=0):
+        #                 part = ret_str[0:pos]
+        #                 if(self.is_number(part)):
+        #                     resultData[k][j]=str(float(part)/10000)+'亿'
+
         df =pd.DataFrame(data=resultData,index=title)
         # print(df.T)
         return df
+    def is_number(self,s):
+        try:
+            float(s)
+            return True
+        except ValueError:
+            pass
+    
+        try:
+            import unicodedata
+            unicodedata.numeric(s)
+            return True
+        except (TypeError, ValueError):
+            pass
+    
+        return False
     def GetCodeList(self):
         try:
             print("------开始读取股票基本信息.....")
@@ -268,8 +296,9 @@ def main():
     if(code=='stock'):
         xlsTest.GetCodeList()
     else:
-        print(sys.argv[3]) 
-        name =sys.argv[3]
+        # print(sys.argv[3]) 
+        # name =sys.argv[3]
+        name =""
         # xlsTest.GetFullAcount(code,name,typeQ='year')
         # xlsTest.GetFullAcount(code,name,typeQ='quarter')
         xlsTest.Get10jqkaAccount(code,name,typeQ='year')

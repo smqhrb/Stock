@@ -9,6 +9,14 @@ from bs4 import BeautifulSoup
 import random
 from html.parser import HTMLParser
 import time
+import math
+import json
+import random
+import lxml.html
+from lxml import etree
+from pandas.io.html import read_html
+from pandas.compat import StringIO
+
 class RandomHeader:
     def __init__(self):
         self.user_agent_list = [
@@ -175,6 +183,7 @@ class AccountPd:
             self.GetStockListFromNet()#不存在则从网上读取
 
         return self.df
+        # 
     def GetStockListFromNet(self):
         print("------开始读取网上股票列表信息")
         self.df = ts.get_stock_basics()             
@@ -183,7 +192,207 @@ class AccountPd:
         self.df.to_excel(write,index=True)
         write.save()
         print("------结束读取网上股票列表信息")
+        # 
+    def GetStockListFromSina(self):
+        '''
+        1.get all count
+        2.every request 20 or 40 or 80
+        3.get data
+        '''
+        everyPage =40
+        print("------开始读取网上股票列表信息")   
+        #get stock count
+        # http://vip.stock.finance.sina.com.cn/quotes_service/api/json_v2.php/Market_Center.getHQNodeStockCount?node=hs_a 
+        # 40 
+        # http://vip.stock.finance.sina.com.cn/quotes_service/api/json_v2.php/Market_Center.getHQNodeData?page=1&num=40&sort=symbol&asc=1&node=hs_a&symbol=&_s_r_a=init
+        getH =RandomHeader()
+        headers =getH.GetHeader()
+        url ="http://vip.stock.finance.sina.com.cn/quotes_service/api/json_v2.php/Market_Center.getHQNodeStockCount?node=hs_a"
+        req = urllib2.Request(url, headers = headers)
+        content = urllib2.urlopen(req).read()
+        text =content.decode('utf8')
+        # print(text)
+        count =text[(text.find('("')+2):text.find('")')]
+        # print(count)
+        iCount =int(count)
+        pageCount =math.ceil(iCount/everyPage)
+        df =pd.DataFrame()
+        for page in range(1,pageCount+1):
+            data_url =("http://vip.stock.finance.sina.com.cn/quotes_service/api/json_v2.php/Market_Center.getHQNodeData?page=%s&num=%s&sort=symbol&asc=1&node=hs_a&symbol=&_s_r_a=init")%(page,everyPage)
+            getH =RandomHeader()
+            headers =getH.GetHeader()
+            req = urllib2.Request(data_url, headers = headers)
+            content = urllib2.urlopen(req).read()
+            text =content.decode('GBK')
+            text =self.jsonfy(text)# to dict 不带双引号的json的key标准化
+            if(len(df)==0):
+                df =pd.DataFrame(data=text)
+            else:
+                df1 =pd.DataFrame(data=text)
+                df =df.append(df1)
+            # time.sleep(random.uniform(1.1,3.4) )
+            time.sleep(random.random()+1)
+        write = pd.ExcelWriter('stockListAccountSina.xls')
+        columns =['symbol','code','name','open','high','low','buy','amount','changepercent','mktcap','nmc','pb','per','pricechange','sell','settlement','trade','turnoverratio','volume','ticktime']
+        df.to_excel(write,index=True,columns=columns)
+        write.save()
+        print("------结束读取网上股票列表信息")    
+       
+    def jsonfy(self,s):
+        #此函数将不带双引号的json的key标准化
+        obj = eval(s, type('js', (dict,), dict(__getitem__=lambda s, n: n))())
+        return obj
 
+    def GetAccountDataFromSina(self,code,table_type):
+        '''
+        all data
+        table_type :"zcfzb","lrb","llb"
+        '''
+        has_data = True
+        #获取当前年份
+        today = pd.to_datetime(time.strftime("%x"))
+        year = today.year    #数据用pandas的dataframe储存
+        dataArr = pd.DataFrame() 
+        time.sleep(random.random()+1) 
+        while has_data: 
+            
+            try:
+                dataArr =self.GetAccountDataFromSinaBase(code,year,dataArr,table_type)
+                year -=1
+            except:
+                if (year+1)==today.year:
+                    has_data=True
+                else:
+                    has_data=False
+        dataArr = dataArr.T
+        dataArr =dataArr.dropna(axis=0,thresh=10) 
+        dataArr =dataArr.dropna(axis=1,thresh=10) 
+        try:
+            dataArr = dataArr.set_index(dataArr.columns[0])
+        except:
+            dataArr=dataArr
+        return dataArr
+
+    def GetAccountDataFromSinaOne(self,code,year,table_type='zcfzb'):
+        '''
+        get one year data
+        table_type :"zcfzb","lrb","llb"
+        '''
+        dataArr =pd.DataFrame()
+        try:
+            dataArr =self.GetAccountDataFromSinaBase(code,year,dataArr,table_type)
+            dataArr = dataArr.T
+            dataArr =dataArr.dropna(axis=0,thresh=10) 
+            dataArr =dataArr.dropna(axis=1,thresh=10) 
+            try:
+                dataArr = dataArr.set_index(dataArr.columns[0])
+            except:
+                dataArr=dataArr
+        except:
+            pass
+        return dataArr
+
+    def GetAccountDataFromSinaBase(self,code,year,dataArr,table_type='zcfzb'):
+        '''
+        table_type :"zcfzb","lrb","llb","fhpg"
+        Bbase function for getting account data from sina
+        add try catch block to avoid exception.
+        http://vip.stock.finance.sina.com.cn/corp/go.php/vFD_BalanceSheet/stockid/600519/ctrl/part/displaytype/4.phtml
+        http://money.finance.sina.com.cn/corp/go.php/vFD_BalanceSheet/stockid/600519/ctrl/2019/displaytype/4.phtml
+        '''  
+        if(table_type==''):
+            table_type ='zcfzb'
+            Id ="BalanceSheetNewTable0" 
+            FINIANCE_SINA_URL = 'http://vip.stock.finance.sina.com.cn/corp/go.php/vFD_BalanceSheet/stockid/%s/ctrl/%s/displaytype/4.phtml'
+            furl = FINIANCE_SINA_URL%(code,year)        #获取数据，标准处理方法
+        # zcfzb id="BalanceSheetNewTable0" 
+        # FINIANCE_SINA_URL = 'http://vip.stock.finance.sina.com.cn/corp/go.php/vFD_BalanceSheet/stockid/%s/ctrl/%s/displaytype/4.phtml'
+        # lrb id="ProfitStatementNewTable0"
+        # FINIANCE_SINA_URL = 'http://vip.stock.finance.sina.com.cn/corp/go.php/vFD_ProfitStatement/stockid/%s/ctrl/%s/displaytype/4.phtml'
+        # llb id="ProfitStatementNewTable0"
+        # FINIANCE_SINA_URL = 'http://vip.stock.finance.sina.com.cn/corp/go.php/vFD_CashFlow/stockid/%s/ctrl/%s/displaytype/4.phtml'
+        if (table_type =='zcfzb'):
+            Id ="BalanceSheetNewTable0"
+            FINIANCE_SINA_URL == 'http://vip.stock.finance.sina.com.cn/corp/go.php/vFD_BalanceSheet/stockid/%s/ctrl/%s/displaytype/4.phtml'
+            furl = FINIANCE_SINA_URL%(code,year)        #获取数据，标准处理方法
+        if(table_type =='lrb'):
+            Id="ProfitStatementNewTable0"
+            FINIANCE_SINA_URL = 'http://vip.stock.finance.sina.com.cn/corp/go.php/vFD_ProfitStatement/stockid/%s/ctrl/%s/displaytype/4.phtml'
+            furl = FINIANCE_SINA_URL%(code,year)        #获取数据，标准处理方法
+        if(table_type =='llb'):
+            Id="ProfitStatementNewTable0"
+            FINIANCE_SINA_URL = 'http://vip.stock.finance.sina.com.cn/corp/go.php/vFD_CashFlow/stockid/%s/ctrl/%s/displaytype/4.phtml'
+            furl = FINIANCE_SINA_URL%(code,year)        #获取数据，标准处理方法
+        if(table_type=='fhpg'):
+            Id="sharebonus_1"
+            FINIANCE_SINA_URL ='http://money.finance.sina.com.cn/corp/go.php/vISSUE_ShareBonus/stockid/%s.phtml'
+            furl = FINIANCE_SINA_URL%(code)        #获取数据，标准处理方法
+        getH =RandomHeader()
+        headers =getH.GetHeader()
+        request = urllib2.Request(furl, headers = headers)
+        text = urllib2.urlopen(request, timeout=5).read()
+        text = text.decode('gbk')
+        html = lxml.html.parse(StringIO(text))        #分离目标数据
+        # res = html.xpath("//table[@id=\"BalanceSheetNewTable0\"]")#ProfitStatementNewTable0
+
+        res = html.xpath(("//table[@id=\"%s\"]")%Id)
+        sarr = [etree.tostring(node).decode('gbk') for node in res]        #存储文件
+        sarr = ''.join(sarr)
+        sarr = '<table>%s</table>'%sarr        #向前滚动一年
+        # year-=1
+        #对最后一页进行判断，依据是数据是否有
+                   #将数据读入到dataframe数据个数中；并进行连接；
+        
+        df = read_html(sarr)[0]
+        df.columns=range(0,df.shape[1])
+        df = df.set_index(df.columns[0])
+        dataArr = [dataArr, df]
+        # dataArr = pd.concat(dataArr, axis=1, join='inner')
+        dataArr = pd.concat(dataArr, axis=1)
+        return dataArr
+
+    def GetFhpgSina(self,code):
+        '''
+        get fen hong and pei gu
+        http://money.finance.sina.com.cn/corp/go.php/vISSUE_ShareBonus/stockid/600519.phtml
+        '''
+        dataArr =pd.DataFrame()
+        try:
+            Id="sharebonus_1"
+            FINIANCE_SINA_URL ='http://money.finance.sina.com.cn/corp/go.php/vISSUE_ShareBonus/stockid/%s.phtml'
+            furl = FINIANCE_SINA_URL%(code)        #获取数据，标准处理方法
+            getH =RandomHeader()
+            headers =getH.GetHeader()
+            request = urllib2.Request(furl, headers = headers)
+            text = urllib2.urlopen(request, timeout=5).read()
+            text = text.decode('gbk')
+            html = lxml.html.parse(StringIO(text))        #分离目标数据
+            # res = html.xpath("//table[@id=\"BalanceSheetNewTable0\"]")#ProfitStatementNewTable0
+
+            res = html.xpath(("//table[@id=\"%s\"]")%Id)
+            sarr = [etree.tostring(node).decode('gbk') for node in res]        #存储文件
+            sarr = ''.join(sarr)
+            sarr = '<table>%s</table>'%sarr        #向前滚动一年
+            # year-=1
+            #对最后一页进行判断，依据是数据是否有
+                    #将数据读入到dataframe数据个数中；并进行连接；
+            
+            df = read_html(sarr)[0]
+            # df.columns=range(0,df.shape[1])
+            # df = df.set_index(df.columns[0])
+            dataArr = [dataArr, df]
+            # dataArr = pd.concat(dataArr, axis=1, join='inner')
+            dataArr = pd.concat(dataArr, axis=1)
+            columns =[]
+            cnt =len(dataArr.columns.levels[2])
+            for k in range(cnt):
+                columns.append(dataArr.columns.levels[2][dataArr.columns.codes[2][k]])
+            dataArr.columns =columns
+            dataArr =dataArr.drop(axis=1,index =8)
+      
+        except:
+            pass
+        return dataArr
 def MainOpt():
     try:
         opts, args = getopt.getopt(sys.argv[1:],'a:h',['all=','help'])
@@ -245,4 +454,13 @@ def MainOpt():
 
 if __name__ == '__main__':
     # only for python command - MainOpt()
-    MainOpt()
+    # MainOpt()
+
+    test =AccountPd()
+    # test.GetStockListFromSina()
+    # test.GetAccountDataFromSinaBase('000001',2019)
+    data =pd.DataFrame()
+    # data =test.GetAccountDataFromSina('000001','zcfzb')
+    data =test.GetFhpgSina('000001')
+    print(data)
+

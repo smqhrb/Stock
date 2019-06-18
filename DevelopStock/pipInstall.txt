@@ -1,0 +1,4 @@
+rem https://www.cnblogs.com/legendjslc/p/7465907.html
+pip3 install tushre
+pip install bs4
+pip install xlwt

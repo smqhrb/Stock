@@ -169,8 +169,7 @@ class AccountPd:
     def GetCodeList(self):
         '''
         #获取股票列表
-        #code,代码 name,名称 industry,所属行业 area,地区 pe,市盈率 outstanding,流通股本 totals,总股本(万) totalAssets,总资产(万)liquidAssets,流动资产
-        # fixedAssets,固定资产 reserved,公积金 reservedPerShare,每股公积金 eps,每股收益 bvps,每股净资 pb,市净率 timeToMarket,上市日期
+        #code,代码 name,名称 
         ''' 
                
         if os.path.exists("stockListAccount.xls") is True:     #判断文件 stockList.xls 是否存在,如果存在 则从文件中读取
@@ -233,7 +232,7 @@ class AccountPd:
                 df =df.append(df1)
             # time.sleep(random.uniform(1.1,3.4) )
             time.sleep(random.random()+1)
-        write = pd.ExcelWriter('stockListAccountSina.xls')
+        write = pd.ExcelWriter('stockListAccount.xls')
         # columns =['symbol','code','name','open','high','low','buy','amount','changepercent','mktcap','nmc','pb','per','pricechange','sell','settlement','trade','turnoverratio','volume','ticktime']
         columns =['code','name']
         df.to_excel(write,index=True,columns=columns)
@@ -481,7 +480,7 @@ class AccountPd:
         return df
                 
 
-    def GetFhpgSina(self,code):
+    def GetFhpgSina(self,code,name):
         '''
         get fen hong and pei gu
         http://money.finance.sina.com.cn/corp/go.php/vISSUE_ShareBonus/stockid/600519.phtml
@@ -519,9 +518,20 @@ class AccountPd:
                 columns.append(dataArr.columns.levels[2][dataArr.columns.codes[2][k]])
             dataArr.columns =columns
             dataArr =dataArr.drop(['查看详细'],axis=1)
-      
+            
+            outFile ="%s\%s(%s_fhpg).xls"%(self.destPath,code,name)
+            write = pd.ExcelWriter(outFile)
+
+            if(len(dataArr)>=0):
+                columns =['公告日期','分红年度','送股','转增','派息','股权登记日','除权除息日','红股上市日']
+                dataArr =dataArr[columns]
+                dataArr.to_excel(write,sheet_name='历史分红',index=False)
+                write.save() 
+            else:
+                print("          %s(%s) 分红数据不存在"%(Code,Name))
+     
         except:
-            pass
+             print("           %s(%s) 分红数据读取异常[%s]"%(Code,Name,ex))
         return dataArr
     def web_access_delay(self):
         time.sleep(random.random()+1) 
@@ -537,17 +547,21 @@ def MainOpt():
             print("")
             print("-----命令格式，参照例子:-----------------------------------------------")
             print("|         获取股票列表:")
-            print("|                 python ForJerryTaobao.py stock")
+            print("|                 python ForJerryTaobao.py -a stock")
             print("|         获取所有股票的分红数据:")
-            print("|                 python ForJerryTaobao.py -a a")
+            print("|                 python ForJerryTaobao.py -a fh")
             print("|         获取指定股票的分红数据:")
-            print("|                 python ForJerryTaobao.py 000651 格力电器")
+            print("|                 python ForJerryTaobao.py fh 000651 格力电器")
+            print("|         获取所有股票的财务数据:")
+            print("|                 python ForJerryTaobao.py -a cw")
+            print("|         获取指定股票的财务数据:")
+            print("|                 python ForJerryTaobao.py cw 000651 格力电器")
             print("---------------------------------------------------------------------")
             sys.exit()
         elif o in ("-a", "--all"): #所有股票读取
             all = a
     
-    if(all =='a'):
+    if(all =='fh'):
 
         xlsTest =AccountPd()
         retDf =xlsTest.GetCodeList()
@@ -562,7 +576,7 @@ def MainOpt():
             k =k +1
             print("[%s]开始读取分红数据 %s(%s)"%(index_k,code,name))
             time_start=time.time()
-            xlsTest.GetFhpg(code,name)                          #分红
+            xlsTest.GetFhpgSina(code,name)                          #分红
             time_end=time.time()
             time_escape =time_end -time_start
             time.sleep(random.random()+1)
@@ -571,30 +585,66 @@ def MainOpt():
         time_end_total=time.time()  
         time_escape_total = time_end_total - time_start_total
         print("共计 耗时%s(s)"%(time_escape_total))  
-        
-    else:
-        code =sys.argv[1]
+    elif(all =='cw'): 
+        retDf =xlsTest.GetCodeList()
+        time_start_total=time.time()
+        k=0
+        for code in retDf.index:
+            name = retDf.loc[code,'name'] 
+            name =name.replace('*','')
+            index_k ='序号:%04d'%k
+            k =k +1
+            print("[%s]开始读取财务数据 %s(%s)"%(index_k,code,name))
+            time_start=time.time()
+            xlsTest.GetAccountData_ALL_XLS(code,name)  
+            time_end=time.time()
+            time_escape =time_end -time_start
+            time.sleep(random.random()+1)
+            print("[%s,耗时%s(s)]结束读取财务数据 %s(%s)"%(index_k,time_escape,code,name))
+        time_end_total=time.time()  
+        time_escape_total = time_end_total - time_start_total
+        print("共计 耗时%s(s)"%(time_escape_total))   
+    elif (all =='stock'):
         xlsTest =AccountPd()
-        if(code=='stock'):
-            xlsTest.GetStockListFromNet()
-        else:
-            name =sys.argv[2]
+        # xlsTest.GetStockListFromNet()
+        xlsTest.GetStockListFromSina()
+    else:
+        typeW = sys.argv[1]
+        if(typeW =='fh'):
+            code =sys.argv[2]
+            xlsTest =AccountPd()
+            name =sys.argv[3]
             name =name.replace('*','')
             print("----开始读取 %s(%s)"%(code,name))
+            time_start_total=time.time()
             xlsTest.GetFhpg(code,name)                          #分红
-            print("----结束读取 %s(%s)"%(code,name))  
+            time_end_total=time.time()  
+            time_escape_total = time_end_total - time_start_total
+            print("----结束读取 %s(%s),耗时%s(s)"%(code,name,time_escape_total)) 
+        elif(typeW =='cw'):
+            code =sys.argv[2]
+            xlsTest =AccountPd()
+            name =sys.argv[3]
+            name =name.replace('*','')
+            print("----开始读取 %s(%s)"%(code,name))
+            time_start_total=time.time()
+            xlsTest.GetAccountData_ALL_XLS(code,name)                    #财务报表
+            time_end_total=time.time()  
+            time_escape_total = time_end_total - time_start_total
+
+            print("----结束读取 %s(%s),耗时%s(s)"%(code,name,time_escape_total)) 
 
 if __name__ == '__main__':
     # only for python command - MainOpt()
-    # MainOpt()
+    MainOpt()
 
-    test =AccountPd()
-    # 股票代号
-    # test.GetStockListFromSina()
-    test.web_access_delay()
-    # 资产负债表
-    # test.GetAccountData_ALL('000001')
-    test.GetAccountData_ALL_XLS('000001','test')
+    # test =AccountPd()
+    # # 股票代号
+    # # test.GetStockListFromSina()
+    # test.web_access_delay()
+    # # 资产负债表
+    # # test.GetAccountData_ALL('000001')
+    # test.GetAccountData_ALL_XLS('000001','test')
 
     # 利润表
     # 现金流量表

@@ -16,6 +16,7 @@ import lxml.html
 from lxml import etree
 from pandas.io.html import read_html
 from pandas.compat import StringIO
+import xlwt
 
 class RandomHeader:
     def __init__(self):
@@ -233,7 +234,8 @@ class AccountPd:
             # time.sleep(random.uniform(1.1,3.4) )
             time.sleep(random.random()+1)
         write = pd.ExcelWriter('stockListAccountSina.xls')
-        columns =['symbol','code','name','open','high','low','buy','amount','changepercent','mktcap','nmc','pb','per','pricechange','sell','settlement','trade','turnoverratio','volume','ticktime']
+        # columns =['symbol','code','name','open','high','low','buy','amount','changepercent','mktcap','nmc','pb','per','pricechange','sell','settlement','trade','turnoverratio','volume','ticktime']
+        columns =['code','name']
         df.to_excel(write,index=True,columns=columns)
         write.save()
         print("------结束读取网上股票列表信息")    
@@ -272,6 +274,19 @@ class AccountPd:
         except:
             dataArr=dataArr
         return dataArr
+
+    def GetAccountData_ALL(self,code):
+        write = pd.ExcelWriter(code +"_zcfzb.xlsx")
+        zcfzb =self.GetAccountDataFromSina(code,'zcfzb')
+        zcfzb.to_excel(write,sheet_name='zcfzb',index=True)
+        
+
+        lrb =self.GetAccountDataFromSina(code,'lrb')
+        lrb.to_excel(write,sheet_name='lrb',index=True)
+
+        llb =self.GetAccountDataFromSina(code,'llb')
+        llb.to_excel(write,sheet_name='llb',index=True)
+        write.save()
 
     def GetAccountDataFromSinaOne(self,code,year,table_type='zcfzb'):
         '''
@@ -313,7 +328,7 @@ class AccountPd:
         # FINIANCE_SINA_URL = 'http://vip.stock.finance.sina.com.cn/corp/go.php/vFD_CashFlow/stockid/%s/ctrl/%s/displaytype/4.phtml'
         if (table_type =='zcfzb'):
             Id ="BalanceSheetNewTable0"
-            FINIANCE_SINA_URL == 'http://vip.stock.finance.sina.com.cn/corp/go.php/vFD_BalanceSheet/stockid/%s/ctrl/%s/displaytype/4.phtml'
+            FINIANCE_SINA_URL = 'http://vip.stock.finance.sina.com.cn/corp/go.php/vFD_BalanceSheet/stockid/%s/ctrl/%s/displaytype/4.phtml'
             furl = FINIANCE_SINA_URL%(code,year)        #获取数据，标准处理方法
         if(table_type =='lrb'):
             Id="ProfitStatementNewTable0"
@@ -350,6 +365,121 @@ class AccountPd:
         # dataArr = pd.concat(dataArr, axis=1, join='inner')
         dataArr = pd.concat(dataArr, axis=1)
         return dataArr
+
+    def GetAccountData_ALL_XLS(self,Code,Name):
+        self.wb = xlwt.Workbook()                            #生成xls表
+        self.wsZcfzb = self.wb.add_sheet(u'资产负债表')       #填加 资产负债表 
+        self.wsLrb = self.wb.add_sheet(u'利润表')             #填加 利润表 
+        self.wsXjllb = self.wb.add_sheet(u'现金流量表')       #填加 现金流量表 
+         #资产负债表
+        self.sheet =self.wsZcfzb
+        self.GetAccountDataFromSinaXls(Code,'zcfzb')
+        
+        #利润表
+        self.sheet = self.wsLrb
+        self.GetAccountDataFromSinaXls(Code,'lrb')
+        
+        #现金流量表
+        self.sheet = self.wsXjllb
+        self.GetAccountDataFromSinaXls(Code,'llb')
+        Name =Name.replace('*', '')
+        self.wb.save(self.destPath+Code+'('+Name+').xls')
+
+    def GetAccountDataFromSinaXls(self,code,table_type):
+        has_data = True
+        #获取当前年份
+        today = pd.to_datetime(time.strftime("%x"))
+        year = today.year    #数据用pandas的dataframe储存
+        hasHead_col =0
+        time.sleep(random.random()+1) 
+        while has_data: 
+            
+            try:
+                hasHead_col =self.GetAccountDataFromSinaBaseXls(code,year,hasHead_col,table_type)
+                year -=1
+            except:
+                if (year+1)==today.year:
+                    has_data=True
+                else:
+                    has_data=False
+           
+
+    def GetAccountDataFromSinaBaseXls(self,code,year,hasHead_col,table_type='zcfzb'):
+        '''
+        hasHead_col is max number of columns
+        # zcfzb id="BalanceSheetNewTable0" 
+        # FINIANCE_SINA_URL = 'http://vip.stock.finance.sina.com.cn/corp/go.php/vFD_BalanceSheet/stockid/%s/ctrl/%s/displaytype/4.phtml'
+        # lrb id="ProfitStatementNewTable0"
+        # FINIANCE_SINA_URL = 'http://vip.stock.finance.sina.com.cn/corp/go.php/vFD_ProfitStatement/stockid/%s/ctrl/%s/displaytype/4.phtml'
+        # llb id="ProfitStatementNewTable0"
+        # FINIANCE_SINA_URL = 'http://vip.stock.finance.sina.com.cn/corp/go.php/vFD_CashFlow/stockid/%s/ctrl/%s/displaytype/4.phtml'
+
+        '''
+        if(table_type==''):
+            table_type ='zcfzb'
+            Id ="BalanceSheetNewTable0" 
+            FINIANCE_SINA_URL = 'http://vip.stock.finance.sina.com.cn/corp/go.php/vFD_BalanceSheet/stockid/%s/ctrl/%s/displaytype/4.phtml'
+            furl = FINIANCE_SINA_URL%(code,year)        #获取数据，标准处理方法
+        if (table_type =='zcfzb'):
+            Id ="BalanceSheetNewTable0"
+            FINIANCE_SINA_URL = 'http://vip.stock.finance.sina.com.cn/corp/go.php/vFD_BalanceSheet/stockid/%s/ctrl/%s/displaytype/4.phtml'
+            furl = FINIANCE_SINA_URL%(code,year)        #获取数据，标准处理方法
+        if(table_type =='lrb'):
+            Id="ProfitStatementNewTable0"
+            FINIANCE_SINA_URL = 'http://vip.stock.finance.sina.com.cn/corp/go.php/vFD_ProfitStatement/stockid/%s/ctrl/%s/displaytype/4.phtml'
+            furl = FINIANCE_SINA_URL%(code,year)        #获取数据，标准处理方法
+        if(table_type =='llb'):
+            Id="ProfitStatementNewTable0"
+            FINIANCE_SINA_URL = 'http://vip.stock.finance.sina.com.cn/corp/go.php/vFD_CashFlow/stockid/%s/ctrl/%s/displaytype/4.phtml'
+            furl = FINIANCE_SINA_URL%(code,year)        #获取数据，标准处理方法
+        getH =RandomHeader()
+        headers =getH.GetHeader()        
+        req = urllib2.Request(furl, headers = headers)
+        try:
+            content = urllib2.urlopen(req).read()
+        except:
+            return
+        soup = BeautifulSoup(content,features="lxml")
+        #获取财务报表的表头
+        table0 = soup.find("table",{"id":Id})
+        j=0
+        for row in table0.findAll("tr"):
+            cells = row.findAll("td")
+            k =len(cells)
+            if(k <=0):
+                continue
+            else:
+                j+=1
+                i = 0
+                lencell = len(cells)#统计财务报表的年数            
+                while i < len(cells):
+                    if(hasHead_col>0):
+                        if (i>0):
+                            self.sheet.write(j, hasHead_col + i , cells[i].text)
+                    else:
+                        self.sheet.write(j, i , cells[i].text)                                        
+                    i=i+1  
+        if(i>0):
+            i= i-1  
+        return i + hasHead_col          
+
+
+
+    def RegularData(self,code,data,type_table):
+        '''
+        序号	股票代号	报告日期	报表名称	科目名称	数值
+
+        '''
+        col_count = data.shape(1)
+        row_count = data.shape(0)
+        
+        rowData =[]
+        for k in range(row_count):
+            for j in range(col_count):
+                rowData.append(['',code,data[k][0],type_table,data.columns[j],data[k][j]])
+        df =pd.DataFrame(rowData,['序号','股票代号','报告日期',	'报表名称','科目名称','数值'])
+        return df
+                
 
     def GetFhpgSina(self,code):
         '''
@@ -388,11 +518,13 @@ class AccountPd:
             for k in range(cnt):
                 columns.append(dataArr.columns.levels[2][dataArr.columns.codes[2][k]])
             dataArr.columns =columns
-            dataArr =dataArr.drop(axis=1,index =8)
+            dataArr =dataArr.drop(['查看详细'],axis=1)
       
         except:
             pass
         return dataArr
+    def web_access_delay(self):
+        time.sleep(random.random()+1) 
 def MainOpt():
     try:
         opts, args = getopt.getopt(sys.argv[1:],'a:h',['all=','help'])
@@ -457,10 +589,14 @@ if __name__ == '__main__':
     # MainOpt()
 
     test =AccountPd()
+    # 股票代号
     # test.GetStockListFromSina()
-    # test.GetAccountDataFromSinaBase('000001',2019)
-    data =pd.DataFrame()
-    # data =test.GetAccountDataFromSina('000001','zcfzb')
-    data =test.GetFhpgSina('000001')
-    print(data)
+    test.web_access_delay()
+    # 资产负债表
+    # test.GetAccountData_ALL('000001')
+    test.GetAccountData_ALL_XLS('000001','test')
+
+    # 利润表
+    # 现金流量表
+
 

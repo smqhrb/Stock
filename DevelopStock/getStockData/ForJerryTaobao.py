@@ -202,6 +202,7 @@ class AccountPd:
         everyPage =40
         print("------开始读取网上股票列表信息")   
         #get stock count
+        # http://vip.stock.finance.sina.com.cn/mkt/#hs_a
         # http://vip.stock.finance.sina.com.cn/quotes_service/api/json_v2.php/Market_Center.getHQNodeStockCount?node=hs_a 
         # 40 
         # http://vip.stock.finance.sina.com.cn/quotes_service/api/json_v2.php/Market_Center.getHQNodeData?page=1&num=40&sort=symbol&asc=1&node=hs_a&symbol=&_s_r_a=init
@@ -402,6 +403,26 @@ class AccountPd:
                 else:
                     has_data=False
            
+    def GetAccountDataFromSinaYearXls(self,code,name,year):
+        '''
+        按照年份提取报表数据
+        '''
+        self.wb = xlwt.Workbook()                            #生成xls表
+        self.wsZcfzb = self.wb.add_sheet(u'资产负债表')       #填加 资产负债表 
+        self.wsLrb = self.wb.add_sheet(u'利润表')             #填加 利润表 
+        self.wsXjllb = self.wb.add_sheet(u'现金流量表')       #填加 现金流量表 
+         #资产负债表
+        self.sheet =self.wsZcfzb
+        self.GetAccountDataFromSinaBaseXls(code,year,0,'zcfzb')
+
+        #利润表
+        self.sheet = self.wsLrb
+        self.GetAccountDataFromSinaBaseXls(code,year,0,'lrb')
+        #现金流量表
+        self.sheet = self.wsXjllb        
+        self.GetAccountDataFromSinaBaseXls(code,year,0,'llb')
+        name =name.replace('*', '')
+        self.wb.save(self.destPath+code+'('+name+'_'+year+').xls')
 
     def GetAccountDataFromSinaBaseXls(self,code,year,hasHead_col,table_type='zcfzb'):
         '''
@@ -523,15 +544,18 @@ class AccountPd:
             write = pd.ExcelWriter(outFile)
 
             if(len(dataArr)>=0):
-                columns =['公告日期','分红年度','送股','转增','派息','股权登记日','除权除息日','红股上市日']
-                dataArr =dataArr[columns]
+                # columns =['公告日期','分红年度','送股','转增','派息','股权登记日','除权除息日','红股上市日']
+                # '公告日期'	'送股(股)'	'转增(股)'	'派息(税前)(元)'	'进度'	'除权除息日'	'股权登记日'	'红股上市日'
+                # 序号	股票代号	公告年度	公告日期	分红年度	送股	转增	派息	股权登记日	除权除息日	红股上市日
+
+                # dataArr =dataArr[columns]
                 dataArr.to_excel(write,sheet_name='历史分红',index=False)
                 write.save() 
             else:
-                print("          %s(%s) 分红数据不存在"%(Code,Name))
+                print("          %s(%s) 分红数据不存在"%(code,name))
      
-        except:
-             print("           %s(%s) 分红数据读取异常[%s]"%(Code,Name,ex))
+        except Exception as ex:
+             print("           %s(%s) 分红数据读取异常[%s]"%(code,name,ex))
         return dataArr
     def web_access_delay(self):
         time.sleep(random.random()+1) 
@@ -556,6 +580,8 @@ def MainOpt():
             print("|                 python ForJerryTaobao.py -a cw")
             print("|         获取指定股票的财务数据:")
             print("|                 python ForJerryTaobao.py cw 000651 格力电器")
+            print("|         获取指定股票的财务数据 按年提取:")
+            print("|                 python ForJerryTaobao.py cw 000651 格力电器 2018")
             print("---------------------------------------------------------------------")
             sys.exit()
         elif o in ("-a", "--all"): #所有股票读取
@@ -586,6 +612,7 @@ def MainOpt():
         time_escape_total = time_end_total - time_start_total
         print("共计 耗时%s(s)"%(time_escape_total))  
     elif(all =='cw'): 
+        xlsTest =AccountPd()
         retDf =xlsTest.GetCodeList()
         time_start_total=time.time()
         k=0
@@ -611,6 +638,7 @@ def MainOpt():
     else:
         typeW = sys.argv[1]
         if(typeW =='fh'):
+            
             code =sys.argv[2]
             xlsTest =AccountPd()
             name =sys.argv[3]
@@ -626,9 +654,17 @@ def MainOpt():
             xlsTest =AccountPd()
             name =sys.argv[3]
             name =name.replace('*','')
-            print("----开始读取 %s(%s)"%(code,name))
+
             time_start_total=time.time()
-            xlsTest.GetAccountData_ALL_XLS(code,name)                    #财务报表
+            if(len(sys.argv)>4):
+                year =sys.argv[4]
+                time_start_total=time.time()
+                print("----开始读取 %s(%s %s)"%(code,name,year))
+                xlsTest.GetAccountDataFromSinaYearXls(code,name,year)
+            else:
+                time_start_total=time.time()
+                print("----开始读取 %s(%s)"%(code,name))
+                xlsTest.GetAccountData_ALL_XLS(code,name)                    #财务报表
             time_end_total=time.time()  
             time_escape_total = time_end_total - time_start_total
 

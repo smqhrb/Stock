@@ -16,6 +16,13 @@ from bs4 import BeautifulSoup
 # from urllib.request import urlopen
 import json
 import random
+# fh
+import lxml.html
+from lxml import etree
+from pandas.io.html import read_html
+from pandas.compat import StringIO
+import xlwt
+
 class RandomHeader:
     def __init__(self):
         self.user_agent_list = [
@@ -56,7 +63,8 @@ class AccountPd:
         self.item =""
         self.filename =""
         self.text =""
-
+        ts.set_token('582c8c9ab1bd9e3e14d5d60527d63affb8c310fba3fb9f5d7853bf9c')
+        self.pro = ts.pro_api()
         # self.wb = xlwt.Workbook()                            #生成xls表
         # self.wsZcfzb = self.wb.add_sheet(u'资产负债表')       #填加 资产负债表 
         # self.wsLrb = self.wb.add_sheet(u'利润表')             #填加 利润表 
@@ -284,6 +292,142 @@ class AccountPd:
             print("------读取股票失败.....")
             pass
 
+    def GetFhpgSina(self,code,name):
+        '''
+        get fen hong and pei gu
+        http://money.finance.sina.com.cn/corp/go.php/vISSUE_ShareBonus/stockid/600519.phtml
+        '''
+        dataArr =pd.DataFrame()
+        try:
+            Id ="sharebonus_1"
+            Id2="sharebonus_2"
+            FINIANCE_SINA_URL ='http://money.finance.sina.com.cn/corp/go.php/vISSUE_ShareBonus/stockid/%s.phtml'
+            furl = FINIANCE_SINA_URL%(code)        #获取数据，标准处理方法
+            getH =RandomHeader()
+            headers =getH.GetHeader()
+            request = urllib2.Request(furl, headers = headers)
+            text = urllib2.urlopen(request, timeout=5).read()
+            # text = text.decode('gbk')
+            # html = lxml.html.parse(StringIO(text))        #分离目标数据
+            # # res = html.xpath("//table[@id=\"BalanceSheetNewTable0\"]")#ProfitStatementNewTable0
+
+            # res = html.xpath(("//table[@id=\"%s\"]")%Id)
+            # sarr = [etree.tostring(node).decode('gbk') for node in res]        #存储文件
+            # sarr = ''.join(sarr)
+            # sarr = '<table>%s</table>'%sarr        #向前滚动一年
+       
+            # df = read_html(sarr)[0]
+
+            # dataArr = [dataArr, df]
+            # # dataArr = pd.concat(dataArr, axis=1, join='inner')
+            # dataArr = pd.concat(dataArr, axis=1)
+            # columns =[]
+            # cnt =len(dataArr.columns.levels[2])
+            # for k in range(cnt):
+            #     columns.append(dataArr.columns.levels[2][dataArr.columns.codes[2][k]])
+            # dataArr.columns =columns
+            dataArr =self.GetFhpgBase(text,Id)
+            # dataArr = pd.concat(dataArr, axis=1)
+            columns =[]
+            cnt =len(dataArr.columns.levels[2])
+            fhfan =dataArr.columns.levels[1][1]
+            pos =fhfan.find('每')
+            fhgs =fhfan[pos+1:-2]
+
+            for k in range(cnt):
+                columns.append(dataArr.columns.levels[2][dataArr.columns.codes[2][k]])
+            dataArr.columns =columns
+            dataArr =dataArr.drop(['查看详细'],axis=1)
+            dataArr['分红方案'] =fhgs
+            # 
+            columns =[]
+            dataArr2 =self.GetFhpgBase(text,Id2)
+            cnt =len(dataArr2.columns.levels[1])
+            for k in range(cnt):
+                columns.append(dataArr2.columns.levels[1][dataArr2.columns.codes[1][k]])
+            dataArr2.columns =columns
+            dataArr2 =dataArr2.drop(['查看详细'],axis=1)
+
+            outFile ="%s\%s(%s_fhpg).xls"%(self.destPath,code,name)
+            write = pd.ExcelWriter(outFile)
+
+            if(len(dataArr)>=0):
+                # columns =['公告日期','分红年度','送股','转增','派息','股权登记日','除权除息日','红股上市日']
+                # '公告日期'	'送股(股)'	'转增(股)'	'派息(税前)(元)'	'进度'	'除权除息日'	'股权登记日'	'红股上市日'
+                # 序号	股票代号	公告年度	公告日期	分红年度	送股	转增	派息	股权登记日	除权除息日	红股上市日
+
+                # dataArr =dataArr[columns]
+                dataArr.to_excel(write,sheet_name='历史分红',index=False)
+                write.save() 
+            else:
+                print("          %s(%s) 分红数据不存在"%(code,name))
+     
+        except Exception as ex:
+             print("           %s(%s) 分红数据读取异常[%s]"%(code,name,ex))
+        return dataArr
+    def GetFhpgBase(self,text,Id):
+        text = text.decode('gbk')
+        html = lxml.html.parse(StringIO(text))        #分离目标数据
+        # res = html.xpath("//table[@id=\"BalanceSheetNewTable0\"]")#ProfitStatementNewTable0
+
+        res = html.xpath(("//table[@id=\"%s\"]")%Id)
+        sarr = [etree.tostring(node).decode('gbk') for node in res]        #存储文件
+        sarr = ''.join(sarr)
+        sarr = '<table>%s</table>'%sarr        #向前滚动一年
+    
+        df = read_html(sarr)[0]
+        return df
+
+    def GetZfSina(self,code):
+        '''
+        增发
+        http://money.finance.sina.com.cn/corp/go.php/vISSUE_AddStock/stockid/000001.phtml
+        '''
+        url ="http://money.finance.sina.com.cn/corp/go.php/vISSUE_AddStock/stockid/%s.phtml"%(code)
+        headers = {"User-Agent":"Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6"}
+        req = urllib2.Request(url, headers = headers)
+        try:
+            content = urllib2.urlopen(req).read()
+        except:
+            return
+        soup = BeautifulSoup(content,features="lxml")
+        #获取财务报表的表头
+        # div tagmain
+        div0 = soup.find("div",{"class":"tagmain"})
+        table2 = div0.find("table",{"class":"table2"})
+        a =table2.findAll("a")
+        a_len =len(a)
+        for k in range(a_len -1):
+            print(a[k])
+        table = div0.findAll("table")
+        table_len =len(table)
+        df1 = pd.DataFrame()
+        col_row =[]
+        for k in range(1,table_len-1,1):
+            data_row =[]
+            th_text =table[k].find("th").text
+            tr_all =table[k].findAll("tr")
+            tr_all_len =len(tr_all)
+            pos =th_text.find("：")
+            if k==1:
+                col_row.append(th_text[pos-4:pos])
+            data_row.append(th_text[pos+1:])
+            for d in range(1,tr_all_len):
+                td_all =tr_all[d].findAll("td")
+                if(k==1):
+                    col_row.append(td_all[0].text)
+                data_row.append(td_all[1].text)
+
+            data1=dict(zip(col_row,data_row))
+            pds =pd.Series(data1,name ="")
+            df1 =df1.append(pds)  
+        return df1
+    def GetGJ(self,code,start,end):
+        '''
+        股价
+        '''
+        df1 = self.pro.daily(code=code, start_date=start, end_date=end)
+        return df1
 def main():
     print(sys.argv[0])
     print(sys.argv[1])
@@ -304,8 +448,10 @@ def main():
         xlsTest.Get10jqkaAccount(code,name,typeQ='year')
         xlsTest.Get10jqkaAccount(code,name,typeQ='quarter')
 if __name__ == '__main__':
-    main()
-    # xlsTest =AccountPd()
+    # main()
+    xlsTest =AccountPd()
+    # xlsTest.GetZfSina('000001')
+    xlsTest.GetFhpgSina("000001","test")
     # xlsTest.Get10jqkaAccount('000651','test',typeQ='year')
     # xlsTest.Get10jqkaAccount('000651','test',typeQ='quarter')
 

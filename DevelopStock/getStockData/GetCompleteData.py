@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 import os,time,sys,re,datetime
 import csv
-import scipy
+# import scipy
 import re
 import urllib.request as urllib2
 import xlwt

@@ -339,7 +339,7 @@ class AccountPd:
             dataArr.columns =columns
             dataArr =dataArr.drop(['查看详细'],axis=1)
             dataArr['分红方案'] =fhgs
-            # 
+            # 配股
             columns =[]
             dataArr2 =self.GetFhpgBase(text,Id2)
             cnt =len(dataArr2.columns.levels[1])
@@ -366,6 +366,9 @@ class AccountPd:
              print("           %s(%s) 分红数据读取异常[%s]"%(code,name,ex))
         return dataArr
     def GetFhpgBase(self,text,Id):
+        '''
+        分红 和 配股 的公共 部分 代码
+        '''
         text = text.decode('gbk')
         html = lxml.html.parse(StringIO(text))        #分离目标数据
         # res = html.xpath("//table[@id=\"BalanceSheetNewTable0\"]")#ProfitStatementNewTable0
@@ -383,13 +386,16 @@ class AccountPd:
         增发
         http://money.finance.sina.com.cn/corp/go.php/vISSUE_AddStock/stockid/000001.phtml
         '''
+
         url ="http://money.finance.sina.com.cn/corp/go.php/vISSUE_AddStock/stockid/%s.phtml"%(code)
-        headers = {"User-Agent":"Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6"}
+        # headers = {"User-Agent":"Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6"}
+        getH =RandomHeader()
+        headers =getH.GetHeader()
         req = urllib2.Request(url, headers = headers)
         try:
             content = urllib2.urlopen(req).read()
         except:
-            return
+            return pd.DataFrame()
         soup = BeautifulSoup(content,features="lxml")
         #获取财务报表的表头
         # div tagmain
@@ -428,6 +434,119 @@ class AccountPd:
         '''
         df1 = self.pro.daily(code=code, start_date=start, end_date=end)
         return df1
+    def GetSS_Sina(self,code):
+        '''
+        诉讼仲裁
+        诉讼提取：所有日期及相应案件名称
+        http://money.finance.sina.com.cn/corp/go.php/vGP_Lawsuit/stockid/000001.phtml
+        '''
+        url ="http://money.finance.sina.com.cn/corp/go.php/vGP_Lawsuit/stockid/%s.phtml"%(code)
+        getH =RandomHeader()
+        headers =getH.GetHeader()
+        req = urllib2.Request(url, headers = headers)
+        try:
+            content = urllib2.urlopen(req).read()
+        except:
+            return pd.DataFrame()
+        soup = BeautifulSoup(content,features="lxml")
+        table = soup.find("table",{"id":"lawsuit"})
+        tbody_All =table.findAll("tbody")
+        tbody_all_len =len(tbody_All)
+        col_row =[]
+        df1 =pd.DataFrame()
+        for k in range(tbody_all_len):
+            tr_all =tbody_All[k].findAll("tr")
+            tr_all_len =len(tr_all)
+            data_row =[]
+            for j in range(tr_all_len):
+                td_all = tr_all[j].findAll("td")
+                if(k==0):
+                    col_row.append(td_all[0].text)
+                data_row.append(td_all[1].text)
+            data1=dict(zip(col_row,data_row))
+            pds =pd.Series(data1,name ="")
+            df1 =df1.append(pds)  
+
+        return df1            
+    def GetWGJL_Sina(self,code):
+        '''
+        违规记录
+        违规提取：所有日期及相应处分类型
+        http://money.finance.sina.com.cn/corp/go.php/vGP_GetOutOfLine/stockid/000001.phtml
+        '''
+        url ="http://money.finance.sina.com.cn/corp/go.php/vGP_GetOutOfLine/stockid/%s.phtml"%(code)
+        getH =RandomHeader()
+        headers =getH.GetHeader()
+        req = urllib2.Request(url, headers = headers)
+        try:
+            content = urllib2.urlopen(req).read()
+        except:
+            return pd.DataFrame()
+        soup = BeautifulSoup(content,features="html.parser")
+ 
+        table =soup.find("table",{"id":"collectFund_1"})
+        tbody = table.find("tbody")
+        tr_all =tbody.findAll("tr")
+        df1 =pd.DataFrame()
+        k =0
+        row_cnt =0
+        col_row =[]
+        tr_all_len =len(tr_all)
+        while(1):
+            if(k>=tr_all_len):
+                break
+            td_all =tr_all[k].findAll("td")
+            if(len(td_all)==0):
+                data_row =[]
+                th =tr_all[k].findAll("th")
+                if(len(th)>0):
+                    if row_cnt ==0:
+                        pos =th[0].text.find(':')
+                        col_row.append(th[0].text[pos-4:pos])
+                    data_row.append(th[0].text[pos+1:])  
+                k =k+1
+                if(k>=tr_all_len):
+                    break
+                while(1):
+                    td_all =tr_all[k].findAll("td") 
+                    if(len(td_all)==0):
+                        break
+                    else:
+                        if(len(td_all)==2):
+                            if(row_cnt==0):
+                                col_row.append(td_all[0].text)
+                            data_row.append(td_all[1].text)  
+                    k =k+1
+                    if(k>=tr_all_len):
+                        break
+            data1=dict(zip(col_row,data_row))
+            pds =pd.Series(data1,name ="")
+            df1 =df1.append(pds)                  
+            row_cnt =row_cnt+1   
+
+
+        # tbody_all =table.findAll("tbody")
+
+        # thread_all =table.findAll("thead")
+        # thread_all_len =len(thread_all)
+        # col_row =[]
+        # df1 =pd.DataFrame()
+        # for k in range(thread_all_len):
+        #     th =thread_all.find("th")
+        #     tr_all =tbody_all[k+1].findAll("tr")
+        #     td_all =tr_all[2].findAll("td")
+        #     pos =th.text.find(':') 
+        #     data_row =[]           
+        #     if(k==0):
+        #         col_row.append(th.text[pos-4:pos])
+        #         col_row.append(td_all[0].text)
+        #     data_row.append(td_all[1].text)
+        #     data_row.append(th.text[pos+1:])            
+        # data1=dict(zip(col_row,data_row))
+        # pds =pd.Series(data1,name ="")
+        # df1 =df1.append(pds)      
+        return df1
+
 def main():
     print(sys.argv[0])
     print(sys.argv[1])
@@ -451,7 +570,8 @@ if __name__ == '__main__':
     # main()
     xlsTest =AccountPd()
     # xlsTest.GetZfSina('000001')
-    xlsTest.GetFhpgSina("000001","test")
+    # xlsTest.GetFhpgSina("000001","test")
     # xlsTest.Get10jqkaAccount('000651','test',typeQ='year')
     # xlsTest.Get10jqkaAccount('000651','test',typeQ='quarter')
+    xlsTest.GetWGJL_Sina('000001')
 

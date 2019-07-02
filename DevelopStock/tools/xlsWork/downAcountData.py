@@ -22,6 +22,7 @@ from lxml import etree
 from pandas.io.html import read_html
 from pandas.compat import StringIO
 import xlwt
+from datetime import datetime,timedelta
 
 class RandomHeader:
     def __init__(self):
@@ -338,7 +339,7 @@ class AccountPd:
                 columns.append(dataArr.columns.levels[2][dataArr.columns.codes[2][k]])
             dataArr.columns =columns
             dataArr =dataArr.drop(['查看详细'],axis=1)
-            dataArr['分红方案'] =fhgs
+            dataArr['方案'] =fhgs
             # 配股
             columns =[]
             dataArr2 =self.GetFhpgBase(text,Id2)
@@ -346,25 +347,28 @@ class AccountPd:
             for k in range(cnt):
                 columns.append(dataArr2.columns.levels[1][dataArr2.columns.codes[1][k]])
             dataArr2.columns =columns
+            pggs =columns[1][columns[1].find('每')+1 : columns[1].find('股配')]
             dataArr2 =dataArr2.drop(['查看详细'],axis=1)
+            dataArr2['方案'] =pggs
+            # outFile ="%s\%s(%s_fhpg).xls"%(self.destPath,code,name)
+            # write = pd.ExcelWriter(outFile)
 
-            outFile ="%s\%s(%s_fhpg).xls"%(self.destPath,code,name)
-            write = pd.ExcelWriter(outFile)
+            # if(len(dataArr)>=0):
+            #     # columns =['公告日期','分红年度','送股','转增','派息','股权登记日','除权除息日','红股上市日']
+            #     # '公告日期'	'送股(股)'	'转增(股)'	'派息(税前)(元)'	'进度'	'除权除息日'	'股权登记日'	'红股上市日'
+            #     # 序号	股票代号	公告年度	公告日期	分红年度	送股	转增	派息	股权登记日	除权除息日	红股上市日
 
-            if(len(dataArr)>=0):
-                # columns =['公告日期','分红年度','送股','转增','派息','股权登记日','除权除息日','红股上市日']
-                # '公告日期'	'送股(股)'	'转增(股)'	'派息(税前)(元)'	'进度'	'除权除息日'	'股权登记日'	'红股上市日'
-                # 序号	股票代号	公告年度	公告日期	分红年度	送股	转增	派息	股权登记日	除权除息日	红股上市日
-
-                # dataArr =dataArr[columns]
-                dataArr.to_excel(write,sheet_name='历史分红',index=False)
-                write.save() 
-            else:
-                print("          %s(%s) 分红数据不存在"%(code,name))
+            #     # dataArr =dataArr[columns]
+            #     dataArr.to_excel(write,sheet_name='历史分红',index=False)
+            #     write.save() 
+            # else:
+            #     print("          %s(%s) 分红数据不存在"%(code,name))
      
         except Exception as ex:
              print("           %s(%s) 分红数据读取异常[%s]"%(code,name,ex))
-        return dataArr
+
+        return dataArr,dataArr2#分红 配股
+
     def GetFhpgBase(self,text,Id):
         '''
         分红 和 配股 的公共 部分 代码
@@ -401,10 +405,12 @@ class AccountPd:
         # div tagmain
         div0 = soup.find("div",{"class":"tagmain"})
         table2 = div0.find("table",{"class":"table2"})
+        if(table2 is None):
+            return pd.DataFrame()
         a =table2.findAll("a")
         a_len =len(a)
-        for k in range(a_len -1):
-            print(a[k])
+        # for k in range(a_len -1):
+        #     print(a[k])
         table = div0.findAll("table")
         table_len =len(table)
         df1 = pd.DataFrame()
@@ -422,17 +428,35 @@ class AccountPd:
                 td_all =tr_all[d].findAll("td")
                 if(k==1):
                     col_row.append(td_all[0].text)
+                
                 data_row.append(td_all[1].text)
 
             data1=dict(zip(col_row,data_row))
             pds =pd.Series(data1,name ="")
             df1 =df1.append(pds)  
+        df_len =len(df1)
+        for k in range(df_len):
+            df1['发行价格：'].values[k] =float(df1['发行价格：'].values[k].replace('元',''))
+            if(df1['实际发行数量：'].values[k].find('万股')>=0):
+                df1['实际发行数量：'].values[k] =df1['实际发行数量：'].values[k].replace('万股','')
+                df1['实际发行数量：'].values[k] =float(df1['实际发行数量：'].values[k])*10000
+            else:
+                df1['实际发行数量：'].values[k] =float(df1['实际发行数量：'].values[k].replace('股',''))
+        df1['增发'] =df1['发行价格：']*df1['实际发行数量：']/100000000
         return df1
     def GetGJ(self,code,start,end):
         '''
-        股价
+        股价 tushare
         '''
-        df1 = self.pro.daily(code=code, start_date=start, end_date=end)
+        start =start.replace('-','')
+        end   =end.replace('-','')
+        if(code.find('.S')<0):
+            if(code >'600000'):
+                code =code+'.SH'
+            else:
+                code =code +'.SZ'
+
+        df1 = self.pro.daily(ts_code=code, start_date=start, end_date=end)
         return df1
     def GetSS_Sina(self,code):
         '''
@@ -450,22 +474,62 @@ class AccountPd:
             return pd.DataFrame()
         soup = BeautifulSoup(content,features="lxml")
         table = soup.find("table",{"id":"lawsuit"})
-        tbody_All =table.findAll("tbody")
-        tbody_all_len =len(tbody_All)
-        col_row =[]
+        # tbody_All =table.findAll("tbody")
+        # tbody_all_len =len(tbody_All)
+        # col_row =[]
+        # df1 =pd.DataFrame()
+        # for k in range(tbody_all_len):
+        #     tr_all =tbody_All[k].findAll("tr")
+        #     tr_all_len =len(tr_all)
+        #     data_row =[]
+        #     for j in range(tr_all_len):
+        #         td_all = tr_all[j].findAll("td")
+        #         if(k==0):
+        #             col_row.append(td_all[0].text)
+        #         data_row.append(td_all[1].text)
+        #     data1=dict(zip(col_row,data_row))
+        #     pds =pd.Series(data1,name ="")
+        #     df1 =df1.append(pds)  
+        if(table is None):
+            return pd.DataFrame(columns=['公告日期','案件名称'])
+        tbody = table.find("tbody")
+        tr_all =tbody.findAll("tr")
         df1 =pd.DataFrame()
-        for k in range(tbody_all_len):
-            tr_all =tbody_All[k].findAll("tr")
-            tr_all_len =len(tr_all)
-            data_row =[]
-            for j in range(tr_all_len):
-                td_all = tr_all[j].findAll("td")
-                if(k==0):
-                    col_row.append(td_all[0].text)
-                data_row.append(td_all[1].text)
+        k =0
+        row_cnt =0
+        col_row =[]
+        tr_all_len =len(tr_all)
+        while(1):
+            if(k>=tr_all_len):
+                break
+            td_all =tr_all[k].findAll("td")
+            if(len(td_all)==0):
+                data_row =[]
+                th =tr_all[k].findAll("th")
+                if(len(th)>0):
+                    if row_cnt ==0:
+                        pos =th[0].text.find(':')
+                        col_row.append(th[0].text[pos-4:pos])
+                    data_row.append(th[0].text[pos+1:])  
+                k =k+1
+                if(k>=tr_all_len):
+                    break
+                while(1):
+                    td_all =tr_all[k].findAll("td") 
+                    if(len(td_all)==0):
+                        break
+                    else:
+                        if(len(td_all)==2):
+                            if(row_cnt==0):
+                                col_row.append(td_all[0].text)
+                            data_row.append(td_all[1].text)  
+                    k =k+1
+                    if(k>=tr_all_len):
+                        break
             data1=dict(zip(col_row,data_row))
             pds =pd.Series(data1,name ="")
-            df1 =df1.append(pds)  
+            df1 =df1.append(pds)                  
+            row_cnt =row_cnt+1 
 
         return df1            
     def GetWGJL_Sina(self,code):
@@ -485,6 +549,8 @@ class AccountPd:
         soup = BeautifulSoup(content,features="html.parser")
  
         table =soup.find("table",{"id":"collectFund_1"})
+        if(table is None):
+            return pd.DataFrame(columns=['公告日期','处分类型'])
         tbody = table.find("tbody")
         tr_all =tbody.findAll("tr")
         df1 =pd.DataFrame()
@@ -547,6 +613,71 @@ class AccountPd:
         # df1 =df1.append(pds)      
         return df1
 
+    def Get_fhpg_SS_Wgjl_Zf(self,code):
+        '''
+        数据源 sina tushare
+            分红配股 增发 股价
+            诉讼 违规记录
+        '''
+        fh,pg =self.GetFhpgSina(code,"")
+        fh_date =fh['除权除息日']
+        fh['除权除息日股价'] ='-'
+        fh['派息调整'] ='-'
+        fh['转增(股)'] =fh['转增(股)'].astype('float64')
+        for k in range(len(fh_date)):
+            start =fh_date[k]
+            start_date =datetime.strptime(start, '%Y-%m-%d')
+            end   =fh_date[k]
+            if(start.find('暂时没有数据')>=0):
+                continue
+            if(start =='--'):
+                continue
+            gj =self.GetGJ(code,start,end)
+            # print('start =%s end =%s'%(start,end))
+            # print(gj)
+            fh['派息(税前)(元)'][k] =float(fh['派息(税前)(元)'][k])/(float(fh['方案'][k]))
+            fh['送股(股)'][k] =float(fh['送股(股)'][k])/(float(fh['方案'][k]))
+            fh['转增(股)'][k] =float(fh['转增(股)'][k])/(float(fh['方案'][k]))
+            if(len(gj)>0):
+                fh['除权除息日股价'][k] =gj['close'][0]
+                fh['派息调整'][k] =fh['派息(税前)(元)'][k]/(fh['除权除息日股价'][k])
+        # save fh
+        fh.to_csv("%s\%s_fh.csv"%(self.destPath,code),index_label=u'',encoding='utf_8_sig')
+        pg_date =pg['除权日']
+        pg['除权日前日股价'] ='-'
+        pg['配股调整'] ='-'
+        for k in range(len(pg_date)):
+
+            start =pg_date[k]
+
+            if(start.find('暂时没有数据')>=0):
+                continue
+            if(start =='--'):
+                continue
+            start_date =datetime.strptime(start, '%Y-%m-%d')
+            end_date =start_date + timedelta(days = -10)
+            end =end_date.strftime('%Y-%m-%d')
+            
+            gj =self.GetGJ(code,end,start)
+            if(len(gj)>1):
+                pg['除权日前日股价'][k] =gj['close'][1]
+                pg['配股调整'][k] =  (1- pg['配股价格(元)'][k]/(pg['除权日前日股价'][k]))*(pg['配股方案(每10股配股股数)'][k])/10
+        # save pg   
+        pg.to_csv("%s\%s_pg.csv"%(self.destPath,code),index_label=u'',encoding='utf_8_sig')  
+
+        zf =self.GetZfSina(code)
+        zf.to_csv("%s\%s_zf.csv"%(self.destPath,code),index_label=u'',encoding='utf_8_sig') 
+        # save zf
+        ss =self.GetSS_Sina(code)
+        ss =ss[['公告日期','案件名称']]
+        ss.to_csv("%s\%s_ss.csv"%(self.destPath,code),index_label=u'',encoding='utf_8_sig') 
+        # save ss
+        wgjl =self.GetWGJL_Sina(code)
+        wgjl =wgjl[['公告日期','处分类型']]
+        wgjl.to_csv("%s\%s_wgjl.csv"%(self.destPath,code),index_label=u'',encoding='utf_8_sig') 
+        # save wgjl
+
+
 def main():
     print(sys.argv[0])
     print(sys.argv[1])
@@ -560,18 +691,22 @@ def main():
         xlsTest.GetCodeList()
     else:
         # print(sys.argv[3]) 
-        # name =sys.argv[3]
-        name =""
-        # xlsTest.GetFullAcount(code,name,typeQ='year')
-        # xlsTest.GetFullAcount(code,name,typeQ='quarter')
-        xlsTest.Get10jqkaAccount(code,name,typeQ='year')
-        xlsTest.Get10jqkaAccount(code,name,typeQ='quarter')
+        name =sys.argv[3]
+        if(name =='fh'):
+            xlsTest.Get_fhpg_SS_Wgjl_Zf(code)
+        else:
+            name =""
+            # xlsTest.GetFullAcount(code,name,typeQ='year')
+            # xlsTest.GetFullAcount(code,name,typeQ='quarter')
+            xlsTest.Get10jqkaAccount(code,name,typeQ='year')
+            xlsTest.Get10jqkaAccount(code,name,typeQ='quarter')
 if __name__ == '__main__':
-    # main()
-    xlsTest =AccountPd()
+    main()
+    # xlsTest =AccountPd()
     # xlsTest.GetZfSina('000001')
     # xlsTest.GetFhpgSina("000001","test")
     # xlsTest.Get10jqkaAccount('000651','test',typeQ='year')
     # xlsTest.Get10jqkaAccount('000651','test',typeQ='quarter')
-    xlsTest.GetWGJL_Sina('000001')
+    # xlsTest.Get_fhpg_SS_Wgjl_Zf('600968')
+    # xlsTest.Get_fhpg_SS_Wgjl_Zf('000001')
 

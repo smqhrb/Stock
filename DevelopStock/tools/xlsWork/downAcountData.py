@@ -622,11 +622,10 @@ class AccountPd:
         fh,pg =self.GetFhpgSina(code,"")
         fh_date =fh['除权除息日']
         fh['除权除息日股价'] ='-'
-        fh['派息调整'] ='-'
+        fh['派息调整'] =0.0
         fh['转增(股)'] =fh['转增(股)'].astype('float64')
         for k in range(len(fh_date)):
             start =fh_date[k]
-            start_date =datetime.strptime(start, '%Y-%m-%d')
             end   =fh_date[k]
             if(start.find('暂时没有数据')>=0):
                 continue
@@ -642,10 +641,14 @@ class AccountPd:
                 fh['除权除息日股价'][k] =gj['close'][0]
                 fh['派息调整'][k] =fh['派息(税前)(元)'][k]/(fh['除权除息日股价'][k])
         # save fh
-        fh.to_csv("%s\%s_fh.csv"%(self.destPath,code),index_label=u'',encoding='utf_8_sig')
+        fh_group =fh
+        fh_group['year'] =fh['公告日期'].str[:4]
+        fh_group1 =fh_group.groupby('year').sum()
+        fh_group2 =fh_group1.sort_values(by=['year'], ascending=False)
+        fh_group2.to_csv("%s\%s_fh.csv"%(self.destPath,code),index_label=u'',encoding='utf_8_sig')
         pg_date =pg['除权日']
         pg['除权日前日股价'] ='-'
-        pg['配股调整'] ='-'
+        pg['配股调整'] =0.0
         for k in range(len(pg_date)):
 
             start =pg_date[k]
@@ -663,10 +666,20 @@ class AccountPd:
                 pg['除权日前日股价'][k] =gj['close'][1]
                 pg['配股调整'][k] =  (1- pg['配股价格(元)'][k]/(pg['除权日前日股价'][k]))*(pg['配股方案(每10股配股股数)'][k])/10
         # save pg   
-        pg.to_csv("%s\%s_pg.csv"%(self.destPath,code),index_label=u'',encoding='utf_8_sig')  
+        pg_group =pg
+        pg_group['year'] =pg['公告日期'].str[:4]
+        pg_group1 =pg_group.groupby('year').sum()
+        pg_group2 =pg_group1.sort_values(by=['year'], ascending=False)
+        
+        pg_group2.to_csv("%s\%s_pg.csv"%(self.destPath,code),index_label=u'',encoding='utf_8_sig')  
 
         zf =self.GetZfSina(code)
-        zf.to_csv("%s\%s_zf.csv"%(self.destPath,code),index_label=u'',encoding='utf_8_sig') 
+        zf_group =zf
+        zf_group['year'] =zf['公告日期'].str[:4]
+        zf_group1 =zf_group.groupby('year').sum()
+        zf_group2 =zf_group1.sort_values(by=['year'], ascending=False)        
+        zf_group2.to_csv("%s\%s_zf.csv"%(self.destPath,code),index_label=u'',encoding='utf_8_sig') 
+
         # save zf
         ss =self.GetSS_Sina(code)
         ss =ss[['公告日期','案件名称']]
@@ -701,12 +714,13 @@ def main():
             xlsTest.Get10jqkaAccount(code,name,typeQ='year')
             xlsTest.Get10jqkaAccount(code,name,typeQ='quarter')
 if __name__ == '__main__':
-    main()
-    # xlsTest =AccountPd()
+    # main()
+    xlsTest =AccountPd()
     # xlsTest.GetZfSina('000001')
     # xlsTest.GetFhpgSina("000001","test")
     # xlsTest.Get10jqkaAccount('000651','test',typeQ='year')
     # xlsTest.Get10jqkaAccount('000651','test',typeQ='quarter')
     # xlsTest.Get_fhpg_SS_Wgjl_Zf('600968')
-    # xlsTest.Get_fhpg_SS_Wgjl_Zf('000001')
+    # xlsTest.Get_fhpg_SS_Wgjl_Zf('601857')
+    xlsTest.Get_fhpg_SS_Wgjl_Zf('000001')
 

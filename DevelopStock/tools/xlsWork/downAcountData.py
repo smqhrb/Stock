@@ -546,7 +546,9 @@ class AccountPd:
             content = urllib2.urlopen(req).read()
         except:
             return pd.DataFrame()
-        soup = BeautifulSoup(content,features="html.parser")
+        html_encode='gb2312'
+        soup = BeautifulSoup(content.decode(html_encode,errors='ignore'), "html.parser")#html_encode='gb2312'
+        # soup = BeautifulSoup(content,features="html.parser")
  
         table =soup.find("table",{"id":"collectFund_1"})
         if(table is None):
@@ -619,6 +621,8 @@ class AccountPd:
             分红配股 增发 股价
             诉讼 违规记录
         '''
+        pd.options.mode.chained_assignment = None
+
         fh,pg =self.GetFhpgSina(code,"")
         fh_date =fh['除权除息日']
         fh['除权除息日股价'] ='-'
@@ -641,11 +645,13 @@ class AccountPd:
                 fh['除权除息日股价'][k] =gj['close'][0]
                 fh['派息调整'][k] =fh['派息(税前)(元)'][k]/(fh['除权除息日股价'][k])
         # save fh
-        fh_group =fh
-        fh_group['year'] =fh['公告日期'].str[:4]
-        fh_group1 =fh_group.groupby('year').sum()
-        fh_group2 =fh_group1.sort_values(by=['year'], ascending=False)
-        fh_group2.to_csv("%s\%s_fh.csv"%(self.destPath,code),index_label=u'',encoding='utf_8_sig')
+        if(len(fh)>0):
+            fh_group =fh
+            fh_group['year'] =fh['公告日期'].str[:4]
+            fh_group1 =fh_group.groupby('year').sum()
+            fh_group2 =fh_group1.sort_values(by=['year'], ascending=False)
+            fh_group2.to_csv("%s\%s_fh.csv"%(self.destPath,code),index_label=u'',encoding='utf_8_sig')
+
         pg_date =pg['除权日']
         pg['除权日前日股价'] ='-'
         pg['配股调整'] =0.0
@@ -665,29 +671,33 @@ class AccountPd:
             if(len(gj)>1):
                 pg['除权日前日股价'][k] =gj['close'][1]
                 pg['配股调整'][k] =  (1- pg['配股价格(元)'][k]/(pg['除权日前日股价'][k]))*(pg['配股方案(每10股配股股数)'][k])/10
-        # save pg   
-        pg_group =pg
-        pg_group['year'] =pg['公告日期'].str[:4]
-        pg_group1 =pg_group.groupby('year').sum()
-        pg_group2 =pg_group1.sort_values(by=['year'], ascending=False)
-        
-        pg_group2.to_csv("%s\%s_pg.csv"%(self.destPath,code),index_label=u'',encoding='utf_8_sig')  
+        # save pg 
+        if(len(pg)>0):  
+            pg_group =pg
+
+            pg_group['year'] =pg['公告日期'].str[:4]
+            pg_group1 =pg_group.groupby('year').sum()
+            pg_group2 =pg_group1.sort_values(by=['year'], ascending=False)
+            pg_group2.to_csv("%s\%s_pg.csv"%(self.destPath,code),index_label=u'',encoding='utf_8_sig')  
 
         zf =self.GetZfSina(code)
-        zf_group =zf
-        zf_group['year'] =zf['公告日期'].str[:4]
-        zf_group1 =zf_group.groupby('year').sum()
-        zf_group2 =zf_group1.sort_values(by=['year'], ascending=False)        
-        zf_group2.to_csv("%s\%s_zf.csv"%(self.destPath,code),index_label=u'',encoding='utf_8_sig') 
+        if len(zf)>0:
+            zf_group =zf
+            zf_group['year'] =zf['公告日期'].str[:4]
+            zf_group1 =zf_group.groupby('year').sum()
+            zf_group2 =zf_group1.sort_values(by=['year'], ascending=False)        
+            zf_group2.to_csv("%s\%s_zf.csv"%(self.destPath,code),index_label=u'',encoding='utf_8_sig') 
 
         # save zf
         ss =self.GetSS_Sina(code)
-        ss =ss[['公告日期','案件名称']]
-        ss.to_csv("%s\%s_ss.csv"%(self.destPath,code),index_label=u'',encoding='utf_8_sig') 
+        if(len(ss)>0):
+            ss =ss[['公告日期','案件名称']]
+            ss.to_csv("%s\%s_ss.csv"%(self.destPath,code),index_label=u'',encoding='utf_8_sig') 
         # save ss
         wgjl =self.GetWGJL_Sina(code)
-        wgjl =wgjl[['公告日期','处分类型']]
-        wgjl.to_csv("%s\%s_wgjl.csv"%(self.destPath,code),index_label=u'',encoding='utf_8_sig') 
+        if(len(wgjl)>0):
+            wgjl =wgjl[['公告日期','处分类型']]
+            wgjl.to_csv("%s\%s_wgjl.csv"%(self.destPath,code),index_label=u'',encoding='utf_8_sig') 
         # save wgjl
 
 
@@ -695,7 +705,7 @@ def main():
     print(sys.argv[0])
     print(sys.argv[1])
     print(sys.argv[2]) 
-
+    
     destPath ="%s\\Account"%(sys.argv[1]) 
     xlsTest =AccountPd(destPath=destPath)
     code =sys.argv[2]
@@ -714,13 +724,13 @@ def main():
             xlsTest.Get10jqkaAccount(code,name,typeQ='year')
             xlsTest.Get10jqkaAccount(code,name,typeQ='quarter')
 if __name__ == '__main__':
-    # main()
-    xlsTest =AccountPd()
+    main()
+    # xlsTest =AccountPd()
     # xlsTest.GetZfSina('000001')
     # xlsTest.GetFhpgSina("000001","test")
     # xlsTest.Get10jqkaAccount('000651','test',typeQ='year')
     # xlsTest.Get10jqkaAccount('000651','test',typeQ='quarter')
     # xlsTest.Get_fhpg_SS_Wgjl_Zf('600968')
     # xlsTest.Get_fhpg_SS_Wgjl_Zf('601857')
-    xlsTest.Get_fhpg_SS_Wgjl_Zf('000001')
+    # xlsTest.Get_fhpg_SS_Wgjl_Zf('000409')
 

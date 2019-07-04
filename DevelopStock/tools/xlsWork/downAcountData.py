@@ -400,7 +400,9 @@ class AccountPd:
             content = urllib2.urlopen(req).read()
         except:
             return pd.DataFrame()
-        soup = BeautifulSoup(content,features="lxml")
+        html_encode='gb2312'
+        soup = BeautifulSoup(content.decode(html_encode,errors='ignore'), "html.parser")#html_encode='gb2312'
+        # soup = BeautifulSoup(content,features="lxml")
         #获取财务报表的表头
         # div tagmain
         div0 = soup.find("div",{"class":"tagmain"})
@@ -472,7 +474,9 @@ class AccountPd:
             content = urllib2.urlopen(req).read()
         except:
             return pd.DataFrame()
-        soup = BeautifulSoup(content,features="lxml")
+        html_encode='gb2312'
+        soup = BeautifulSoup(content.decode(html_encode,errors='ignore'), "html.parser")#html_encode='gb2312'
+        # soup = BeautifulSoup(content,features="lxml")
         table = soup.find("table",{"id":"lawsuit"})
         # tbody_All =table.findAll("tbody")
         # tbody_all_len =len(tbody_All)
@@ -624,6 +628,7 @@ class AccountPd:
         pd.options.mode.chained_assignment = None
 
         fh,pg =self.GetFhpgSina(code,"")
+        #
         fh_date =fh['除权除息日']
         fh['除权除息日股价'] ='-'
         fh['派息调整'] =0.0
@@ -646,6 +651,7 @@ class AccountPd:
                 fh['派息调整'][k] =fh['派息(税前)(元)'][k]/(fh['除权除息日股价'][k])
         # save fh
         if(len(fh)>0):
+            fh= fh[fh['除权除息日']!='--']
             fh_group =fh
             fh_group['year'] =fh['公告日期'].str[:4]
             fh_group1 =fh_group.groupby('year').sum()
@@ -673,8 +679,8 @@ class AccountPd:
                 pg['配股调整'][k] =  (1- pg['配股价格(元)'][k]/(pg['除权日前日股价'][k]))*(pg['配股方案(每10股配股股数)'][k])/10
         # save pg 
         if(len(pg)>0):  
+            pg= pg[pg['除权日']!='--']            
             pg_group =pg
-
             pg_group['year'] =pg['公告日期'].str[:4]
             pg_group1 =pg_group.groupby('year').sum()
             pg_group2 =pg_group1.sort_values(by=['year'], ascending=False)
@@ -733,4 +739,5 @@ if __name__ == '__main__':
     # xlsTest.Get_fhpg_SS_Wgjl_Zf('600968')
     # xlsTest.Get_fhpg_SS_Wgjl_Zf('601857')
     # xlsTest.Get_fhpg_SS_Wgjl_Zf('000409')
+    # xlsTest.Get_fhpg_SS_Wgjl_Zf('000651')
 

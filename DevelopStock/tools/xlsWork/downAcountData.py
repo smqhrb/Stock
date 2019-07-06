@@ -632,7 +632,7 @@ class AccountPd:
         fh_date =fh['除权除息日']
         fh['除权除息日股价'] ='-'
         fh['派息调整'] =0.0
-        fh['转增(股)'] =fh['转增(股)'].astype('float64')
+        
         for k in range(len(fh_date)):
             start =fh_date[k]
             end   =fh_date[k]
@@ -643,6 +643,7 @@ class AccountPd:
             gj =self.GetGJ(code,start,end)
             # print('start =%s end =%s'%(start,end))
             # print(gj)
+            fh['转增(股)'][k] =fh['转增(股)'][k].astype('float64')
             fh['派息(税前)(元)'][k] =float(fh['派息(税前)(元)'][k])/(float(fh['方案'][k]))
             fh['送股(股)'][k] =float(fh['送股(股)'][k])/(float(fh['方案'][k]))
             fh['转增(股)'][k] =float(fh['转增(股)'][k])/(float(fh['方案'][k]))
@@ -739,5 +740,7 @@ if __name__ == '__main__':
     # xlsTest.Get_fhpg_SS_Wgjl_Zf('600968')
     # xlsTest.Get_fhpg_SS_Wgjl_Zf('601857')
     # xlsTest.Get_fhpg_SS_Wgjl_Zf('000409')
-    # xlsTest.Get_fhpg_SS_Wgjl_Zf('000651')
-
+    # xlsTest.Get_fhpg_SS_Wgjl_Zf('000598')
+    
+    # xlsTest.Get_fhpg_SS_Wgjl_Zf('002260')
+    # xlsTest.Get_fhpg_SS_Wgjl_Zf('002955')

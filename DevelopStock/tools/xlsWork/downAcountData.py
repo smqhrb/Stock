@@ -298,6 +298,7 @@ class AccountPd:
         get fen hong and pei gu
         http://money.finance.sina.com.cn/corp/go.php/vISSUE_ShareBonus/stockid/600519.phtml
         '''
+        pd.options.mode.chained_assignment = None
         dataArr =pd.DataFrame()
         try:
             Id ="sharebonus_1"
@@ -350,6 +351,24 @@ class AccountPd:
             pggs =columns[1][columns[1].find('每')+1 : columns[1].find('股配')]
             dataArr2 =dataArr2.drop(['查看详细'],axis=1)
             dataArr2['方案'] =pggs
+            dataArr2['实际配股数'] =0.0
+            pg_len =len(dataArr2)
+            pg_sjpgs ='0.0'
+            for ind in range(pg_len):
+                pg_sjpgs ='0.0'
+                date_ggrq =dataArr2['公告日期'][ind]
+                df_pgxx =self.GetPgXX(code,'2',date_ggrq)
+                len_pgxx =len(df_pgxx)
+                for k in range(len_pgxx):
+                    if(df_pgxx[0][k]=='实际配股数'):
+                        if(df_pgxx[1][k]=='--'):
+                            pg_sjpgs ='0.0'
+                        else:
+                            pg_sjpgs =df_pgxx[1][k]
+                        break
+                
+                dataArr2['实际配股数'][ind] =pg_sjpgs
+
             # outFile ="%s\%s(%s_fhpg).xls"%(self.destPath,code,name)
             # write = pd.ExcelWriter(outFile)
 
@@ -383,7 +402,34 @@ class AccountPd:
         sarr = '<table>%s</table>'%sarr        #向前滚动一年
     
         df = read_html(sarr)[0]
-        return df
+        #all_href =soup.find_all('a', href=True)
+        return df#,all_href
+
+    def GetPgXX(self,code,typeL,end):
+        '''
+        get detail message 
+        get 实际配股数
+        http://money.finance.sina.com.cn/corp/view/vISSUE_ShareBonusDetail.php?stockid=000001&type=2&end_date=2000-10-23
+        '''
+        try:
+            Id ="sharebonusdetail"
+            FINIANCE_SINA_URL ='http://money.finance.sina.com.cn/corp/view/vISSUE_ShareBonusDetail.php?stockid=%s&type=%s&end_date=%s'
+            furl = FINIANCE_SINA_URL%(code,typeL,end)        #获取数据，标准处理方法
+            getH =RandomHeader()
+            headers =getH.GetHeader()
+            request = urllib2.Request(furl, headers = headers)
+            text = urllib2.urlopen(request, timeout=5).read()
+            text = text.decode('gbk')
+            html = lxml.html.parse(StringIO(text))        #分离目标数据
+
+            res = html.xpath(("//table[@id=\"%s\"]")%Id)
+            sarr = [etree.tostring(node).decode('gbk') for node in res]        #存储文件
+            sarr = ''.join(sarr)
+            sarr = '<table>%s</table>'%sarr        #向前滚动一年
+            df = read_html(sarr)[0]
+            return df            
+        except:
+            return pd.DataFrame()
 
     def GetZfSina(self,code):
         '''
@@ -631,7 +677,7 @@ class AccountPd:
         #
         try:
             fh_date =fh['除权除息日']
-            fh['除权除息日股价'] ='-'
+            fh['除权除息日股价'] =0.0
             fh['派息调整'] =0.0
             fh['转增(股)'] =fh['转增(股)'].astype('float64')
             fh['派息(税前)(元)'] =fh['派息(税前)(元)'].astype('float64')
@@ -651,7 +697,8 @@ class AccountPd:
                 fh['送股(股)'][k] =float(fh['送股(股)'][k])/(float(fh['方案'][k]))
                 fh['转增(股)'][k] =float(fh['转增(股)'][k])/(float(fh['方案'][k]))
                 if(len(gj)>0):
-                    fh['除权除息日股价'][k] =gj['close'][0]
+                    # fh['除权除息日股价'][k] =gj['close'][0]
+                    fh['除权除息日股价'][k] =gj['open'][0]
                     fh['派息调整'][k] =fh['派息(税前)(元)'][k]/(fh['除权除息日股价'][k])
             # save fh
             if(len(fh)>0):
@@ -665,8 +712,13 @@ class AccountPd:
             pass
         try:
             pg_date =pg['除权日']
-            pg['除权日前日股价'] ='-'
+            pg['除权日前日股价'] =0.0
+
             pg['配股调整'] =0.0
+            pg['配股募资金额(亿)'] =0.0
+            pg['每股配股数'] =0.0
+            pg['除权价'] =0.0
+            
             for k in range(len(pg_date)):
 
                 start =pg_date[k]
@@ -682,7 +734,14 @@ class AccountPd:
                 gj =self.GetGJ(code,end,start)
                 if(len(gj)>1):
                     pg['除权日前日股价'][k] =gj['close'][1]
-                    pg['配股调整'][k] =  (1- pg['配股价格(元)'][k]/(pg['除权日前日股价'][k]))*(pg['配股方案(每10股配股股数)'][k])/10
+                    '''
+                    配股调整 =（1 – 配股价/除权价）*每股配股数
+                    除权价= （除 权前一日收盘价 + 配股价*每股配股数）/ （1 + 每股配股数）
+                    '''
+                    pg['每股配股数'][k] =pg['配股方案(每10股配股股数)'][k]*1.0/10.0
+                    pg['除权价'][k] =(pg['除权日前日股价'][k] + pg['配股价格(元)'][k]*pg['每股配股数'][k])/(1 + pg['每股配股数'][k])
+                    pg['配股调整'][k] =  (1- pg['配股价格(元)'][k]/pg['除权价'][k])*pg['每股配股数'][k]
+                    pg['配股募资金额(亿)'][k] = float(pg['实际配股数'][k])*float(pg['配股价格(元)'][k])/100000000.0
             # save pg 
             if(len(pg)>0):  
                 pg= pg[pg['除权日']!='--']            
@@ -758,3 +817,5 @@ if __name__ == '__main__':
     
     # xlsTest.Get_fhpg_SS_Wgjl_Zf('002260')
     # xlsTest.Get_fhpg_SS_Wgjl_Zf('600089')
+    # xlsTest.Get_fhpg_SS_Wgjl_Zf('000001')
+    # xlsTest.GetFhpgSina('000001','')

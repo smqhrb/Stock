@@ -700,9 +700,24 @@ class AccountPd:
                     # fh['除权除息日股价'][k] =gj['close'][0]
                     fh['除权除息日股价'][k] =gj['open'][0]
                     fh['派息调整'][k] =fh['派息(税前)(元)'][k]/(fh['除权除息日股价'][k])
-            # save fh
+                else:#向后查找 直到有股价
+                    while True:
+                        time.sleep(0.3)
+                        start_date =datetime.strptime(start, '%Y-%m-%d')
+                        end_date =start_date + timedelta(days = 30)
+                        end =end_date.strftime('%Y-%m-%d')
+                        gj =self.GetGJ(code,start,end)
+                        if(len(gj)>0):
+                            gj_len =len(gj)
+                            fh['除权除息日股价'][k] =gj['open'][gj_len-1]
+                            fh['派息调整'][k] =fh['派息(税前)(元)'][k]/(fh['除权除息日股价'][k])
+                            break
+                        else:
+                            start =end
+             # save fh
             if(len(fh)>0):
                 fh= fh[fh['除权除息日']!='--']
+                # fh.to_csv("%s\%s_fh_org.csv"%(self.destPath,code),index_label=u'',encoding='utf_8_sig')  
                 fh_group =fh
                 fh_group['year'] =fh['公告日期'].str[:4]
                 fh_group1 =fh_group.groupby('year').sum()
@@ -711,8 +726,10 @@ class AccountPd:
         except:
             pass
         try:
-            pg_date =pg['除权日']
-            pg['除权日前日股价'] =0.0
+            # pg_date =pg['除权日']
+            pg_date =pg['股权登记日']
+            # pg['除权日前日股价'] =0.0 
+            pg['股权登记日收盘价'] =0.0
 
             pg['配股调整'] =0.0
             pg['配股募资金额(亿)'] =0.0
@@ -733,18 +750,36 @@ class AccountPd:
                 
                 gj =self.GetGJ(code,end,start)
                 if(len(gj)>1):
-                    pg['除权日前日股价'][k] =gj['close'][1]
+                    # pg['除权日前日股价'][k] =gj['close'][1]
+                    pg['股权登记日收盘价'][k] =gj['close'][0]
                     '''
                     配股调整 =（1 – 配股价/除权价）*每股配股数
                     除权价= （除 权前一日收盘价 + 配股价*每股配股数）/ （1 + 每股配股数）
+                    除权价= （股权登记日收盘价 + 配股价*每股配股数）/ （1 + 每股配股数）
                     '''
                     pg['每股配股数'][k] =pg['配股方案(每10股配股股数)'][k]*1.0/10.0
-                    pg['除权价'][k] =(pg['除权日前日股价'][k] + pg['配股价格(元)'][k]*pg['每股配股数'][k])/(1 + pg['每股配股数'][k])
+                    pg['除权价'][k] =(pg['股权登记日收盘价'][k] + pg['配股价格(元)'][k]*pg['每股配股数'][k])/(1 + pg['每股配股数'][k])
                     pg['配股调整'][k] =  (1- pg['配股价格(元)'][k]/pg['除权价'][k])*pg['每股配股数'][k]
                     pg['配股募资金额(亿)'][k] = float(pg['实际配股数'][k])*float(pg['配股价格(元)'][k])/100000000.0
+                else:#向前查找 直到有股价
+                    while True:
+                        time.sleep(0.3)
+                        start_date =datetime.strptime(start, '%Y-%m-%d')
+                        end_date =start_date + timedelta(days = -30)
+                        end =end_date.strftime('%Y-%m-%d') 
+                        gj =self.GetGJ(code,end,start)
+                        if(len(gj)>1):
+                            pg['股权登记日收盘价'][k] =gj['close'][0]
+                            pg['每股配股数'][k] =pg['配股方案(每10股配股股数)'][k]*1.0/10.0
+                            pg['除权价'][k] =(pg['股权登记日收盘价'][k] + pg['配股价格(元)'][k]*pg['每股配股数'][k])/(1 + pg['每股配股数'][k])
+                            pg['配股调整'][k] =  (1- pg['配股价格(元)'][k]/pg['除权价'][k])*pg['每股配股数'][k]
+                            pg['配股募资金额(亿)'][k] = float(pg['实际配股数'][k])*float(pg['配股价格(元)'][k])/100000000.0
+                        else:
+                            start =end                    
             # save pg 
             if(len(pg)>0):  
-                pg= pg[pg['除权日']!='--']            
+                pg= pg[pg['除权日']!='--']  
+                        
                 pg_group =pg
                 pg_group['year'] =pg['公告日期'].str[:4]
                 pg_group1 =pg_group.groupby('year').sum()

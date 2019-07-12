@@ -499,7 +499,7 @@ class AccountPd:
         start =start.replace('-','')
         end   =end.replace('-','')
         if(code.find('.S')<0):
-            if(code >'600000'):
+            if(code >='600000'):
                 code =code+'.SH'
             else:
                 code =code +'.SZ'
@@ -706,6 +706,9 @@ class AccountPd:
                         start_date =datetime.strptime(start, '%Y-%m-%d')
                         end_date =start_date + timedelta(days = 30)
                         end =end_date.strftime('%Y-%m-%d')
+                        nowTime=datetime.now().strftime('%Y-%m-%d')
+                        if(start>nowTime):
+                            break
                         gj =self.GetGJ(code,start,end)
                         if(len(gj)>0):
                             gj_len =len(gj)
@@ -762,11 +765,14 @@ class AccountPd:
                     pg['配股调整'][k] =  (1- pg['配股价格(元)'][k]/pg['除权价'][k])*pg['每股配股数'][k]
                     pg['配股募资金额(亿)'][k] = float(pg['实际配股数'][k])*float(pg['配股价格(元)'][k])/100000000.0
                 else:#向前查找 直到有股价
+                    lowLimitDate ='1989-10-01'
                     while True:
                         time.sleep(0.3)
                         start_date =datetime.strptime(start, '%Y-%m-%d')
                         end_date =start_date + timedelta(days = -30)
                         end =end_date.strftime('%Y-%m-%d') 
+                        if(end<lowLimitDate):
+                            break
                         gj =self.GetGJ(code,end,start)
                         if(len(gj)>1):
                             pg['股权登记日收盘价'][k] =gj['close'][0]
@@ -854,3 +860,5 @@ if __name__ == '__main__':
     # xlsTest.Get_fhpg_SS_Wgjl_Zf('600089')
     # xlsTest.Get_fhpg_SS_Wgjl_Zf('000001')
     # xlsTest.GetFhpgSina('000001','')
+    # xlsTest.Get_fhpg_SS_Wgjl_Zf('600038')
+    # xlsTest.Get_fhpg_SS_Wgjl_Zf('600018')

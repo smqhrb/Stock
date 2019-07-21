@@ -780,6 +780,7 @@ class AccountPd:
                             pg['除权价'][k] =(pg['股权登记日收盘价'][k] + pg['配股价格(元)'][k]*pg['每股配股数'][k])/(1 + pg['每股配股数'][k])
                             pg['配股调整'][k] =  (1- pg['配股价格(元)'][k]/pg['除权价'][k])*pg['每股配股数'][k]
                             pg['配股募资金额(亿)'][k] = float(pg['实际配股数'][k])*float(pg['配股价格(元)'][k])/100000000.0
+                            break
                         else:
                             start =end                    
             # save pg 
@@ -861,4 +862,4 @@ if __name__ == '__main__':
     # xlsTest.Get_fhpg_SS_Wgjl_Zf('000001')
     # xlsTest.GetFhpgSina('000001','')
     # xlsTest.Get_fhpg_SS_Wgjl_Zf('600038')
-    # xlsTest.Get_fhpg_SS_Wgjl_Zf('600018')
+    # xlsTest.Get_fhpg_SS_Wgjl_Zf('600165')

@@ -1,0 +1,4 @@
+﻿python爬虫+网页点击事件+selenium模拟浏览器，爬取选股宝内容
+https://blog.csdn.net/weixin_42551465/article/details/80817552
+
+pip install se

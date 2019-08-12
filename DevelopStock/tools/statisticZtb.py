@@ -217,21 +217,31 @@ class dataOper:
     def getStockDataInDifferentFileUser(self,start,end):
         pro = ts.pro_api()
         i=0
-        df_sssj =self.db.cx_data("select code,sssj from stock_code_name")
+        df_sssj =self.db.cx_data("select code,sssj from stock_code_name where name not like '%ST%'")
         len_df =len(df_sssj)
         for k in range(len_df):
             #ts must delay 300ms
             time.sleep(0.3)
             #1 最后日期
-            code =df_sssj['code'][k]
-            df_date =self.db.cx_data("select max(\'trade_date\') as tdate from stock_day where code =\'%s\'"%code)
-            if(len(df_date)==0):
-                start =df_sssj['sssj'][k]
+            code =df_sssj[0][k]
+            if code>='600000':
+                code ="%s.SH"%code
             else:
-                start =df_date['tdate'][0]
+                code ="%s.SZ"%code
+            df_date =self.db.cx_data("select max(trade_date) as tdate from stock_day where ts_code =\'%s\'"%code)
+            if(df_date[0][0]==None):
+                start =df_sssj[1][k]
+                if(start==""):
+                    start ='20000101'
+            else:
+                start =df_date[0][0]
+            # 
+            dateTime_p = datetime.datetime.strptime(start,'%Y-%m-%d')
+            start =datetime.datetime.strftime(dateTime_p,'%Y%m%d')
             now_time = datetime.datetime.now()#现在
             end =now_time.strftime('%Y%m%d')
             #2 重最后日期 到 最新日期的股价
+
             df1 = pro.daily(ts_code=code, start_date=start, end_date=end)
             df=df1.sort_values(by=['trade_date'])
             df=df.reset_index()
@@ -284,7 +294,7 @@ class dataOper:
             # dfR.to_excel(writer,sheet_name=code)
 
             # writer.save()
-            print("...[%d]finish writing Stock =%s data to %s"%(i,code,savefileName))
+            print("...[%d]finish writing Stock =%s to table stock_day"%(i,code))
     # 3.StoreToDB
 
     # 4.GetGpFxrq
@@ -327,13 +337,15 @@ class dataOper:
 
       
         # pass
-           
+
+
 if __name__ == '__main__':
     # https://github.com/sadjjk/tonghuashun_industry
     # https://www.jianshu.com/p/13381aac9245
     test =dataOper("stockA.db")
     # test.GetStockListFromSina()
-    test.GetGpFxrq("300722")
+    # test.GetGpFxrq("300722")
+    test.getStockDataInDifferentFileUser('','')
 
 
 # http://basic.10jqka.com.cn/000600/company.html#stockpage

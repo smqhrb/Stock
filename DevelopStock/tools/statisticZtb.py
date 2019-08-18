@@ -168,7 +168,7 @@ class dbOper:
             self.cx.execute("COMMIT") 
             
             end = time.clock()
-            print("...Using time:%s   Store data rows =%s"%(end-start,rowCnt))
+            print("...Using time:%.4f   Store data rows =%s"%(end-start,rowCnt))
         except Exception as e:
             # cur.close()
             # cur.execute("rollback")
@@ -239,7 +239,8 @@ class dataOper:
     def GetStockData(self):
         pro = ts.pro_api()
         i=0
-        df_sssj =self.db.cx_data("select code,sssj from stock_code_name where name not like '%ST%'")
+        sql ="select code,sssj from stock_code_name where name not like \'%ST%\'"
+        df_sssj =self.db.cx_data(sql)
         len_df =len(df_sssj)
         for k in range(len_df):
             #ts must delay 300ms
@@ -430,6 +431,7 @@ class dataOper:
         day,week_str,lowNeg5,dtbCnt,maxZtbCnt,ztbCnt,ztbBz,ztbPriceAvg,ztbBzPriceAvg,oneZtCnt,zrOneZtAvg,today2Div1)\
         values('%s','%s',%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"%(first_day,week_str,lowNeg5,dtbCnt,maxZtbCnt,ztbCnt,ztbBz,ztbPriceAvg,ztbBzPriceAvg,oneZtCnt,zrOneZtAvg,today2Div1)
         self.db.update_data(sql)
+
         # pass
     def writeXls(self,file_name):
        
@@ -444,12 +446,45 @@ class dataOper:
         #根据索引获得第一个sheet
         sheet1 = wb.worksheets[0]
         
-        L = ['张三', '李四', '王五']
-        #excel中单元格为B2开始，即第2列，第2行
-        for i in range(len(L)):
-            sheet1.cell(i+2, 2).value=L[i]
+        # L = ['张三', '李四', '王五']
+        # #excel中单元格为B2开始，即第2列，第2行
+        # for i in range(len(L)):
+        #     sheet1.cell(i+2, 2).value=L[i]
+        offset =2
+        day =0 
+        week_str =1 
+        lowNeg5 =2 
+        dtbCnt =3 
+        maxZtbCnt =4 
+        ztbCnt =5 
+        ztbBz =6 
+        ztbPriceAvg =7 
+        ztbBzPriceAvg =8 
+        oneZtCnt =9 
+        zrOneZtAvg =10 
+        today2Div1 =11 
+        sql ="select day,week_str,lowNeg5,dtbCnt,maxZtbCnt,ztbCnt,ztbBz,ztbPriceAvg,ztbBzPriceAvg,oneZtCnt,zrOneZtAvg,today2Div1 from stock_ztb order by day desc"
+        pd_ztb =self.db.cx_data(sql)
+        pd_ztb_len =len(pd_ztb)
+        for i in range(pd_ztb_len):
+            lineOffset =2
+            sheet1.cell(i+lineOffset,day + offset).value=pd_ztb[day][i]
+            sheet1.cell(i+lineOffset,week_str+ offset).value=pd_ztb[week_str][i]
+            sheet1.cell(i+lineOffset,lowNeg5+ offset).value=pd_ztb[lowNeg5][i]
+            sheet1.cell(i+lineOffset,dtbCnt+ offset).value=pd_ztb[dtbCnt][i]
+            sheet1.cell(i+lineOffset,maxZtbCnt+ offset).value=pd_ztb[maxZtbCnt][i]
+            sheet1.cell(i+lineOffset,ztbCnt+ offset).value=pd_ztb[ztbCnt][i]
+            sheet1.cell(i+lineOffset,ztbBz+ offset).value=pd_ztb[ztbBz][i]
+            sheet1.cell(i+lineOffset,ztbPriceAvg+ offset).value=pd_ztb[ztbCnt][i] + pd_ztb[ztbBz][i]
+            sheet1.cell(i+lineOffset,ztbPriceAvg+ offset+1).value=pd_ztb[ztbPriceAvg][i]
+            sheet1.cell(i+lineOffset,ztbBzPriceAvg+ offset+1).value=pd_ztb[ztbBzPriceAvg][i]
+            sheet1.cell(i+lineOffset,oneZtCnt+ offset+1).value=pd_ztb[oneZtCnt][i]
+            sheet1.cell(i+lineOffset,zrOneZtAvg+ offset+1).value=pd_ztb[zrOneZtAvg][i]
+            sheet1.cell(i+lineOffset,today2Div1+ offset+1).value=pd_ztb[today2Div1][i]
         #保存数据，如果提示权限错误，需要关闭打开的excel
-        wb.save("../file/test.xlsx")
+
+        wb.save(file_name)
+
 class WorkDay:
     def get_day_type(self,query_date):
         getH =RandomHeader()
@@ -501,33 +536,34 @@ class WorkDay:
         }
         day = date.weekday()
         return week_day_dict[day]
+
 def main():
     print(sys.argv[0])
     print(sys.argv[1])
-    print(sys.argv[2]) 
-    xlsTest =dataOper("stockA.db")
+    print(sys.argv[2])
+    path =sys.argv[1]
+    db_name =path+"\\stockA.db"
+    xlsTest =dataOper(db_name)
     code =sys.argv[2]
 
     if(code=='stock'):# stock's code and name
         xlsTest.GetStockList()
     else:
-        # print(sys.argv[3]) 
-        name =sys.argv[3]
-        if(name =='data'):#update stock day data
-            xlsTest.GetStockData()
-        else:
-            #caculate index data
-            xlsTest.AnalysisIndex()
+        xlsTest.GetStockData()
+        #caculate index data
+        xlsTest.AnalysisIndex()
+        xlsTest.writeXls(path+"\\stockA.xlsx")
 
 if __name__ == '__main__':
-    # main()
+    main()
     # https://github.com/sadjjk/tonghuashun_industry
     # https://www.jianshu.com/p/13381aac9245
-    test =dataOper("stockA.db")
-    # test.GetStockListFromSina()
-    # test.GetGpFxrq("300722")
-    # test.GetStockData()
-    test.AnalysisIndex()
+    # test =dataOper("stockA.db")
+    # # test.GetStockListFromSina()
+    # # test.GetGpFxrq("300722")
+    # # test.GetStockData()
+    # test.AnalysisIndex()
+    # test.writeXls("stockA.xlsx")
 
 
 # http://basic.10jqka.com.cn/000600/company.html#stockpage

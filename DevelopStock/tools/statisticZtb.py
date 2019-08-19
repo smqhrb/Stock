@@ -168,7 +168,7 @@ class dbOper:
             self.cx.execute("COMMIT") 
             
             end = time.clock()
-            print("...Using time:%.4f   Store data rows =%s"%(end-start,rowCnt))
+            print("...写数据库耗时:%.4f   存入数据行数=%s"%(end-start,rowCnt))
         except Exception as e:
             # cur.close()
             # cur.execute("rollback")
@@ -272,7 +272,9 @@ class dataOper:
             now_time = datetime.datetime.now()#现在
             end =now_time.strftime('%Y%m%d')
             #2 重最后日期 到 最新日期的股价
-
+            if(start>end):
+                print("...开始日期%s>结束日期%s,数据库中已经是最新数据 ..."%(start,end))
+                break
             df1 = pro.daily(ts_code=code, start_date=start, end_date=end)
             df=df1.sort_values(by=['trade_date'])
             df['high_pct_change'] =(df['high'] -df['pre_close'])*100/df['pre_close']
@@ -307,8 +309,12 @@ class dataOper:
             pass
         return date
         # pass
+    def AnalysisIndex(self,day_rq=""):
+        wdCheck =WorkDay(day_rq)
+        days =wdCheck.get_recent_twotradeday(3)
+        self.AnalysisIndexDay(days)
 
-    def AnalysisIndex(self):
+    def AnalysisIndexDay(self,days):
         '''
         # 5.Analysis data 
         # 1.（A股收盘价低于-5%家数）,（跌停板家数），
@@ -325,10 +331,12 @@ class dataOper:
         '''
         ZTB_THRESOLD =9.9
         # 查找交易日 和 上一交易日
-        wdCheck =WorkDay()
-        days =wdCheck.get_recent_twotradeday(3)
         previous_day =days[1]
         first_day =days[0]
+        # 删除已经存在的记录
+        sql ="delete from stock_ztb where day ='%s'"%first_day
+        self.db.update_data(sql)
+        #
         ssrq = self.db.cx_data("select strftime('%Y%m%d',sssj) sssj from stock_code_name")
         #1 A股收盘价低于-5%家数）,（跌停板家数）
         sql ="select count(*) from stock_day where pct_chg<-5  and trade_date ='%s'"%first_day #低于-5%家数
@@ -408,16 +416,17 @@ class dataOper:
         pd_6 =self.db.cx_data(sql)
         oneZtCnt =pd_6[0][0]         
         #7 昨日1板的（昨日涨停价-今日收盘价）/昨日涨停价的平均值
-        sql ="select (close - pre_close)*100/pre_close from stock_day where  trade_date='%s' and high!=close and ts_code in (select ts_code from stock_day where pct_chg>%s and trade_date='%s')"%(first_day,ZTB_THRESOLD,previous_day)
+        # sql ="select (close - pre_close)*100/pre_close from stock_day where  trade_date='%s' and high!=close and ts_code in (select ts_code from stock_day where pct_chg>%s and trade_date='%s')"%(first_day,ZTB_THRESOLD,previous_day)
+        sql ="select (close - pre_close)*100/pre_close from stock_day where pct_chg<%s and trade_date='%s' and  ts_code in (select ts_code from stock_day where pct_chg>%s and trade_date='%s') and  ts_code in (select ts_code from stock_day where pct_chg<%s and trade_date='%s')"%(ZTB_THRESOLD,days[0],ZTB_THRESOLD,days[1],ZTB_THRESOLD,days[2])#昨日1板数量
         pd_7 =self.db.cx_data(sql)
         zrOneZtAvg ='%.2f'%(pd_7[0].mean())          
         #8 今日2板数量除以昨日1板数量
         
-        sql ="select count(*) from stock_day where pct_chg>%s and trade_date='%s' and  ts_code in (select ts_code from stock_day where pct_chg>%s and trade_date='%s') and  ts_code in (select ts_code from stock_day where pct_chg<%s and trade_date='%s')"%(ZTB_THRESOLD,days[2],ZTB_THRESOLD,days[1],ZTB_THRESOLD,days[0])#今日2板数量
+        sql ="select count(*) from stock_day where pct_chg>%s and trade_date='%s' and  ts_code in (select ts_code from stock_day where pct_chg>%s and trade_date='%s') and  ts_code in (select ts_code from stock_day where pct_chg<%s and trade_date='%s')"%(ZTB_THRESOLD,days[0],ZTB_THRESOLD,days[1],ZTB_THRESOLD,days[2])#今日2板数量
         pd_8 =self.db.cx_data(sql)
         twoZtb =pd_8[0][0] 
 
-        sql ="select count(*) from stock_day where pct_chg<%s and trade_date='%s' and  ts_code in (select ts_code from stock_day where pct_chg>%s and trade_date='%s') and  ts_code in (select ts_code from stock_day where pct_chg<%s and trade_date='%s')"%(ZTB_THRESOLD,days[2],ZTB_THRESOLD,days[1],ZTB_THRESOLD,days[0])#今日2板数量
+        sql ="select count(*) from stock_day where pct_chg<%s and trade_date='%s' and  ts_code in (select ts_code from stock_day where pct_chg>%s and trade_date='%s') and  ts_code in (select ts_code from stock_day where pct_chg<%s and trade_date='%s')"%(ZTB_THRESOLD,days[0],ZTB_THRESOLD,days[1],ZTB_THRESOLD,days[2])#昨日1板数量
         pd_8 =self.db.cx_data(sql)
         oneZtb =pd_8[0][0] 
         if(oneZtb==0):
@@ -426,6 +435,7 @@ class dataOper:
             today2Div1 ='%.2f'%(twoZtb/oneZtb)
         # update to xlsx
         dateTime_p = datetime.datetime.strptime(first_day,'%Y%m%d')
+        wdCheck = WorkDay()
         week_str = wdCheck.get_week_day(dateTime_p)
         sql ="insert into stock_ztb(\
         day,week_str,lowNeg5,dtbCnt,maxZtbCnt,ztbCnt,ztbBz,ztbPriceAvg,ztbBzPriceAvg,oneZtCnt,zrOneZtAvg,today2Div1)\
@@ -486,9 +496,17 @@ class dataOper:
         wb.save(file_name)
 
 class WorkDay:
+    def __init__(self,start=""):
+        if(start==""):
+            dateTime_p =datetime.datetime.today()
+            self.dateTime_t =dateTime_p -datetime.timedelta(hours=16)
+        else:
+            self.dateTime_t = datetime.datetime.strptime(start,'%Y%m%d')
+
     def get_day_type(self,query_date):
         getH =RandomHeader()
         headers =getH.GetHeader()
+        time.sleep(1)
         url = 'http://tool.bitefu.net/jiari/?d=' + query_date
        
         req = urllib2.Request(url, headers = headers)
@@ -511,10 +529,11 @@ class WorkDay:
         days =[]
         i =0
         while(len(days)<day_cnt):
-            dateTime_p =datetime.datetime.today()
-            # dateTime_p = datetime.datetime.strptime(start,'%Y%m%d')
+            # dateTime_p =datetime.datetime.today()
+            # dateTime_t =dateTime_p -datetime.timedelta(hours=16)
+            # #dateTime_p = datetime.datetime.strptime(start,'%Y%m%d')
             detaday=datetime.timedelta(days=i)
-            da_days=dateTime_p-detaday
+            da_days=self.dateTime_t-detaday
             start =datetime.datetime.strftime(da_days,'%Y%m%d')
             day_type =self.get_day_type(start)
             if(day_type==0):
@@ -541,18 +560,33 @@ def main():
     print(sys.argv[0])
     print(sys.argv[1])
     print(sys.argv[2])
+    
     path =sys.argv[1]
     db_name =path+"\\stockA.db"
     xlsTest =dataOper(db_name)
-    code =sys.argv[2]
+    wk_type =sys.argv[2]
 
-    if(code=='stock'):# stock's code and name
+    if(wk_type=='stock'):# stock's code and name
         xlsTest.GetStockList()
     else:
-        xlsTest.GetStockData()
+        
+        # xlsTest.GetStockData()
         #caculate index data
-        xlsTest.AnalysisIndex()
+        
+        day_start =sys.argv[3]
+        
+        day_end =sys.argv[4]
+        # day_end_p =datetime.datetime.strptime(day_end,'%Y%m%d')
+        while(day_start<=day_end):
+            print('...更新指标的的日期为%s'%day_start)
+            xlsTest.AnalysisIndex(day_start)
+            day_start_p =datetime.datetime.strptime(day_start,'%Y%m%d')
+            detaday =datetime.timedelta(days=1)
+            da_days =day_start_p + detaday
+            day_start =datetime.datetime.strftime(da_days,'%Y%m%d')
+
         xlsTest.writeXls(path+"\\stockA.xlsx")
+        print('...更新指标写入%s'%(path+"\\stockA.xlsx"))
 
 if __name__ == '__main__':
     main()
@@ -562,7 +596,7 @@ if __name__ == '__main__':
     # # test.GetStockListFromSina()
     # # test.GetGpFxrq("300722")
     # # test.GetStockData()
-    # test.AnalysisIndex()
+    # test.AnalysisIndex('20190814')
     # test.writeXls("stockA.xlsx")
 
 

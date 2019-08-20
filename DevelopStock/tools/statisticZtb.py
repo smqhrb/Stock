@@ -15,28 +15,15 @@
 #coding=utf-8
 import getopt
 import tushare as ts
-import numpy as np
+# import numpy as np
 import pandas as pd
 import os,time,sys,re,datetime
 import urllib.request as urllib2
 from bs4 import BeautifulSoup 
 import random
 from html.parser import HTMLParser
-import time
 import math
 import json
-import random
-# import lxml.html
-# from lxml import etree
-# from pandas.io.html import read_html
-# from pandas.compat import StringIO
-# import xlwt
-import time
- 
-
-import pandas as pd
-from bs4 import BeautifulSoup
-
 import openpyxl
 import sqlite3 as db
 class RandomHeader:
@@ -69,19 +56,13 @@ class RandomHeader:
     def GetHeader(self):
         headers={"User-Agent":random.choice(self.user_agent_list)}
         return headers
-# from sqlalchemy import create_engine
-# engine = create_engine(
-#     "mysql+pymysql://root:root@localhost:3306/tushare?charset=utf8")
     
 class dbOper:
-    # https://www.cnblogs.com/lizunicon/p/4306730.htm
-    # http://docs.jinkan.org/dodbOpercs/flask/patterns/sqlalchemy.html
-    # https://www.cnblogs.com/zenan/p/10176767.html
+
     def __init__(self,db_file=""):
-        # self.engine = create_engine('sqlite:///.\\%s'%db_file)
+
         self.cx = db.connect(db_file)
-        
-        # self.engine.connect(db_file)
+
     def cx_data(self,sql_select):
         cur =self.cx.cursor()
         cur.execute(sql_select)
@@ -98,7 +79,7 @@ class dbOper:
             self.cx.rollback()
             print(str(e))
     def pandas_tosql(self,df,tbl_name,ifexist):
-        # df.to_sql(name = 'employee', con = con, if_exists='replace', index = None)
+
         df.to_sql(name = tbl_name, con = self.cx, if_exists=ifexist, index = None)
     def to_sql(self,dataf,tbl):
         '''
@@ -108,12 +89,11 @@ class dbOper:
         rowCnt =len(dataf)
         if(rowCnt==0):
             return
-        # dataf.to_sql(name=tbl,con=self.cx,if_exists='append',index= False)
+
         colCnt =dataf.columns.tolist()
         cnt =len(colCnt)
         start = time.clock()
 
-        # tuple(zip(df.Description, df.Code))
     
 
         try:
@@ -133,37 +113,6 @@ class dbOper:
                     vals = vals + "?,"
             sql ="insert into %s(%s) values(%s);"%(tbl,cols,vals)
             cur.executemany(sql,data_tuple)
-            # #very slow
-            # for i in range(rowCnt):
-            #     try: 
-            #         # dataf.iloc[i:i+1].to_sql(name =tbl,  con=self.cx, if_exists='append',index= False)
-
-            #         cols =""
-            #         vals =""
-            #         for k in range(cnt):
-            #             if(k==(cnt -1)):
-            #                 cols = cols + colCnt[k]
-            #                 coltype =str(dataf[colCnt[k]].dtype)
-            #                 if(coltype=="object"):
-            #                     vals = vals + "\'%s\'"%(dataf.iloc[i:i+1][colCnt[k]].values[0])
-            #                 else:
-            #                     vals = vals + "%s"%(dataf.iloc[i:i+1][colCnt[k]].values[0])
-            #             else:
-            #                 cols = cols + "%s,"%(colCnt[k])
-            #                 coltype =str(dataf[colCnt[k]].dtype)
-            #                 if(coltype=="object"):
-            #                     vals = vals + "\'%s\',"%(dataf.iloc[i:i+1][colCnt[k]].values[0])
-            #                 else: 
-            #                     vals = vals + "%s,"%(dataf.iloc[i:i+1][colCnt[k]].values[0])
-            #         sql ="insert into %s(%s) values(%s);"%(tbl,cols,vals)
-            #         # self.update_data(sql)
-            #         cur.executemany(sql)
-            #         #
-            #         # self.cx.commit()
-            #     except Exception as e:
-            #         pass#
-            #         # print('Error is ' + str(e))
-            #         #self.con.rollback()  
             
             self.cx.execute("COMMIT") 
             
@@ -389,7 +338,10 @@ class dataOper:
             ccontent.append(ztb_cnt)
             ts_list.append(ccontent)
         df =pd.DataFrame(ts_list,columns=['ts_code','ztb_cnt'])
-        maxZtbCnt = df['ztb_cnt'].max()
+        if(len(df)>0):
+            maxZtbCnt = df['ztb_cnt'].max()
+        else:
+            maxZtbCnt =0
         # loop to search A股最高板板数
 
         #3 涨停板数量,涨停板被砸,涨停板数量+涨停板被砸(最高价=涨停价，收盘价不等于涨停价)数量 
@@ -406,11 +358,17 @@ class dataOper:
         #4 昨日涨停板的（今日收盘价 -昨日涨停价）/昨日涨停价的平均值
         sql ="select (close - pre_close)*100/pre_close from stock_day where trade_date='%s' and ts_code in(select ts_code  from stock_day where pct_chg>%s and trade_date='%s')"%(first_day,ZTB_THRESOLD,previous_day)
         pd_4 =self.db.cx_data(sql)
-        ztbPriceAvg ='%.2f'%(pd_4[0].mean()) 
+        if(len(pd_4)>0):
+            ztbPriceAvg ='%.2f'%(pd_4[0].mean()) 
+        else:
+            ztbPriceAvg =0
         #5 昨日涨停板被砸的（今日收盘价-昨日涨停价）/昨日涨停价的平均值
         sql = "select (close - pre_close)*100/pre_close from stock_day where  trade_date='%s' and ts_code in(select ts_code from stock_day where high_pct_change>%s and close!=high and trade_date='%s')"%(first_day,ZTB_THRESOLD,previous_day)
         pd_5 =self.db.cx_data(sql)
-        ztbBzPriceAvg ='%.2f'%(pd_5[0].mean()) 
+        if(len(pd_5)>0):
+            ztbBzPriceAvg ='%.2f'%(pd_5[0].mean()) 
+        else:
+            ztbBzPriceAvg =0
         #6 1板的数量
         sql ="select count(*) from stock_day where pct_chg>%s and trade_date='%s' and ts_code in (select ts_code from stock_day where pct_chg<%s and trade_date='%s')"%(ZTB_THRESOLD,first_day,ZTB_THRESOLD,previous_day)
         pd_6 =self.db.cx_data(sql)
@@ -419,7 +377,10 @@ class dataOper:
         # sql ="select (close - pre_close)*100/pre_close from stock_day where  trade_date='%s' and high!=close and ts_code in (select ts_code from stock_day where pct_chg>%s and trade_date='%s')"%(first_day,ZTB_THRESOLD,previous_day)
         sql ="select (close - pre_close)*100/pre_close from stock_day where pct_chg<%s and trade_date='%s' and  ts_code in (select ts_code from stock_day where pct_chg>%s and trade_date='%s') and  ts_code in (select ts_code from stock_day where pct_chg<%s and trade_date='%s')"%(ZTB_THRESOLD,days[0],ZTB_THRESOLD,days[1],ZTB_THRESOLD,days[2])#昨日1板数量
         pd_7 =self.db.cx_data(sql)
-        zrOneZtAvg ='%.2f'%(pd_7[0].mean())          
+        if(len(pd_7)>0):
+            zrOneZtAvg ='%.2f'%(pd_7[0].mean())  
+        else:
+            zrOneZtAvg =0         
         #8 今日2板数量除以昨日1板数量
         
         sql ="select count(*) from stock_day where pct_chg>%s and trade_date='%s' and  ts_code in (select ts_code from stock_day where pct_chg>%s and trade_date='%s') and  ts_code in (select ts_code from stock_day where pct_chg<%s and trade_date='%s')"%(ZTB_THRESOLD,days[0],ZTB_THRESOLD,days[1],ZTB_THRESOLD,days[2])#今日2板数量
@@ -450,16 +411,8 @@ class dataOper:
         #获得sheet名称
         sheetNames = wb.sheetnames
         print(sheetNames)
-        #sheetName1 = sheetNames[0]
-        #根据名称获取第一个sheet
-        #sheet1 = wb[sheetName1]
-        #根据索引获得第一个sheet
         sheet1 = wb.worksheets[0]
         
-        # L = ['张三', '李四', '王五']
-        # #excel中单元格为B2开始，即第2列，第2行
-        # for i in range(len(L)):
-        #     sheet1.cell(i+2, 2).value=L[i]
         offset =2
         day =0 
         week_str =1 
@@ -504,14 +457,25 @@ class WorkDay:
             self.dateTime_t = datetime.datetime.strptime(start,'%Y%m%d')
 
     def get_day_type(self,query_date):
-        getH =RandomHeader()
-        headers =getH.GetHeader()
-        time.sleep(1)
-        url = 'http://tool.bitefu.net/jiari/?d=' + query_date
-       
-        req = urllib2.Request(url, headers = headers)
-        content = urllib2.urlopen(req).read()
-        text =content.decode('utf8')
+        text ="0"
+        try:
+
+            getH =RandomHeader()
+            headers =getH.GetHeader()
+            time.sleep(1)
+            url = 'http://tool.bitefu.net/jiari/?d=' + query_date
+        
+            req = urllib2.Request(url, headers = headers)
+            content = urllib2.urlopen(req).read()
+            text =content.decode('utf8')
+        except Exception as e:
+            day_p =datetime.datetime.strptime(query_date,'%Y%m%d')
+            week_p =day_p.weekday()
+            if(week_p<5):
+                text= '"0"'
+            else:
+                text ='1'
+                    
         if text == '"0"':
             return 0
         elif text == '1':
@@ -529,9 +493,7 @@ class WorkDay:
         days =[]
         i =0
         while(len(days)<day_cnt):
-            # dateTime_p =datetime.datetime.today()
-            # dateTime_t =dateTime_p -datetime.timedelta(hours=16)
-            # #dateTime_p = datetime.datetime.strptime(start,'%Y%m%d')
+
             detaday=datetime.timedelta(days=i)
             da_days=self.dateTime_t-detaday
             start =datetime.datetime.strftime(da_days,'%Y%m%d')
@@ -569,14 +531,11 @@ def main():
     if(wk_type=='stock'):# stock's code and name
         xlsTest.GetStockList()
     else:
-        
-        # xlsTest.GetStockData()
-        #caculate index data
-        
+        xlsTest.GetStockData()
+
         day_start =sys.argv[3]
-        
         day_end =sys.argv[4]
-        # day_end_p =datetime.datetime.strptime(day_end,'%Y%m%d')
+
         while(day_start<=day_end):
             print('...更新指标的的日期为%s'%day_start)
             xlsTest.AnalysisIndex(day_start)
@@ -590,15 +549,6 @@ def main():
 
 if __name__ == '__main__':
     main()
-    # https://github.com/sadjjk/tonghuashun_industry
-    # https://www.jianshu.com/p/13381aac9245
-    # test =dataOper("stockA.db")
-    # # test.GetStockListFromSina()
-    # # test.GetGpFxrq("300722")
-    # # test.GetStockData()
-    # test.AnalysisIndex('20190814')
-    # test.writeXls("stockA.xlsx")
-
-
-# http://basic.10jqka.com.cn/000600/company.html#stockpage
+    # xlsTest =dataOper("stockA.db")
+    # xlsTest.AnalysisIndex("20190819")
 

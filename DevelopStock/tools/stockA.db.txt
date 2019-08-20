@@ -1,0 +1,35 @@
+--sqlite3 建立数据库
+CREATE TABLE [stock_code_name](
+  [code] CHAR(6) NOT NULL UNIQUE ON CONFLICT IGNORE, 
+  [name] VARCHAR2(10) NOT NULL, 
+  [sssj] DATE);
+
+CREATE TABLE [stock_day](
+  [ts_code] CHAR(6) NOT NULL, 
+  [trade_date] DATE NOT NULL, 
+  [open] FLOAT, 
+  [high] FLOAT, 
+  [low] FLOAT, 
+  [close] FLOAT, 
+  [pre_close] FLOAT, 
+  [change] FLOAT, 
+  [pct_chg] FLOAT, 
+  [vol] INTEGER, 
+  [amount] FLOAT, 
+  [high_pct_change] FLOAT, 
+  UNIQUE([ts_code], [trade_date]) ON CONFLICT FAIL);
+
+CREATE TABLE [stock_ztb](
+  [day] DATE NOT NULL UNIQUE ON CONFLICT REPLACE, 
+  [week_str] VARCHAR2(10), 
+  [lowNeg5] INT, 
+  [dtbCnt] INT, 
+  [maxZtbCnt] INT, 
+  [ztbCnt] INT, 
+  [ztbBz] INT, 
+  [ztbPriceAvg] INT, 
+  [ztbBzPriceAvg] INT, 
+  [oneZtCnt] INT, 
+  [zrOneZtAvg] INT, 
+  [today2Div1] INT);
+

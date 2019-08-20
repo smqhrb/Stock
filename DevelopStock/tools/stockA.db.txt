@@ -1,4 +1,5 @@
 --sqlite3 建立数据库
+--SQLite Expert Personal 管理工具
 CREATE TABLE [stock_code_name](
   [code] CHAR(6) NOT NULL UNIQUE ON CONFLICT IGNORE, 
   [name] VARCHAR2(10) NOT NULL, 

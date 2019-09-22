@@ -186,6 +186,7 @@ class dataOper:
         return obj 
     # 2.GetStockData open close pre_close pct_chg涨跌幅度
     def GetStockData(self):
+        ts.set_token('582c8c9ab1bd9e3e14d5d60527d63affb8c310fba3fb9f5d7853bf9c')
         pro = ts.pro_api()
         i=0
         sql ="select code,sssj from stock_code_name where name not like \'%ST%\'"

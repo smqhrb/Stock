@@ -6,48 +6,279 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>499</width>
-    <height>568</height>
+    <width>1132</width>
+    <height>599</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>UseWeChat</string>
+   <string>微信 - Tdx 捕图 消息 通知</string>
   </property>
-  <widget class="QPushButton" name="pBtn_Start">
+  <widget class="QGroupBox" name="groupBox">
+   <property name="geometry">
+    <rect>
+     <x>550</x>
+     <y>60</y>
+     <width>581</width>
+     <height>531</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>检测 捕图软件机状态 设置</string>
+   </property>
+   <widget class="QCheckBox" name="cB_ipCheck">
+    <property name="geometry">
+     <rect>
+      <x>140</x>
+      <y>50</y>
+      <width>71</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>运行</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="lb_from_3">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>50</y>
+      <width>31</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>间隔</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="le_minspan">
+    <property name="geometry">
+     <rect>
+      <x>40</x>
+      <y>50</y>
+      <width>31</width>
+      <height>20</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="lb_from_4">
+    <property name="geometry">
+     <rect>
+      <x>80</x>
+      <y>50</y>
+      <width>31</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>分钟</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>20</y>
+      <width>571</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>检测捕图软件 在交易日(或者b) 从 B时刻 到 C时刻 每隔D分钟,如果没有向数据库添加数据情况,微信通知</string>
+    </property>
+   </widget>
+   <widget class="QListView" name="listView_Ip">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>80</y>
+      <width>561</width>
+      <height>441</height>
+     </rect>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QGroupBox" name="groupBox_2">
    <property name="geometry">
     <rect>
      <x>10</x>
      <y>10</y>
-     <width>75</width>
-     <height>23</height>
+     <width>1121</width>
+     <height>41</height>
     </rect>
    </property>
-   <property name="text">
-    <string>开始发送</string>
+   <property name="title">
+    <string/>
    </property>
+   <widget class="QLabel" name="lb_from">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>10</y>
+      <width>61</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>运行时间从</string>
+    </property>
+   </widget>
+   <widget class="QTimeEdit" name="tE_From">
+    <property name="geometry">
+     <rect>
+      <x>80</x>
+      <y>10</y>
+      <width>81</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="displayFormat">
+     <string>h:mm</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="lb_from_2">
+    <property name="geometry">
+     <rect>
+      <x>170</x>
+      <y>10</y>
+      <width>21</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>到</string>
+    </property>
+   </widget>
+   <widget class="QTimeEdit" name="tE_End">
+    <property name="geometry">
+     <rect>
+      <x>190</x>
+      <y>10</y>
+      <width>81</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="currentSection">
+     <enum>QDateTimeEdit::HourSection</enum>
+    </property>
+    <property name="displayFormat">
+     <string>h:mm</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pBtn_Start">
+    <property name="geometry">
+     <rect>
+      <x>280</x>
+      <y>10</y>
+      <width>81</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>开始</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pBtn_Stop">
+    <property name="geometry">
+     <rect>
+      <x>370</x>
+      <y>10</y>
+      <width>81</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>停止</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pBtn_Save">
+    <property name="geometry">
+     <rect>
+      <x>510</x>
+      <y>10</y>
+      <width>81</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>保存配置</string>
+    </property>
+   </widget>
   </widget>
-  <widget class="QPushButton" name="pBtn_Stop">
-   <property name="geometry">
-    <rect>
-     <x>90</x>
-     <y>10</y>
-     <width>75</width>
-     <height>23</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>停止发送</string>
-   </property>
-  </widget>
-  <widget class="QListView" name="listView">
+  <widget class="QGroupBox" name="groupBox_3">
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>40</y>
-     <width>481</width>
-     <height>521</height>
+     <y>70</y>
+     <width>531</width>
+     <height>31</height>
     </rect>
    </property>
+   <property name="title">
+    <string/>
+   </property>
+   <widget class="QLabel" name="label_3">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>10</y>
+      <width>371</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>导出 当日数据库 记录(每隔5 分钟) 导出一次 到 文件 (日期.xls)</string>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="cB_DbExport">
+    <property name="geometry">
+     <rect>
+      <x>410</x>
+      <y>10</y>
+      <width>51</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>运行</string>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QGroupBox" name="groupBox_4">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>110</y>
+     <width>531</width>
+     <height>481</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string/>
+   </property>
+   <widget class="QLabel" name="label_2">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>10</y>
+      <width>351</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>编辑&quot;WeList.xls&quot;,信息发送到&quot;微信&quot;和自己的&quot;文件传输助手&quot;里</string>
+    </property>
+   </widget>
+   <widget class="QListView" name="listView">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>30</y>
+      <width>511</width>
+      <height>441</height>
+     </rect>
+    </property>
+   </widget>
   </widget>
  </widget>
  <resources/>
